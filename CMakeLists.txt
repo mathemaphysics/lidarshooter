@@ -47,12 +47,37 @@ endif()
 FetchContent_MakeAvailable(spdlog)
 FetchContent_MakeAvailable(jsoncpp)
 
+# Extra libraries if needed go here
+find_package(PDAL REQUIRED)
+find_package(PCL REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(TileDB REQUIRED)
+find_package(wxWidgets REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
+
+include_directories(${PDAL_INCLUDE_DIRS})
+link_directories(${PDAL_LIBRARY_DIRS})
+add_definitions(${PDAL_DEFINITIONS})
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+include_directories(${OpenCV_INCLUDE_DIRS})
+link_directories(${OpenCV_LIBRARY_DIRS})
+add_definitions(${OpenCV_DEFINITIONS})
+include_directories(${wxWidgets_INCLUDE_DIRS})
+link_directories(${wxWidgets_LIBRARY_DIRS})
+
+# Needed for use with wxWidgets
+include(${wxWidgets_USE_FILE})
+
 # Compile the library
 add_subdirectory(src)
 
-
 # Compile the application
 add_subdirectory(app)
+
+# Compile the examples
+add_subdirectory(examples)
 
 # Compile the tests
 include(CTest)

@@ -43,7 +43,8 @@
 		"novaturion.cpp-classes-creator",
 		"matepek.vscode-catch2-test-adapter",
 		"go2sh.cmake-integration-vscode",
-		"mischelebuha.cmake-extension-pack"
+		"mischelebuha.cmake-extension-pack",
+		"ms-iot.vscode-ros"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -61,5 +62,6 @@
 	// Maps the .ssh/ folder from your ${HOME} into /home/devuser/.ssh
 	"mounts": [
 		"source=${localEnv:HOME}/.ssh,target=/home/devuser/.ssh,type=bind,consistency=cached",
+		"source=/c/Users/mathe/Data/pointclouds,target=/workspaces/data,type=bind,consistency=cached"
 	]
 }

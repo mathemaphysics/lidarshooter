@@ -13,8 +13,6 @@
 #include <pcl/surface/mls.h>
 #include <pcl/surface/grid_projection.h>
 #include <pcl/geometry/triangle_mesh.h>
-#include <pcl/gpu/surface/convex_hull.h>
-#include <pcl/gpu/segmentation/gpu_extract_clusters.h>
 
 #include <tiledb/array.h>
 
