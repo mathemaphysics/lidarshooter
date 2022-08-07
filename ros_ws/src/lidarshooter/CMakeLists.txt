@@ -218,7 +218,7 @@ find_package(Eigen REQUIRED)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(lidarshooter src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp)
+add_executable(lidarshooter src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/PointCloudXYZIR.cpp)
 target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} /usr/include/eigen3)
 target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})

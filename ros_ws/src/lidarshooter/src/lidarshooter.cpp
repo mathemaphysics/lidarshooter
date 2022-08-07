@@ -20,6 +20,7 @@
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
 #include "XYZIRBytes.hpp"
+#include "PointCloudXYZIR.hpp"
 
 int main(int argc, char **argv)
 {
@@ -47,31 +48,11 @@ int main(int argc, char **argv)
     {
         // Build the message and its header
         sensor_msgs::PointCloud2 msg;
-        sensor_msgs::PointField fieldx, fieldy, fieldz, fieldi, fieldr;
+        lidarshooter::PointCloudXYZIR config;
 
-        fieldx.name = "x";   fieldy.name = "y";   fieldz.name = "z";   fieldi.name = "intensity"; fieldr.name = "ring";
-        fieldx.offset = 0;   fieldy.offset = 4;   fieldz.offset = 8;   fieldi.offset = 16;        fieldr.offset = 20;
-        fieldx.datatype = 7; fieldy.datatype = 7; fieldz.datatype = 7; fieldi.datatype = 7;       fieldr.datatype = 4;
-        fieldx.count = 1;    fieldy.count = 1;    fieldz.count = 1;    fieldi.count = 1;          fieldr.count = 1;
-
-        msg.fields.push_back(fieldx);
-        msg.fields.push_back(fieldy);
-        msg.fields.push_back(fieldz);
-        msg.fields.push_back(fieldi);
-        msg.fields.push_back(fieldr);
-
-        // Assume Hesai PandarXT-32 for now
         const int xsteps = 32;
         const int ysteps = 150;
-        msg.header.frame_id = "PandarXT-32";
-        msg.header.stamp = ros::Time::now();
-        msg.header.seq = ++frameIndex;
-        msg.height = 1;
-        msg.width = xsteps * ysteps + trackObject.cloud.width * trackObject.cloud.height;
-        msg.is_bigendian = false;
-        msg.point_step = 32;
-        msg.row_step = msg.width * msg.point_step;
-        msg.is_dense = true;
+        config.initMessage(msg, xsteps * ysteps, ++frameIndex);
 
         // Trace out the Hesai configuration for now
         const float xstart = M_PI_2 + 0.01;
