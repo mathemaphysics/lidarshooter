@@ -16,14 +16,15 @@ RUN apt-get -y update \
 					       vim \
 					       sudo \
 					       libboost-all-dev \
- && python3 -m pip install cookiecutter sphinx breathe sphinx_rtd_theme
+ && python3 -m pip install cookiecutter sphinx breathe sphinx_rtd_theme catkin-tools
 WORKDIR /builds
 RUN git clone https://github.com/Kitware/CMake.git -b v3.22.1 \
  && cd CMake && ./configure --prefix=/usr && make && make install
 
-RUN apt-get -y install ros-desktop-full libtf2-std-srvs-dev libtf2-sensor-msgs-dev \
+RUN apt-get -y update \
+	&& apt-get -y install ros-desktop-full libtf2-sensor-msgs-dev \
 	libstd-srvs-dev ros-std-srvs python3-std-srvs libroslib-dev python3-roslib \
-	python3-rostest librostest-dev
+	python3-rostest librostest-dev ros-geometry-msgs
 
 ENV DEVUSER=${DEVUSER}
 RUN adduser --uid 1000 --disabled-password --gecos "" ${DEVUSER} \
