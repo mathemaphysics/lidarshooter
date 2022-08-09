@@ -14,11 +14,11 @@ namespace lidarshooter
      * @brief Class representing the invariant attributes of a Hesai PandarXT-32
      * point cloud
      */
-    class PointCloudXYZIR
+    class LidarDevice
     {
     public:
-        PointCloudXYZIR();
-        ~PointCloudXYZIR() = default;
+        LidarDevice();
+        ~LidarDevice() = default;
         void initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex);
 
     private:

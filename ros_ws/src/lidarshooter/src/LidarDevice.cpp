@@ -1,4 +1,4 @@
-#include "PointCloudXYZIR.hpp"
+#include "LidarDevice.hpp"
 
 #include <cstdint>
 #include <string>
@@ -8,7 +8,7 @@
 #include <sensor_msgs/PointField.h>
 #include <std_msgs/Header.h>
 
-lidarshooter::PointCloudXYZIR::PointCloudXYZIR()
+lidarshooter::LidarDevice::LidarDevice()
 {
     // Because PointField has no constructor to set name, offset, datatype,
     // count, must build them here in the constructor even though they may as
@@ -26,7 +26,7 @@ lidarshooter::PointCloudXYZIR::PointCloudXYZIR()
     _fields.push_back(fieldr);
 }
 
-void lidarshooter::PointCloudXYZIR::initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex)
+void lidarshooter::LidarDevice::initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex)
 {
     for (auto field : _fields)
         _msg.fields.push_back(field);

@@ -218,9 +218,10 @@ find_package(Eigen REQUIRED)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(lidarshooter src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/PointCloudXYZIR.cpp)
-target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} /usr/include/eigen3)
-target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_executable(lidarshooter src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/LidarDevice.cpp)
+target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
+target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} embree3)
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
 
 #add_executable(somereader src/somereader.cpp)
