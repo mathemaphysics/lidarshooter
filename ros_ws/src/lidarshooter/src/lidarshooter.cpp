@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcAttachGeometry(scene, geom);
 
-    // This is where to figure out where the ray intersects
+    // Create the geometry buffers for vertices and indexes
     float *vertices = (float*) rtcSetNewGeometryBuffer(
         geom, RTC_BUFFER_TYPE_VERTEX, 0,
         RTC_FORMAT_FLOAT3, 3*sizeof(float),
@@ -113,6 +113,7 @@ int main(int argc, char **argv)
         trackObject.polygons.size()
     );
 
+    // The main loop; each iteration produces a new point cloud
     while (ros::ok())
     {
         // Build the message and its header

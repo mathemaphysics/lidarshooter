@@ -11,8 +11,12 @@
 namespace lidarshooter
 {
     /**
-     * @brief Class representing the invariant attributes of a Hesai PandarXT-32
-     * point cloud
+     * @brief Class that builds a header for our specific sensor's cloud
+     * 
+     * Class representing the invariant attributes of a Hesai PandarXT-32
+     * point cloud which knows how to build the header to a sensor_msgs::PointCloud2
+     * object for this type; eventually use this as a base class to build other
+     * sensor-specific header generators
      */
     class LidarDevice
     {

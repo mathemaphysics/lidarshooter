@@ -1,6 +1,6 @@
 #include <ros/ros.h>
-#include <somenode/StringWithHeader.h>
 #include <iostream>
+#include <Eigen/Eigen>
 
 void callbackFunction(const somenode::StringWithHeaderConstPtr& msg)
 {
