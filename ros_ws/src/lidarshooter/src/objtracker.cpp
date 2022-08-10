@@ -20,7 +20,6 @@ int main(int argc, char **argv)
     std::cout << "Points in tracked object      : " << trackObject.cloud.width * trackObject.cloud.height << std::endl;
     std::cout << "Triangles in tracked object   : " << trackObject.polygons.size() << std::endl;
 
-
     // The main loop; each iteration produces a new point cloud
     ros::Rate rate(2);
     int frameIndex = 200;

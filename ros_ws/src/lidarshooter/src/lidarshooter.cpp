@@ -12,6 +12,8 @@
 #include <cmath>
 #include <vector>
 #include <cstring>
+#include <fstream>
+#include <sstream>
 
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
@@ -51,23 +53,20 @@ public:
         pcl_conversions::toPCL(*_mesh, _trackObject);
         std::cout << "Points in tracked object      : " << _trackObject.cloud.width * _trackObject.cloud.height << std::endl;
         std::cout << "Triangles in tracked object   : " << _trackObject.polygons.size() << std::endl;
-        for (int kdx = 0; kdx < 164; ++kdx)
-            std::cout << floatBytes(_trackObject.cloud.data.data() + kdx * _trackObject.cloud.point_step).asFloat << " ";
-        std::cout << std::endl;
         
-        // Create the geometry buffers for vertices and indexes
-        _geometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-        rtcAttachGeometry(_scene, _geometry);
-        _vertices = (float*) rtcSetNewGeometryBuffer(
-            _geometry, RTC_BUFFER_TYPE_VERTEX, 0,
-            RTC_FORMAT_FLOAT3, 3 * sizeof(float),
-            _trackObject.cloud.width * _trackObject.cloud.height
-        );
-        _triangles = (unsigned*) rtcSetNewGeometryBuffer(
-            _geometry, RTC_BUFFER_TYPE_INDEX, 0,
-            RTC_FORMAT_UINT3, 3 * sizeof(unsigned),
-            _trackObject.polygons.size()
-        );
+        //// Create the geometry buffers for vertices and indexes
+        //_geometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+        //rtcAttachGeometry(_scene, _geometry);
+        //_vertices = (float*) rtcSetNewGeometryBuffer(
+        //    _geometry, RTC_BUFFER_TYPE_VERTEX, 0,
+        //    RTC_FORMAT_FLOAT3, 3 * sizeof(float),
+        //    _trackObject.cloud.width * _trackObject.cloud.height
+        //);
+        //_triangles = (unsigned*) rtcSetNewGeometryBuffer(
+        //    _geometry, RTC_BUFFER_TYPE_INDEX, 0,
+        //    RTC_FORMAT_UINT3, 3 * sizeof(unsigned),
+        //    _trackObject.polygons.size()
+        //);
 
         // Make the output location for the cloud
         sensor_msgs::PointCloud2 msg;
@@ -87,11 +86,28 @@ public:
 
         msg.data.clear();
 
+        _device = rtcNewDevice(nullptr);
+        _scene = rtcNewScene(_device);
+
+        // Create the geometry buffers for vertices and indexes
+        _geometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+        rtcAttachGeometry(_scene, _geometry);
+        _vertices = (float*) rtcSetNewGeometryBuffer(
+            _geometry, RTC_BUFFER_TYPE_VERTEX, 0,
+            RTC_FORMAT_FLOAT3, 3 * sizeof(float),
+            _trackObject.cloud.width * _trackObject.cloud.height
+        );
+        _triangles = (unsigned*) rtcSetNewGeometryBuffer(
+            _geometry, RTC_BUFFER_TYPE_INDEX, 0,
+            RTC_FORMAT_UINT3, 3 * sizeof(unsigned),
+            _trackObject.polygons.size()
+        );
+
         // Update mesh with new locations and possibly structure
         updateMeshPolygons(_frameIndex);
-        //rtcUpdateGeometryBuffer(_geometry, RTC_BUFFER_TYPE_VERTEX, 0);
-        //rtcUpdateGeometryBuffer(_geometry, RTC_BUFFER_TYPE_INDEX, 0);
         rtcCommitGeometry(_geometry);
+        rtcAttachGeometry(_scene, _geometry);
+        rtcReleaseGeometry(_geometry);
         rtcCommitScene(_scene);
 
         for (int ix = 0; ix < xsteps; ++ix)
@@ -131,7 +147,8 @@ public:
 
         // Spoof the LiDAR device
         _cloudPublisher.publish(msg);
-        rtcReleaseGeometry(_geometry);
+        rtcReleaseScene(_scene);
+        rtcReleaseDevice(_device);
     }
 
 private:
@@ -169,7 +186,7 @@ private:
             float py = bytes.yPos.asFloat;
             float pz = bytes.zPos.asFloat;
 
-            _vertices[3 * jdx + 0] = px; _vertices[3 * jdx + 1] = py; _vertices[3 * jdx + 2] = pz; // 1st vertex
+            _vertices[3 * jdx + 0] = px; _vertices[3 * jdx + 1] = py; _vertices[3 * jdx + 2] = pz; // Mesh vertex
         }
     }
 
