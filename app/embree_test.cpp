@@ -33,6 +33,32 @@ float getIntersection()
     rtcReleaseGeometry(geom);
     rtcCommitScene(scene);
 
+    RTCRayHit4 rayhit4;
+    rayhit4.ray.org_x[0] = 0.f; rayhit4.ray.org_y[0] = 0.f; rayhit4.ray.org_z[0] = -1.f;
+    rayhit4.ray.org_x[1] = 0.f; rayhit4.ray.org_y[1] = 0.f; rayhit4.ray.org_z[1] = -1.f;
+    rayhit4.ray.org_x[2] = 0.f; rayhit4.ray.org_y[2] = 0.f; rayhit4.ray.org_z[2] = -1.f;
+    rayhit4.ray.org_x[3] = 0.f; rayhit4.ray.org_y[3] = 0.f; rayhit4.ray.org_z[3] = -1.f;
+
+    rayhit4.ray.dir_x[0]  = 0.437870544204244; rayhit4.ray.dir_y[0] = 0.5819343209147206; rayhit4.ray.dir_z[0] = 0.6852895976591227;
+    rayhit4.ray.dir_x[1]  = 0.18499438632552934; rayhit4.ray.dir_y[1] = 0.2753895209183792; rayhit4.ray.dir_z[1] = 0.9433650877557355;
+    rayhit4.ray.dir_x[2]  = 0.18814417f; rayhit4.ray.dir_y[2] = 0.28221626f; rayhit4.ray.dir_z[2] = 0.94072087f;
+    rayhit4.ray.dir_x[3]  = 0.08581487653093794; rayhit4.ray.dir_y[3] = 0.5085431814428848; rayhit4.ray.dir_z[3] = 0.8567494613794217;
+
+    rayhit4.ray.tnear[0] = 0.f;
+    rayhit4.ray.tnear[1] = 0.f;
+    rayhit4.ray.tnear[2] = 0.f;
+    rayhit4.ray.tnear[3] = 0.f;
+
+    rayhit4.ray.tfar[0] = std::numeric_limits<float>::infinity();
+    rayhit4.ray.tfar[1] = std::numeric_limits<float>::infinity();
+    rayhit4.ray.tfar[2] = std::numeric_limits<float>::infinity();
+    rayhit4.ray.tfar[3] = std::numeric_limits<float>::infinity();
+
+    rayhit4.hit.geomID[0] = RTC_INVALID_GEOMETRY_ID;
+    rayhit4.hit.geomID[1] = RTC_INVALID_GEOMETRY_ID;
+    rayhit4.hit.geomID[2] = RTC_INVALID_GEOMETRY_ID;
+    rayhit4.hit.geomID[3] = RTC_INVALID_GEOMETRY_ID;
+
     RTCRayHit rayhit; 
     rayhit.ray.org_x  = 0.f; rayhit.ray.org_y = 0.f; rayhit.ray.org_z = -1.f;
     rayhit.ray.dir_x  = 0.18814417f; rayhit.ray.dir_y = 0.28221626f; rayhit.ray.dir_z = 0.94072087f;
@@ -50,6 +76,21 @@ float getIntersection()
     } else {
         std::cout << "No Intersection" << std::endl;
     }
+
+    // Ray mask; -1 means valid, 0 means invalid, i.e. don't compute
+    int valid[4] = {-1, -1, -1, -1};
+    rtcIntersect4(valid, scene, &context, &rayhit4);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        if (rayhit4.hit.geomID[i] != RTC_INVALID_GEOMETRY_ID) {
+            std::cout << "Intersection at t = " << rayhit4.ray.tfar[i] << std::endl;
+        } else {
+            std::cout << "No Intersection" << std::endl;
+        }
+    }
+
+    std::cout << "Device query: " << rtcGetDeviceProperty(device, RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED) << std::endl;
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);

@@ -224,6 +224,7 @@ target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/
 target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} embree3)
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
 
-#add_executable(somereader src/somereader.cpp)
-#target_link_libraries(somereader ${catkin_LIBRARIES})
-#add_dependencies(somereader ${catkin_EXPORTED_TARGETS})
+add_executable(objtracker src/objtracker.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp)
+target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} /usr/include/eigen3)
+target_link_libraries(objtracker ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})

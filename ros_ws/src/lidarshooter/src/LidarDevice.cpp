@@ -24,6 +24,8 @@ lidarshooter::LidarDevice::LidarDevice()
     _fields.push_back(fieldz);
     _fields.push_back(fieldi);
     _fields.push_back(fieldr);
+
+    index = 0;
 }
 
 void lidarshooter::LidarDevice::initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex)
@@ -40,4 +42,14 @@ void lidarshooter::LidarDevice::initMessage(sensor_msgs::PointCloud2& _msg, int 
     _msg.row_step = _numPoints * _pointStep;
     _msg.is_bigendian = _isBigendian;
     _msg.is_dense = _isDense;
+}
+
+void lidarshooter::LidarDevice::nextRay(RTCRay& _ray)
+{
+
+}
+
+void lidarshooter::LidarDevice::reset()
+{
+    index = 0;
 }
