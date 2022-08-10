@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     std::cout << "Triangles in tracked object   : " << trackObject.polygons.size() << std::endl;
 
     // The main loop; each iteration produces a new point cloud
-    ros::Rate rate(2);
+    ros::Rate rate(10);
     int frameIndex = 200;
     while (ros::ok())
     {

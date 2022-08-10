@@ -26,8 +26,6 @@ class MeshProjector
 {
 public:
     MeshProjector()
-        : _device(rtcNewDevice(nullptr)),
-          _scene(rtcNewScene(_device))
     {
         // Create the pubsub situation
         _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
@@ -40,8 +38,6 @@ public:
     ~MeshProjector()
     {
         // Clean up the geometry data
-        rtcReleaseScene(_scene);
-        rtcReleaseDevice(_device);
     }
 
     void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh)
@@ -53,20 +49,6 @@ public:
         pcl_conversions::toPCL(*_mesh, _trackObject);
         std::cout << "Points in tracked object      : " << _trackObject.cloud.width * _trackObject.cloud.height << std::endl;
         std::cout << "Triangles in tracked object   : " << _trackObject.polygons.size() << std::endl;
-        
-        //// Create the geometry buffers for vertices and indexes
-        //_geometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-        //rtcAttachGeometry(_scene, _geometry);
-        //_vertices = (float*) rtcSetNewGeometryBuffer(
-        //    _geometry, RTC_BUFFER_TYPE_VERTEX, 0,
-        //    RTC_FORMAT_FLOAT3, 3 * sizeof(float),
-        //    _trackObject.cloud.width * _trackObject.cloud.height
-        //);
-        //_triangles = (unsigned*) rtcSetNewGeometryBuffer(
-        //    _geometry, RTC_BUFFER_TYPE_INDEX, 0,
-        //    RTC_FORMAT_UINT3, 3 * sizeof(unsigned),
-        //    _trackObject.polygons.size()
-        //);
 
         // Make the output location for the cloud
         sensor_msgs::PointCloud2 msg;
@@ -86,12 +68,12 @@ public:
 
         msg.data.clear();
 
+        // For the time being we *must* initialize the scene here; make _device and _scene local variables?
         _device = rtcNewDevice(nullptr);
         _scene = rtcNewScene(_device);
 
         // Create the geometry buffers for vertices and indexes
         _geometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-        rtcAttachGeometry(_scene, _geometry);
         _vertices = (float*) rtcSetNewGeometryBuffer(
             _geometry, RTC_BUFFER_TYPE_VERTEX, 0,
             RTC_FORMAT_FLOAT3, 3 * sizeof(float),
