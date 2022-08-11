@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #define XYZIRPOINT_LENGTH 32
-
 namespace lidarshooter
 {
     /**

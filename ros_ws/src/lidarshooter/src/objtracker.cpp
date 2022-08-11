@@ -11,6 +11,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "objtracker");
 
+    // Publisher node needs to be global; no namespace
     ros::NodeHandle nodeHandle;
     ros::Publisher meshPublisher = nodeHandle.advertise<pcl_msgs::PolygonMesh>("objtracker", 20);
 
