@@ -20,6 +20,8 @@
 #include "XYZIRBytes.hpp"
 #include "LidarDevice.hpp"
 
+#undef USE_RAY_PACKETS
+
 namespace lidarshooter
 {
 class MeshProjector
@@ -72,26 +74,48 @@ public:
         _device = rtcNewDevice(nullptr);
         _scene = rtcNewScene(_device);
 
-        // Create the geometry buffers for vertices and indexes
-        _geometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-        _vertices = (float*) rtcSetNewGeometryBuffer(
-            _geometry, RTC_BUFFER_TYPE_VERTEX, 0,
+        // Create the geometry buffers for tracked object's vertices and indexes
+        _objectGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+        _objectVertices = (float*) rtcSetNewGeometryBuffer(
+            _objectGeometry, RTC_BUFFER_TYPE_VERTEX, 0,
             RTC_FORMAT_FLOAT3, 3 * sizeof(float),
             _trackObject.cloud.width * _trackObject.cloud.height
         );
-        _triangles = (unsigned*) rtcSetNewGeometryBuffer(
-            _geometry, RTC_BUFFER_TYPE_INDEX, 0,
+        _objectTriangles = (unsigned*) rtcSetNewGeometryBuffer(
+            _objectGeometry, RTC_BUFFER_TYPE_INDEX, 0,
             RTC_FORMAT_UINT3, 3 * sizeof(unsigned),
             _trackObject.polygons.size()
         );
 
+        // Create the geometry buffers for the ground vertices and indexes
+        _groundGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_QUAD);
+        _groundVertices = (float*) rtcSetNewGeometryBuffer(
+            _groundGeometry, RTC_BUFFER_TYPE_VERTEX, 0,
+            RTC_FORMAT_FLOAT3, 3 * sizeof(float),
+            4
+        );
+        _groundQuadrilaterals = (unsigned*) rtcSetNewGeometryBuffer(
+            _groundGeometry, RTC_BUFFER_TYPE_INDEX, 0,
+            RTC_FORMAT_UINT4, 4 * sizeof(unsigned),
+            1
+        );
+
         // Update mesh with new locations and possibly structure
+        updateGround();
         updateMeshPolygons(_frameIndex);
-        rtcCommitGeometry(_geometry);
-        rtcAttachGeometry(_scene, _geometry);
-        rtcReleaseGeometry(_geometry);
+        rtcCommitGeometry(_objectGeometry);
+        rtcCommitGeometry(_groundGeometry);
+        rtcAttachGeometry(_scene, _objectGeometry);
+        rtcAttachGeometry(_scene, _groundGeometry);
+        rtcReleaseGeometry(_objectGeometry);
+        rtcReleaseGeometry(_groundGeometry);
         rtcCommitScene(_scene);
 
+#ifdef USE_RAY_PACKETS
+        int rayCount = 0;
+        int validRays = { -1, -1, -1, -1};
+        RTCRayHit4 rayhit4;
+#endif
         for (int ix = 0; ix < xsteps; ++ix)
         {
             for (int iy = 0; iy < ysteps; ++iy)
@@ -100,17 +124,13 @@ public:
                 float theta = xstart + static_cast<float>(ix) * dx;
                 float phi = ystart + static_cast<float>(iy) * dy;
                 float rad = deviceHeight / std::cos(theta);
-
-                // Transform to cartesian coordinates
-                float px = rad * std::sin(theta) * std::cos(phi);
-                float py = rad * std::sin(theta) * std::sin(phi);
-                float pz = -1.0 * deviceHeight;
                 
                 // The normalized direction to trace
                 float pxo = std::sin(theta) * std::cos(phi);
                 float pyo = std::sin(theta) * std::sin(phi);
                 float pzo = std::cos(theta);
 
+#ifndef USE_RAY_PACKETS
                 RTCRayHit rayhit;
                 getMeshIntersect1(0.0f, 0.0f, 0.0f, pxo, pyo, pzo, &rayhit);
 
@@ -119,11 +139,22 @@ public:
                     lidarshooter::XYZIRBytes cloudBytes(rayhit.ray.tfar * pxo, rayhit.ray.tfar * pyo, rayhit.ray.tfar * pzo, 64.0, ix);
                     cloudBytes.AddToCloud(msg);
                 }
-                else
+#else
+                rayhit4.ray.org_x[rayCount % 4] = 0.0; rayhit4.ray.org_y[rayCount % 4] = 0.0; rayhit4.ray.org_z[rayCount % 4] = 0.0;
+                rayhit4.ray.dir_x[rayCount % 4] = pxo; rayhit4.ray.dir_y[rayCount % 4] = pyo; rayhit4.ray.dir_z[rayCount % 4] = pzo;
+                ++rayCount;
+                if (rayCount % 4 == 0)
                 {
-                    lidarshooter::XYZIRBytes cloudBytes(px, py, pz, 64.0, ix);
-                    cloudBytes.AddToCloud(msg);
+                    getMeshIntersect4(_scene, validRays, rayhit4);
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        if (rayhit4.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+                        {
+                            
+                        }
+                    }
                 }
+#endif
             }
         }
 
@@ -136,18 +167,35 @@ public:
 private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
-    float *_vertices;
-    unsigned *_triangles;
+    float *_objectVertices;
+    unsigned *_objectTriangles;
+    float *_groundVertices;
+    unsigned *_groundQuadrilaterals;
     pcl::PolygonMesh _trackObject;
     RTCDevice _device;
     RTCScene _scene;
-    RTCGeometry _geometry;
+    RTCGeometry _objectGeometry;
+    RTCGeometry _groundGeometry;
     ros::NodeHandle _nodeHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _meshSubscriber;
 
+    void updateGround()
+    {
+        // Set the ground; eventually make this its own function
+        _groundVertices[0] = -50.0; _groundVertices[1]  = -50.0; _groundVertices[2]  = -5.0;
+        _groundVertices[3] = -50.0; _groundVertices[4]  =  50.0; _groundVertices[5]  = -5.0;
+        _groundVertices[6] =  50.0; _groundVertices[7]  =  50.0; _groundVertices[8]  = -5.0;
+        _groundVertices[9] =  50.0; _groundVertices[10] = -50.0; _groundVertices[11] = -5.0;
+        _groundQuadrilaterals[0] = 0;
+        _groundQuadrilaterals[1] = 1;
+        _groundQuadrilaterals[2] = 2;
+        _groundQuadrilaterals[3] = 3;
+    }
+
     void updateMeshPolygons(int frameIndex)
     {
+        // Set the triangle element indexes 
         std::size_t idx = 0;
         for (auto poly : _trackObject.polygons)
         {
@@ -155,10 +203,11 @@ private:
             std::uint32_t vert2 = poly.vertices[1];
             std::uint32_t vert3 = poly.vertices[2];
 
-            _triangles[3 * idx + 0] = vert1; _triangles[3 * idx + 1] = vert2; _triangles[3 * idx + 2] = vert3; // Mesh triangle
+            _objectTriangles[3 * idx + 0] = vert1; _objectTriangles[3 * idx + 1] = vert2; _objectTriangles[3 * idx + 2] = vert3; // Mesh triangle
             ++idx;
         }
 
+        // Set the actual vertex positions
         for (std::size_t jdx = 0; jdx < _trackObject.cloud.width * _trackObject.cloud.height; ++jdx)
         {
             auto rawData = _trackObject.cloud.data.data() + jdx * _trackObject.cloud.point_step;
@@ -168,7 +217,7 @@ private:
             float py = bytes.yPos.asFloat;
             float pz = bytes.zPos.asFloat;
 
-            _vertices[3 * jdx + 0] = px; _vertices[3 * jdx + 1] = py; _vertices[3 * jdx + 2] = pz; // Mesh vertex
+            _objectVertices[3 * jdx + 0] = px; _objectVertices[3 * jdx + 1] = py; _objectVertices[3 * jdx + 2] = pz; // Mesh vertex
         }
     }
 
@@ -188,14 +237,14 @@ private:
         rtcIntersect1(_scene, &context, rayhit);
     }
 
-    void getMeshIntersectNp(RTCScene scene, RTCRayHitNp *rayhit, unsigned int numRays)
+    void getMeshIntersect4(RTCScene scene, const int *validRays, RTCRayHit4 rayhit)
     {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
         // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
         // at a distance of rayhit.ray.tfar
-        rtcIntersectNp(scene, &context, rayhit, numRays);
+        rtcIntersect4(validRays, _scene, &context, &rayhit);
     }
 };
 }
