@@ -131,6 +131,7 @@ include_directories(
 )
 
 find_package(PCL REQUIRED)
+find_package(Poco COMPONENTS Net)
 find_package(Eigen REQUIRED)
 
 ## Declare a C++ library
@@ -218,10 +219,10 @@ find_package(Eigen REQUIRED)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(lidarshooter src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/LidarDevice.cpp)
+add_executable(lidarshooter src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/LidarDevice.cpp src/MeshProjector.cpp)
 target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} embree3)
+target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} embree3 Poco::Net)
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
 
 add_executable(objtracker src/objtracker.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp)
