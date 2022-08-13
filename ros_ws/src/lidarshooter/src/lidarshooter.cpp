@@ -7,6 +7,7 @@
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <embree3/rtcore.h>
+#include <curl/curl.h>
 
 #include <cstdint>
 #include <cmath>
@@ -21,7 +22,8 @@
 #include "LidarDevice.hpp"
 
 #undef USE_RAY_PACKETS
-
+#define USE_RAY_PACKETS
+#define RAY_PACKET_SIZE 8
 namespace lidarshooter
 {
 class MeshProjector
@@ -113,8 +115,13 @@ public:
 
 #ifdef USE_RAY_PACKETS
         int rayCount = 0;
-        int validRays = { -1, -1, -1, -1};
-        RTCRayHit4 rayhit4;
+        int validRays[RAY_PACKET_SIZE]; // Initialize all invalid
+        for (int i = 0; i < RAY_PACKET_SIZE; ++i)
+            validRays[i] = 0;
+        int rayRings[RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
+        for (int i = 0; i < RAY_PACKET_SIZE; ++i)
+            rayRings[i] = -1;
+        RTCRayHit8 rayhitn;
 #endif
         for (int ix = 0; ix < xsteps; ++ix)
         {
@@ -123,7 +130,6 @@ public:
                 // Set the angular coordinates
                 float theta = xstart + static_cast<float>(ix) * dx;
                 float phi = ystart + static_cast<float>(iy) * dy;
-                float rad = deviceHeight / std::cos(theta);
                 
                 // The normalized direction to trace
                 float pxo = std::sin(theta) * std::cos(phi);
@@ -140,23 +146,52 @@ public:
                     cloudBytes.AddToCloud(msg);
                 }
 #else
-                rayhit4.ray.org_x[rayCount % 4] = 0.0; rayhit4.ray.org_y[rayCount % 4] = 0.0; rayhit4.ray.org_z[rayCount % 4] = 0.0;
-                rayhit4.ray.dir_x[rayCount % 4] = pxo; rayhit4.ray.dir_y[rayCount % 4] = pyo; rayhit4.ray.dir_z[rayCount % 4] = pzo;
-                ++rayCount;
-                if (rayCount % 4 == 0)
+                // Fill up the next ray in the buffer
+                rayhitn.ray.org_x[rayCount % RAY_PACKET_SIZE] = 0.0; rayhitn.ray.org_y[rayCount % RAY_PACKET_SIZE] = 0.0; rayhitn.ray.org_z[rayCount % RAY_PACKET_SIZE] = 0.0;
+                rayhitn.ray.dir_x[rayCount % RAY_PACKET_SIZE] = pxo; rayhitn.ray.dir_y[rayCount % RAY_PACKET_SIZE] = pyo; rayhitn.ray.dir_z[rayCount % RAY_PACKET_SIZE] = pzo;
+                rayhitn.ray.tnear[rayCount % RAY_PACKET_SIZE] = 0.f;
+                rayhitn.ray.tfar[rayCount % RAY_PACKET_SIZE] = std::numeric_limits<float>::infinity();
+                rayhitn.hit.geomID[rayCount % RAY_PACKET_SIZE] = RTC_INVALID_GEOMETRY_ID;
+                validRays[rayCount % RAY_PACKET_SIZE] = -1; // Mark this ray valid/do compute it
+                rayRings[rayCount % RAY_PACKET_SIZE] = ix;
+
+                // Execute when the buffer is full
+                if (++rayCount % RAY_PACKET_SIZE == 0)
                 {
-                    getMeshIntersect4(_scene, validRays, rayhit4);
-                    for (int i = 0; i < 4; ++i)
+                    getMeshIntersect8(_scene, validRays, &rayhitn);
+                    for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
                     {
-                        if (rayhit4.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+                        if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
                         {
+                            lidarshooter::XYZIRBytes cloudBytes(rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri], 64.0, rayRings[ri]);
+                            //std::cout << "Collision: " << rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri] << ", " << rayhitn.ray.tfar[4] * rayhitn.ray.dir_y[ri] << ", " << rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri] << std::endl;
+                            cloudBytes.AddToCloud(msg);
                             
                         }
+                        validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
                     }
                 }
 #endif
             }
         }
+
+#ifdef USE_RAY_PACKETS
+        // Check to see if there are leftovers in the last iteration
+        if (rayCount % 4 > 0)
+        {
+            getMeshIntersect8(_scene, validRays, &rayhitn);
+            for (int ri = 0; ri < (rayCount % RAY_PACKET_SIZE); ++ri)
+            {
+                if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
+                {
+                    lidarshooter::XYZIRBytes cloudBytes(rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri], 64.0, rayRings[ri]);
+                    cloudBytes.AddToCloud(msg);
+                    
+                }
+                validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
+            }
+        }
+#endif
 
         // Spoof the LiDAR device
         _cloudPublisher.publish(msg);
@@ -237,14 +272,14 @@ private:
         rtcIntersect1(_scene, &context, rayhit);
     }
 
-    void getMeshIntersect4(RTCScene scene, const int *validRays, RTCRayHit4 rayhit)
+    void getMeshIntersect8(RTCScene scene, const int *validRays, RTCRayHit8 *rayhit)
     {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
         // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
         // at a distance of rayhit.ray.tfar
-        rtcIntersect4(validRays, _scene, &context, &rayhit);
+        rtcIntersect8(validRays, _scene, &context, rayhit);
     }
 };
 }

@@ -24,26 +24,24 @@ namespace lidarshooter
     {
     public:
         LidarDevice();
+        LidarDevice(std::string _name, std::string _config);
         ~LidarDevice() = default;
         void initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex);
-        void nextRay(RTCRay& _ray);
+        void nextRay(RTCRayHit& _ray);
+        void nextRay4(RTCRayHit4& _ray);
+        void nextRay8(RTCRayHit8& _ray);
         void reset();
 
     private:
+        // Invariant; present in all LiDAR devices
         unsigned int index;
         const std::string _frameId = "PandarXT-32";
         const std::uint32_t _pointStep = 32;
         const bool _isBigendian = false;
         const bool _isDense = true;
-        std::vector<sensor_msgs::PointField> _fields;
-        const int xsteps = 32;
-        const int ysteps = 150;
-        const float xstart = M_PI_2 + 0.01;
-        const float xstop = M_PI_2 + (M_PI_4 / 3.0);
-        const float dx = (xstop - xstart) / (float)(xsteps - 1);
-        const float ystart = 0.0; // Phi goes all around
-        const float ystop = 2.0 * M_PI;
-        const float dy = (ystop - ystart) / (float)(ysteps - 1); // Make step depend on theta; fewer for angles closer to 0 and pi
-        const float deviceHeight = 4.6; // Assume 5 m
+        std::vector<sensor_msgs::PointField> _fields; // Require dynamic initialization sadly
+    
+        // Methods
+        void initializeFieldData();
     };
 }

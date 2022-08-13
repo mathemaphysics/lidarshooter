@@ -10,6 +10,64 @@
 
 lidarshooter::LidarDevice::LidarDevice()
 {
+    // Initialize the settings for the message header
+    initializeFieldData();
+    reset();
+}
+
+lidarshooter::LidarDevice::LidarDevice(const std::string _name, const std::string _config)
+    : _frameId(_name)
+{
+    // Initialize the settings for the message header
+    initializeFieldData();
+    reset();
+
+    // Load the configuration defining rays here from _config
+    // Preferably use a json file
+}
+
+void lidarshooter::LidarDevice::initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex)
+{
+    // Transfer fields into the header
+    for (auto field : _fields)
+        _msg.fields.push_back(field);
+
+    // Copy field values into the message header
+    _msg.header.frame_id = _frameId;
+    _msg.header.stamp = ros::Time::now();
+    _msg.header.seq = _frameIndex;
+    _msg.height = 1;
+    _msg.width = _numPoints;
+    _msg.point_step = _pointStep;
+    _msg.row_step = _numPoints * _pointStep;
+    _msg.is_bigendian = _isBigendian;
+    _msg.is_dense = _isDense;
+}
+
+void lidarshooter::LidarDevice::nextRay(RTCRayHit& _ray)
+{
+
+}
+
+void lidarshooter::LidarDevice::nextRay4(RTCRayHit4& _ray)
+{
+
+}
+
+void lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray)
+{
+
+}
+
+void lidarshooter::LidarDevice::reset()
+{
+    // Index will indicate the position in the set of rays to iterate So when
+    // \c nextRayX is called this will be referenced
+    index = 0;
+}
+
+void lidarshooter::LidarDevice::initializeFieldData()
+{
     // Because PointField has no constructor to set name, offset, datatype,
     // count, must build them here in the constructor even though they may as
     // well be static
@@ -24,32 +82,4 @@ lidarshooter::LidarDevice::LidarDevice()
     _fields.push_back(fieldz);
     _fields.push_back(fieldi);
     _fields.push_back(fieldr);
-
-    index = 0;
-}
-
-void lidarshooter::LidarDevice::initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex)
-{
-    for (auto field : _fields)
-        _msg.fields.push_back(field);
-
-    _msg.header.frame_id = _frameId;
-    _msg.header.stamp = ros::Time::now();
-    _msg.header.seq = _frameIndex;
-    _msg.height = 1;
-    _msg.width = _numPoints;
-    _msg.point_step = _pointStep;
-    _msg.row_step = _numPoints * _pointStep;
-    _msg.is_bigendian = _isBigendian;
-    _msg.is_dense = _isDense;
-}
-
-void lidarshooter::LidarDevice::nextRay(RTCRay& _ray)
-{
-
-}
-
-void lidarshooter::LidarDevice::reset()
-{
-    index = 0;
 }
