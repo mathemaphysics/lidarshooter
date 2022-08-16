@@ -31,7 +31,7 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 
     // Make the output location for the cloud
     sensor_msgs::PointCloud2 msg;
-    lidarshooter::LidarDevice config("/workspaces/yolo3d/row_ws/hesai-pandar-XT-32.json");
+    lidarshooter::LidarDevice config("/workspaces/yolo3d/ros_ws/hesai-pandar-XT-32.json");
 
     // Trace out the Hesai configuration for now
     const int xsteps = 32;
