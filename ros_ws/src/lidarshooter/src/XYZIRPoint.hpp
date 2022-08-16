@@ -14,6 +14,9 @@ namespace lidarshooter
         XYZIRPoint(std::uint8_t *_bytes);
         XYZIRPoint(float _xPos, float _yPos, float _zPos, float _intensity, int _ring);
         ~XYZIRPoint() = default;
+        void getPoint(float *_x, float *_y, float *_z, float *_intensity, int *_ring) const;
+        void setPoint(float _x, float _y, float _z, float _intensity, int _ring);
+        void writePoint(void *_point);
         std::size_t length() const;
 
         // The union elements

@@ -3,9 +3,9 @@
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl_msgs/PolygonMesh.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <Eigen/Eigen>
 #include <iostream>
 #include "XYZIRBytes.hpp"
+#include "XYZIRPoint.hpp"
 
 int main(int argc, char **argv)
 {
@@ -30,17 +30,13 @@ int main(int argc, char **argv)
         pcl_msgs::PolygonMesh trackObjectMsg;
         for (int jdx = 0; jdx < trackObject.cloud.width * trackObject.cloud.height; ++jdx)
         {
+            float x, y, z, intensity;
+            int ring;
             auto rawData = trackObject.cloud.data.data() + jdx * trackObject.cloud.point_step;
-            auto bytes = lidarshooter::XYZIRBytes(rawData, rawData + 4, rawData + 8, rawData + 16, rawData + 20);
-            bytes.xPos.asFloat = bytes.xPos.asFloat + 0.05;
-            bytes.yPos.asFloat = bytes.yPos.asFloat + 0.05;
-            bytes.zPos.asFloat = bytes.zPos.asFloat;
-            for (int i = 0; i < 4; i++)
-                rawData[i] = bytes.xPos.byteArray[i];
-            for (int i = 0; i < 4; i++)
-                rawData[i + 4] = bytes.yPos.byteArray[i];
-            for (int i = 0; i < 4; i++)
-                rawData[i + 8] = bytes.zPos.byteArray[i];
+            auto point = lidarshooter::XYZIRPoint(rawData);
+            point.getPoint(&x, &y, &z, &intensity, &ring);
+            point.setPoint(x + 0.05, y + 0.05, z, intensity, ring);
+            point.writePoint(rawData);
         }
         pcl_conversions::fromPCL(trackObject, trackObjectMsg);
 

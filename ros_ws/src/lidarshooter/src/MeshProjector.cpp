@@ -31,7 +31,7 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 
     // Make the output location for the cloud
     sensor_msgs::PointCloud2 msg;
-    lidarshooter::LidarDevice config;
+    lidarshooter::LidarDevice config("/workspaces/yolo3d/row_ws/hesai-pandar-XT-32.json");
 
     // Trace out the Hesai configuration for now
     const int xsteps = 32;
@@ -42,7 +42,6 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     const float ystart = 0.0; // Phi goes all around
     const float ystop = 2.0 * M_PI;
     const float dy = (ystop - ystart) / (float)(ysteps - 1); // Make step depend on theta; fewer for angles closer to 0 and pi
-    const float deviceHeight = 4.6; // Assume 5 m
     config.initMessage(msg, xsteps * ysteps, ++_frameIndex);
 
     // Just do this for the sake of surety
@@ -143,8 +142,12 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
                 {
                     if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
                     {
-                        lidarshooter::XYZIRBytes cloudBytes(rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri], 64.0, rayRings[ri]);
-                        //std::cout << "Collision: " << rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri] << ", " << rayhitn.ray.tfar[4] * rayhitn.ray.dir_y[ri] << ", " << rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri] << std::endl;
+                        lidarshooter::XYZIRBytes cloudBytes(
+                            rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri],
+                            rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri],
+                            rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
+                            64.0, rayRings[ri]
+                        );
                         cloudBytes.AddToCloud(msg);
                         
                     }

@@ -24,7 +24,8 @@ RUN git clone https://github.com/Kitware/CMake.git -b v3.22.1 \
 RUN apt-get -y update \
 	&& apt-get -y install ros-desktop-full libtf2-sensor-msgs-dev \
 	libstd-srvs-dev ros-std-srvs python3-std-srvs libroslib-dev python3-roslib \
-	python3-rostest librostest-dev ros-geometry-msgs
+	python3-rostest librostest-dev ros-geometry-msgs libjsoncpp-dev libpoco-dev \
+	libspdlog-dev
 
 ENV DEVUSER=${DEVUSER}
 RUN adduser --uid 1000 --disabled-password --gecos "" ${DEVUSER} \
