@@ -172,7 +172,6 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
 
     // Probably do some checking here first to make sure it loaded correctly
     _configLoaded = true;
-    std::cout << jsonData << std::endl;
 
     return 0;
 }
