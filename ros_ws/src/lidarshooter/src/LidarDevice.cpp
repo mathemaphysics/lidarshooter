@@ -38,6 +38,7 @@ lidarshooter::LidarDevice::LidarDevice(const std::string _config)
         _logger = spdlog::stdout_color_mt(_applicationName);
 
     // Load the configuration defining rays here from _config
+    _channels.count = 0;
     if (_config.length() > 0)
         loadConfiguration(_config);
 
@@ -67,26 +68,72 @@ void lidarshooter::LidarDevice::initMessage(
     _msg.is_dense = _message.isDense;
 }
 
-void lidarshooter::LidarDevice::nextRay(RTCRayHit& _ray)
+int lidarshooter::LidarDevice::advanceRayIndex()
 {
+    // Check if last index of each; if not increment each
+    if (_horizontalIndex == _channels.horizontal.count - 1)
+    {
+        // Reset horizontal to 0
+        _horizontalIndex = 0;
+        if (_verticalIndex == _channels.vertical.size() - 1)
+        {
+            // Reset vertical to 0
+            _verticalIndex = 0;
+            return 1; // Both reset so done; return 1
+        }
+        else
+            ++_verticalIndex; // Increment because horizontal reset to 0
+    }
+    else
+        ++_horizontalIndex; // Increment business as usual
 
+    // This isn't the last index
+    return 0;
 }
 
-void lidarshooter::LidarDevice::nextRay4(RTCRayHit4& _ray)
+int lidarshooter::LidarDevice::nextRay(RTCRayHit& _ray)
 {
+    // Fill out the ray/hit details
+    float preChi = _channels.vertical[_verticalIndex];
+    float prePhi = _channels.horizontal.range.begin + _channels.horizontal.step * static_cast<float>(_horizontalIndex);
 
+    // Convert to LiDAR coordinates
+    float theta = (90.0 - preChi) * M_PI / 180.0; // Convert from chi in degrees to theta in radians
+    float phi = prePhi * M_PI / 180.0; // Just convert to radians
+
+    // The normalized direction to trace
+    float dx = std::sin(theta) * std::cos(phi);
+    float dy = std::sin(theta) * std::sin(phi);
+    float dz = std::cos(theta);
+
+    // Next ray
+    return advanceRayIndex();
 }
 
-void lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray)
+int lidarshooter::LidarDevice::nextRay4(RTCRayHit4& _ray)
 {
+    // Fill out the ray/hit details
 
+
+    // Next ray
+    return advanceRayIndex();
+}
+
+int lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray)
+{
+    // Fill out the ray/hit details
+
+
+    // Next ray
+    return advanceRayIndex();
 }
 
 void lidarshooter::LidarDevice::reset()
 {
     // Index will indicate the position in the set of rays to iterate So when
-    // \c nextRayX is called this will be referenced
-    _index = 0;
+    // \c nextRayXX is called this will be referenced
+    _verticalIndex = 0;
+    _horizontalIndex = 0;
 }
 
 int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
@@ -162,10 +209,14 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
                 _logger->error("Configuration file {} horizontal section is missing range section", _config);
             
             // Number of horizontal subdivisions
-            _channels.horizontal.count = jsonData["channels"]["horizontal"].get("count", 150).asUInt();
+            _channels.horizontal.count = jsonData["channels"]["horizontal"].get("count", 128).asUInt();
+            _channels.horizontal.step = (_channels.horizontal.range.end - _channels.horizontal.range.begin) / (_channels.horizontal.count - 1);
         }
         else
             _logger->error("Configuration file {} channels section is missing horizontal values section", _config);
+        
+        // Set total number of rays
+        _channels.count = _channels.vertical.size() * _channels.horizontal.count;
     }
     else
         _logger->error("Configuration file {} is missing channels section", _config);

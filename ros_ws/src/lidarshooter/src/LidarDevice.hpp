@@ -28,10 +28,11 @@ namespace lidarshooter
         LidarDevice(std::string _config = "");
         ~LidarDevice() = default;
         void initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex);
-        void nextRay(RTCRayHit& _ray);
-        void nextRay4(RTCRayHit4& _ray);
-        void nextRay8(RTCRayHit8& _ray);
+        int nextRay(RTCRayHit& _ray);
+        int nextRay4(RTCRayHit4& _ray);
+        int nextRay8(RTCRayHit8& _ray);
         void reset();
+        unsigned int getTotalRays();
 
     private:
         /**
@@ -44,7 +45,8 @@ namespace lidarshooter
          * 
          * Stateful setup for calling \c nextRayXX() to get the next item to trace
          */
-        unsigned int _index;
+        unsigned int _verticalIndex;
+        unsigned int _horizontalIndex;
         
         /**
          * @brief UID/node name reference for this LiDAR device in SENSR API
@@ -86,11 +88,13 @@ namespace lidarshooter
             std::vector<float> vertical;
             struct {
                 struct {
-                    float begin;
-                    float end;
+                    float begin;    // Included in count
+                    float end;      // Included in count
                 } range;
-                unsigned int count;
+                float step;         // = (horizontal.end - horizontal.begin) / (horizontal.count - 1)
+                unsigned int count; // The total number of points made; inclusive of endpoints
             } horizontal;
+            unsigned int count;     // = horizontal.count * vertical.size()
         } _channels;
 
         // Related to the transformation
@@ -118,5 +122,15 @@ namespace lidarshooter
          * @return int Zero if okay, < 0 if failure
          */
         int loadTransformation(std::string __requestUrl);
+
+        /**
+         * @brief Iterate one ray forward; return 1 of done, else 0
+         * 
+         * This function increments \c _horizontalIndex and \c _verticalIndex
+         * and return 1 when we're at the end.
+         * 
+         * @return int Value is 1 if all vectors covered and 0 otherwise
+         */
+        int advanceRayIndex();
     };
 }
