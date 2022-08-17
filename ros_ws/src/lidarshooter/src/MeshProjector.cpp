@@ -127,13 +127,13 @@ void lidarshooter::MeshProjector::updateGround()
     // Set the ground; eventually make this its own function
     Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config.originToSensor(corner1);
     Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config.originToSensor(corner2);
-    Eigen::Vector3f corner3( 50.0, -50.0, 0.0); _config.originToSensor(corner3);
-    Eigen::Vector3f corner4( 50.0,  50.0, 0.0); _config.originToSensor(corner4);
+    Eigen::Vector3f corner3( 50.0,  50.0, 0.0); _config.originToSensor(corner3);
+    Eigen::Vector3f corner4( 50.0, -50.0, 0.0); _config.originToSensor(corner4);
 
-    _groundVertices[0] = corner1[0]; _groundVertices[1]  = corner1[1]; _groundVertices[2]  = corner1[2];
-    _groundVertices[3] = corner2[0]; _groundVertices[4]  = corner2[1]; _groundVertices[5]  = corner2[2];
-    _groundVertices[6] = corner3[0]; _groundVertices[7]  = corner3[1]; _groundVertices[8]  = corner3[2];
-    _groundVertices[9] = corner4[0]; _groundVertices[10] = corner4[1]; _groundVertices[11] = corner4[2];
+    _groundVertices[0] = corner1.x(); _groundVertices[1]  = corner1.y(); _groundVertices[2]  = corner1.z();
+    _groundVertices[3] = corner2.x(); _groundVertices[4]  = corner2.y(); _groundVertices[5]  = corner2.z();
+    _groundVertices[6] = corner3.x(); _groundVertices[7]  = corner3.y(); _groundVertices[8]  = corner3.z();
+    _groundVertices[9] = corner4.x(); _groundVertices[10] = corner4.y(); _groundVertices[11] = corner4.z();
 
     _groundQuadrilaterals[0] = 0;
     _groundQuadrilaterals[1] = 1;

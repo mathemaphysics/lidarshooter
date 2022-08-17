@@ -203,8 +203,8 @@ int lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray, int *_valid)
 
 void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor)
 {
-    Eigen::Vector3f rotTrans = _device.transform.sensorToBase.R * _sensor;
-    _sensor = rotTrans + Eigen::Vector3f(
+    Eigen::Vector3f rotTrans = _device.transform.sensorToBase.R.inverse() * _sensor;
+    _sensor = rotTrans - Eigen::Vector3f(
         _device.transform.baseToOrigin.tx,
         _device.transform.baseToOrigin.ty,
         _device.transform.sensorToBase.tz
