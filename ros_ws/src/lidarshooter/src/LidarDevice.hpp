@@ -12,6 +12,8 @@
 #include <json/json.h>
 #include <spdlog/spdlog.h>
 
+#include <Eigen/Dense>
+
 namespace lidarshooter
 {
     /**
@@ -25,14 +27,21 @@ namespace lidarshooter
     class LidarDevice
     {
     public:
-        LidarDevice(std::string _config = "");
+        LidarDevice();
+        LidarDevice(const std::string& _config);
         ~LidarDevice() = default;
-        void initMessage(sensor_msgs::PointCloud2& _msg, int _numPoints, int _frameIndex);
+        void initialize(const std::string& _config);
+        void initMessage(sensor_msgs::PointCloud2& _msg, int _frameIndex);
+        void resetRayHit(RTCRayHit& _ray);
+        void setRayHitOrigin(RTCRayHit& _ray, float _px, float _py, float _pz);
+        void setRayHitDirection(RTCRayHit& _ray, float _dx, float _dy, float _dz);
         int nextRay(RTCRayHit& _ray);
-        int nextRay4(RTCRayHit4& _ray);
-        int nextRay8(RTCRayHit8& _ray);
+        int nextRay4(RTCRayHit4& _ray, int *_valid);
+        int nextRay8(RTCRayHit8& _ray, int *_valid);
+        void originToSensor(Eigen::Vector3f& _sensor);
         void reset();
         unsigned int getTotalRays();
+        void getCurrentIndex(int *_verticalIndex, int *_horizontalIndex);
 
     private:
         /**
@@ -62,6 +71,21 @@ namespace lidarshooter
             std::string sensorUid;
             std::string sensorApiUrl;
             std::uint16_t sensorApiPort;
+            struct {
+                struct {
+                    float qw;
+                    float qx;
+                    float qy;
+                    float qz;
+                    Eigen::Quaternionf q;
+                    Eigen::Matrix3f R;
+                    float tz;
+                } sensorToBase;
+                struct {
+                    float tx;
+                    float ty;
+                } baseToOrigin;
+            } transform;
         } _device;
 
         /**
@@ -100,7 +124,6 @@ namespace lidarshooter
         // Related to the transformation
         bool _configLoaded;
         bool _transformLoaded;
-        Json::Value _transformJson;
         const std::string _sensrGetEndpoint = "/settings/sensor-ext?sensor-id=";
 
         // Log file setup

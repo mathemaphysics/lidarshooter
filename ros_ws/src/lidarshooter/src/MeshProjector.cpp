@@ -31,18 +31,10 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 
     // Make the output location for the cloud
     sensor_msgs::PointCloud2 msg;
-    lidarshooter::LidarDevice config("/workspaces/yolo3d/ros_ws/hesai-pandar-XT-32.json");
+    _config.initialize("/workspaces/yolo3d/ros_ws/hesai-pandar-XT-32.json");
 
     // Trace out the Hesai configuration for now
-    const int xsteps = 32;
-    const int ysteps = 150;
-    const float xstart = M_PI_2 + 0.01;
-    const float xstop = M_PI_2 + (M_PI_4 / 3.0);
-    const float dx = (xstop - xstart) / (float)(xsteps - 1);
-    const float ystart = 0.0; // Phi goes all around
-    const float ystop = 2.0 * M_PI;
-    const float dy = (ystop - ystart) / (float)(ysteps - 1); // Make step depend on theta; fewer for angles closer to 0 and pi
-    config.initMessage(msg, xsteps * ysteps, ++_frameIndex);
+    _config.initMessage(msg, ++_frameIndex);
 
     // Just do this for the sake of surety
     msg.data.clear();
@@ -88,93 +80,41 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     rtcReleaseGeometry(_groundGeometry);
     rtcCommitScene(_scene);
 
-#ifdef USE_RAY_PACKETS // Use Embree's batch ray tracing functions
-    int rayCount = 0;
+    // Set up packet processing
     int validRays[RAY_PACKET_SIZE]; // Initialize all invalid
+    int rayRings[RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
     for (int i = 0; i < RAY_PACKET_SIZE; ++i)
         validRays[i] = 0;
-    int rayRings[RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
     for (int i = 0; i < RAY_PACKET_SIZE; ++i)
         rayRings[i] = -1;
     RTCRayHit8 rayhitn;
-#endif
-    for (int ix = 0; ix < xsteps; ++ix)
+
+    int rayState = 0;
+    _config.reset();
+    while (rayState == 0)
     {
-        for (int iy = 0; iy < ysteps; ++iy)
-        {
-            // Set the angular coordinates
-            float theta = xstart + static_cast<float>(ix) * dx;
-            float phi = ystart + static_cast<float>(iy) * dy;
-            
-            // The normalized direction to trace
-            float pxo = std::sin(theta) * std::cos(phi);
-            float pyo = std::sin(theta) * std::sin(phi);
-            float pzo = std::cos(theta);
+        // Fill up the next ray in the buffer
+        rayState = _config.nextRay8(rayhitn, validRays);
+        for (int idx = 0; idx < RAY_PACKET_SIZE; ++idx)
+            rayRings[idx] = 0;
 
-#ifndef USE_RAY_PACKETS
-            RTCRayHit rayhit;
-            getMeshIntersect1(0.0f, 0.0f, 0.0f, pxo, pyo, pzo, &rayhit);
-
-            if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
-            {
-                lidarshooter::XYZIRBytes cloudBytes(rayhit.ray.tfar * pxo, rayhit.ray.tfar * pyo, rayhit.ray.tfar * pzo, 64.0, ix);
-                cloudBytes.AddToCloud(msg);
-            }
-#else
-            // Fill up the next ray in the buffer
-            rayhitn.ray.org_x[rayCount % RAY_PACKET_SIZE] = 0.0;
-            rayhitn.ray.org_y[rayCount % RAY_PACKET_SIZE] = 0.0;
-            rayhitn.ray.org_z[rayCount % RAY_PACKET_SIZE] = 0.0;
-            rayhitn.ray.dir_x[rayCount % RAY_PACKET_SIZE] = pxo;
-            rayhitn.ray.dir_y[rayCount % RAY_PACKET_SIZE] = pyo;
-            rayhitn.ray.dir_z[rayCount % RAY_PACKET_SIZE] = pzo;
-            rayhitn.ray.tnear[rayCount % RAY_PACKET_SIZE] = 0.f;
-            rayhitn.ray.tfar[rayCount % RAY_PACKET_SIZE] = std::numeric_limits<float>::infinity();
-            rayhitn.hit.geomID[rayCount % RAY_PACKET_SIZE] = RTC_INVALID_GEOMETRY_ID;
-            validRays[rayCount % RAY_PACKET_SIZE] = -1; // Mark this ray valid/do compute it
-            rayRings[rayCount % RAY_PACKET_SIZE] = ix;
-
-            // Execute when the buffer is full
-            if (++rayCount % RAY_PACKET_SIZE == 0)
-            {
-                getMeshIntersect8(validRays, &rayhitn);
-                for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
-                {
-                    if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
-                    {
-                        lidarshooter::XYZIRBytes cloudBytes(
-                            rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri],
-                            rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri],
-                            rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
-                            64.0, rayRings[ri]
-                        );
-                        cloudBytes.AddToCloud(msg);
-                        
-                    }
-                    validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
-                }
-            }
-#endif
-        }
-    }
-
-#ifdef USE_RAY_PACKETS
-    // Check to see if there are leftovers in the last iteration
-    if (rayCount % 4 > 0)
-    {
+        // Execute when the buffer is full
         getMeshIntersect8(validRays, &rayhitn);
-        for (int ri = 0; ri < (rayCount % RAY_PACKET_SIZE); ++ri)
+        for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
         {
             if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
             {
-                lidarshooter::XYZIRBytes cloudBytes(rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri], rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri], 64.0, rayRings[ri]);
+                lidarshooter::XYZIRBytes cloudBytes(
+                    rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri],
+                    rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri],
+                    rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
+                    64.0, rayRings[ri]
+                );
                 cloudBytes.AddToCloud(msg);
-                
             }
             validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
         }
     }
-#endif
 
     // Spoof the LiDAR device
     _cloudPublisher.publish(msg);
@@ -185,10 +125,16 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 void lidarshooter::MeshProjector::updateGround()
 {
     // Set the ground; eventually make this its own function
-    _groundVertices[0] = -50.0; _groundVertices[1]  = -50.0; _groundVertices[2]  = -5.0;
-    _groundVertices[3] = -50.0; _groundVertices[4]  =  50.0; _groundVertices[5]  = -5.0;
-    _groundVertices[6] =  50.0; _groundVertices[7]  =  50.0; _groundVertices[8]  = -5.0;
-    _groundVertices[9] =  50.0; _groundVertices[10] = -50.0; _groundVertices[11] = -5.0;
+    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config.originToSensor(corner1);
+    Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config.originToSensor(corner2);
+    Eigen::Vector3f corner3( 50.0, -50.0, 0.0); _config.originToSensor(corner3);
+    Eigen::Vector3f corner4( 50.0,  50.0, 0.0); _config.originToSensor(corner4);
+
+    _groundVertices[0] = corner1[0]; _groundVertices[1]  = corner1[1]; _groundVertices[2]  = corner1[2];
+    _groundVertices[3] = corner2[0]; _groundVertices[4]  = corner2[1]; _groundVertices[5]  = corner2[2];
+    _groundVertices[6] = corner3[0]; _groundVertices[7]  = corner3[1]; _groundVertices[8]  = corner3[2];
+    _groundVertices[9] = corner4[0]; _groundVertices[10] = corner4[1]; _groundVertices[11] = corner4[2];
+
     _groundQuadrilaterals[0] = 0;
     _groundQuadrilaterals[1] = 1;
     _groundQuadrilaterals[2] = 2;

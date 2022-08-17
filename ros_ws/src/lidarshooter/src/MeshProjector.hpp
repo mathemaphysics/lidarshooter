@@ -50,6 +50,7 @@ public:
 private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
+    LidarDevice _config;
     float *_objectVertices;
     unsigned *_objectTriangles;
     float *_groundVertices;
