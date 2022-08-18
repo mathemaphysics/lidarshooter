@@ -2,12 +2,29 @@
 
 #include <ros/ros.h>
 
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
-lidarshooter::MeshProjector::MeshProjector()
+lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
 {
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker", 1, &MeshProjector::meshCallback, this);
+
+    // Set up the logger
+    _logger = spdlog::get(_applicationName);
+    if (_logger == nullptr)
+        _logger = spdlog::stdout_color_mt(_applicationName);
+
+    // Load file given on the command line
+    if (_configFile.length() > 0)
+    {
+        _logger->info("Loading device configuration from {}", _configFile);
+        _config.initialize(_configFile);
+    }
+    else
+        _logger->warn("Failed to load a configuration file; proceed with caution");
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -31,7 +48,6 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 
     // Make the output location for the cloud
     sensor_msgs::PointCloud2 msg;
-    _config.initialize("/workspaces/yolo3d/ros_ws/hesai-pandar-XT-32.json");
 
     // Trace out the Hesai configuration for now
     _config.initMessage(msg, ++_frameIndex);
@@ -89,6 +105,7 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
         rayRings[i] = -1;
     RTCRayHit8 rayhitn;
 
+    // Initialize ray state for batch processing
     int rayState = 0;
     _config.reset();
     while (rayState == 0)
@@ -159,13 +176,15 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
     for (std::size_t jdx = 0; jdx < _trackObject.cloud.width * _trackObject.cloud.height; ++jdx)
     {
         auto rawData = _trackObject.cloud.data.data() + jdx * _trackObject.cloud.point_step;
-        auto bytes = lidarshooter::XYZIRBytes(rawData, rawData + 4, rawData + 8, nullptr, nullptr);
+        
+        float px, py, pz;
+        auto point = lidarshooter::XYZIRPoint(rawData);
+        point.getPoint(&px, &py, &pz, nullptr, nullptr);
 
-        float px = bytes.xPos.asFloat;
-        float py = bytes.yPos.asFloat;
-        float pz = bytes.zPos.asFloat;
+        Eigen::Vector3f ptrans(px, py, pz);
+        _config.originToSensor(ptrans);
 
-        _objectVertices[3 * jdx + 0] = px; _objectVertices[3 * jdx + 1] = py; _objectVertices[3 * jdx + 2] = pz; // Mesh vertex
+        _objectVertices[3 * jdx + 0] = ptrans.x(); _objectVertices[3 * jdx + 1] = ptrans.y(); _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
     }
 }
 

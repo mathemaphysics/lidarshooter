@@ -19,11 +19,16 @@ lidarshooter::XYZIRPoint::XYZIRPoint(float _xPos, float _yPos, float _zPos, floa
 
 void lidarshooter::XYZIRPoint::getPoint(float *_x, float *_y, float *_z, float *_intensity, int *_ring) const
 {
-    *_x = asPoint.xPos;
-    *_y = asPoint.yPos;
-    *_z = asPoint.zPos;
-    *_intensity = asPoint.intensity;
-    *_ring = asPoint.ring;
+    if (_x != nullptr)
+        *_x = asPoint.xPos;
+    if (_y != nullptr)
+        *_y = asPoint.yPos;
+    if (_z != nullptr)
+        *_z = asPoint.zPos;
+    if (_intensity != nullptr)
+        *_intensity = asPoint.intensity;
+    if (_ring != nullptr)
+        *_ring = asPoint.ring;
 }
 
 void lidarshooter::XYZIRPoint::setPoint(float _x, float _y, float _z, float _intensity, int _ring)

@@ -9,6 +9,7 @@
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <embree3/rtcore.h>
+#include <spdlog/spdlog.h>
 
 #include <cstdint>
 #include <cmath>
@@ -16,10 +17,12 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <memory>
 
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
 #include "XYZIRBytes.hpp"
+#include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
 
 #undef USE_RAY_PACKETS
@@ -31,7 +34,7 @@ namespace lidarshooter
 class MeshProjector
 {
 public:
-    MeshProjector();
+    MeshProjector(const std::string& _configFile = "");
     ~MeshProjector();
 
     /**
@@ -50,6 +53,8 @@ public:
 private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
+    const std::string _applicationName = "LiDARShooter";
+    std::shared_ptr<spdlog::logger> _logger;
     LidarDevice _config;
     float *_objectVertices;
     unsigned *_objectTriangles;
