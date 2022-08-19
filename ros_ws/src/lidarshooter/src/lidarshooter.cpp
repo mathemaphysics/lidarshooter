@@ -10,6 +10,7 @@
  */
 
 #include <ros/ros.h>
+
 #include <boost/program_options.hpp>
 
 #include "MeshProjector.hpp"
@@ -55,7 +56,7 @@ int main(int argc, char **argv)
     else
     {
         std::cout << "Config file not given but is required" << std::endl;
-        return 0;
+        return -1;
     }
 
     // Start up the mesh projector

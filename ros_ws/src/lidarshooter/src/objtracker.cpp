@@ -9,18 +9,63 @@
  */
 
 #include <ros/ros.h>
+
 #include <pcl/PolygonMesh.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl_msgs/PolygonMesh.h>
 #include <pcl_conversions/pcl_conversions.h>
+
 #include <iostream>
+
+#include <boost/program_options.hpp>
+
 #include "LidarShooter.hpp"
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 
 int main(int argc, char **argv)
 {
+    // Initialize ROS to eat the --ros-args flags first
     ros::init(argc, argv, "objtracker");
+
+    // Handle command line input
+    boost::program_options::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "Display help")
+        ("version", "Returns the version of test executive")
+        ("ros-args", "ROS arguments")
+        ("-r", "ROS arguments")
+        ("mesh", boost::program_options::value<std::string>(), "Path to the STL mesh to load")
+    ;
+
+    // Parse and store command line variables for later
+    boost::program_options::variables_map variables;
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), variables);
+    boost::program_options::notify(variables);
+
+    // Stop if help requested
+    if (variables.count("help") > 0)
+    {
+        std::cout << desc << std::endl;
+        return 0;
+    }
+
+    // Stop if version requested
+    if (variables.count("version") > 0)
+    {
+        std::cout << "LiDARShooter" << std::endl;
+        return 0;
+    }
+
+    // Grab the config file name
+    std::string meshFile;
+    if (variables.count("mesh") > 0)
+        meshFile = variables["mesh"].as<std::string>();
+    else
+    {
+        std::cout << "Mesh file not given but is required" << std::endl;
+        return -1;
+    }
 
     // Publisher node needs to be global; no namespace
     ros::NodeHandle nodeHandle;
@@ -28,7 +73,7 @@ int main(int argc, char **argv)
 
     // Load the objects to track
     pcl::PolygonMesh trackObject;
-    pcl::io::loadPolygonFileSTL("./sphere.stl", trackObject);
+    pcl::io::loadPolygonFileSTL(meshFile, trackObject);
     std::cout << "Points in tracked object      : " << trackObject.cloud.width * trackObject.cloud.height << std::endl;
     std::cout << "Triangles in tracked object   : " << trackObject.polygons.size() << std::endl;
 
