@@ -246,6 +246,45 @@ int lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray, int *_valid)
     return 0;
 }
 
+int lidarshooter::LidarDevice::nextRay16(RTCRayHit16& _ray, int *_valid)
+{
+    // Invalidate vector indexes
+    for (int i = 0; i < 16; ++i)
+        _valid[i] = 0;
+//#pragma omp for
+    for (int idx = 0; idx < 16; ++idx)
+    {
+        // Fill out the ray/hit details
+        float preChi = _channels.vertical[_verticalIndex];
+        float prePhi = _channels.horizontal.range.begin + _channels.horizontal.step * static_cast<float>(_horizontalIndex);
+
+        // Convert to LiDAR coordinates
+        float theta = (90.0 - preChi) * M_PI / 180.0; // Convert from chi in degrees to theta in radians
+        float phi = prePhi * M_PI / 180.0; // Just convert to radians
+
+        // The normalized direction to trace
+        float dx = std::sin(theta) * std::cos(phi);
+        float dy = std::sin(theta) * std::sin(phi);
+        float dz = std::cos(theta);
+
+        // Set the ray and hit details
+        SET_RAY_HIT_ORIGIN(_ray, idx, 0.f, 0.f, 0.f);
+        SET_RAY_HIT_DIRECTION(_ray, idx, dx, dy, dz);
+        RESET_RAY_HIT(_ray, idx);
+
+        // Validate the current vector slot
+        _valid[idx] = -1;
+
+        // Next ray
+        int done = advanceRayIndex();
+        if (done == 1)
+            return done;
+    }
+
+    // Signal there's more left
+    return 0;
+}
+
 void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor)
 {
     Eigen::Vector3f translated = _sensor - Eigen::Vector3f(

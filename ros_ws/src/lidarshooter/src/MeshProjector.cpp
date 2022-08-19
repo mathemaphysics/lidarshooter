@@ -229,3 +229,13 @@ void lidarshooter::MeshProjector::getMeshIntersect8(const int *validRays, RTCRay
     // at a distance of rayhit.ray.tfar
     rtcIntersect8(validRays, _scene, &context, rayhit);
 }
+
+void lidarshooter::MeshProjector::getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit)
+{
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+
+    // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
+    // at a distance of rayhit.ray.tfar
+    rtcIntersect16(validRays, _scene, &context, rayhit);
+}

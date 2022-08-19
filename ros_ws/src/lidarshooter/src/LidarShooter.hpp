@@ -24,7 +24,7 @@
  * or 16 now, and note that some of the functions corresponding to these sizes
  * haven't been written yet.
  */
-#define RAY_PACKET_SIZE 8
+#define RAY_PACKET_SIZE 16
 
 /**
  * Define ray packet size-invariant types

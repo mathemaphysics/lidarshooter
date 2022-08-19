@@ -169,6 +169,18 @@ namespace lidarshooter
         int nextRay8(RTCRayHit8& _ray, int *_valid);
 
         /**
+         * @brief Returns a single initialized ray from device's sequence
+         * 
+         * NOTE: This function is called by the macro inside of \c nextRay if
+         * \c RAY_PACKET_SIZE = 16.
+         * 
+         * @param _ray A single ray from the device
+         * @param _valid Array of \c int of length 16; 0 means don't compute, -1 means compute
+         * @return int State of the system; 1 means all rays have been returns, 0 means continue
+         */
+        int nextRay16(RTCRayHit16& _ray, int *_valid);
+
+        /**
          * @brief Transforms an origin-basis coordinate to sensor coordinates
          * 
          * @param _sensor Vector to transform; in global basis

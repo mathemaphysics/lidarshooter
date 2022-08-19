@@ -131,5 +131,14 @@ private:
      * @param rayhit The input/output ray hit data structure
      */
     void getMeshIntersect8(const int *validRays, RTCRayHit8 *rayhit);
+
+    /**
+     * @brief Get the intersection of a packet of 16 rays with the \c _scene
+     * 
+     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
+     *                  where -1 indicates do compute its intersection and 0 don't
+     * @param rayhit The input/output ray hit data structure
+     */
+    void getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit);
 };
 }
