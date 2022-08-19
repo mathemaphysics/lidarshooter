@@ -61,7 +61,6 @@
 
 	// Maps the .ssh/ folder from your ${HOME} into /home/devuser/.ssh
 	"mounts": [
-		"source=${localEnv:HOME}/.ssh,target=/home/devuser/.ssh,type=bind,consistency=cached",
-		"source=/c/Users/mathe/Data/pointclouds,target=/workspaces/data,type=bind,consistency=cached"
+		"source=${localEnv:HOME}/.ssh,target=/home/devuser/.ssh,type=bind,consistency=cached"
 	]
 }
