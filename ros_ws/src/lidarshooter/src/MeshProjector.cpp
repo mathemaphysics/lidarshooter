@@ -1,3 +1,14 @@
+/**
+ * @file MeshProjector.cpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief MeshProjector class which traces objects
+ * @version 0.1
+ * @date 2022-08-18
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "MeshProjector.hpp"
 
 #include <ros/ros.h>
@@ -39,12 +50,12 @@ lidarshooter::MeshProjector::~MeshProjector()
 void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh)
 {
     // Announce until unneeded
-    std::cout << "Received a frame" << std::endl;
+    _logger->info("Received a frame");
 
     // Load the objects to track
     pcl_conversions::toPCL(*_mesh, _trackObject);
-    std::cout << "Points in tracked object      : " << _trackObject.cloud.width * _trackObject.cloud.height << std::endl;
-    std::cout << "Triangles in tracked object   : " << _trackObject.polygons.size() << std::endl;
+    _logger->info("Points in tracked object      : {}", _trackObject.cloud.width * _trackObject.cloud.height);
+    _logger->info("Triangles in tracked object   : {}", _trackObject.polygons.size());
 
     // Make the output location for the cloud
     sensor_msgs::PointCloud2 msg;
@@ -103,7 +114,7 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
         validRays[i] = 0;
     for (int i = 0; i < RAY_PACKET_SIZE; ++i)
         rayRings[i] = -1;
-    RTCRayHit8 rayhitn;
+    RayHitType rayhitn;
 
     // Initialize ray state for batch processing
     int rayState = 0;
@@ -111,12 +122,12 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     while (rayState == 0)
     {
         // Fill up the next ray in the buffer
-        rayState = _config.nextRay8(rayhitn, validRays);
+        rayState = _config.nextRay(rayhitn, validRays);
         for (int idx = 0; idx < RAY_PACKET_SIZE; ++idx)
             rayRings[idx] = 0;
 
         // Execute when the buffer is full
-        getMeshIntersect8(validRays, &rayhitn);
+        getMeshIntersect(validRays, &rayhitn);
         for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
         {
             if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
@@ -186,6 +197,11 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
 
         _objectVertices[3 * jdx + 0] = ptrans.x(); _objectVertices[3 * jdx + 1] = ptrans.y(); _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
     }
+}
+
+void lidarshooter::MeshProjector::getMeshIntersect(int *_valid, RayHitType *_rayhit)
+{
+    GET_MESH_INTERSECT(_valid, _rayhit);
 }
 
 void lidarshooter::MeshProjector::getMeshIntersect1(float ox, float oy, float oz, float dx, float dy, float dz, RTCRayHit *rayhit)

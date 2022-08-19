@@ -1,3 +1,13 @@
+/**
+ * @file LidarDevice.cpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief Abstraction of the LiDAR device configuration
+ * @version 0.1
+ * @date 2022-08-18
+ * 
+ * @copyright Copyright (c) 2022
+ */
+
 #include "LidarDevice.hpp"
 
 #include <cstdint>
@@ -129,7 +139,12 @@ inline void lidarshooter::LidarDevice::setRayHitDirection(RTCRayHit& _ray, float
     _ray.ray.dir_y[N] = _dy; \
     _ray.ray.dir_z[N] = _dz;
 
-int lidarshooter::LidarDevice::nextRay(RTCRayHit& _ray)
+int lidarshooter::LidarDevice::nextRay(RayHitType& _ray, int *_valid)
+{
+    return NEXT_RAY(_ray, _valid);
+}
+
+int lidarshooter::LidarDevice::nextRay1(RTCRayHit& _ray, int *_valid)
 {
     // Fill out the ray/hit details
     float preChi = _channels.vertical[_verticalIndex]; // Chi is angle above horizontal; theta is angle down from vertical (z-axis)

@@ -1,4 +1,16 @@
+/**
+ * @file LidarDevice.hpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief Abstraction of the LiDAR device configuration
+ * @version 0.1
+ * @date 2022-08-18
+ * 
+ * @copyright Copyright (c) 2022
+ */
+
 #pragma once
+
+#include "LidarShooter.hpp"
 
 #include <string>
 #include <cstdint>
@@ -13,6 +25,9 @@
 #include <spdlog/spdlog.h>
 
 #include <Eigen/Dense>
+
+#define NEXT_RAY_BASE nextRay
+#define NEXT_RAY(__rayhit, __valid) GLUE(NEXT_RAY_BASE, RAY_PACKET_SIZE)(__rayhit, __valid)
 
 namespace lidarshooter
 {
@@ -35,9 +50,28 @@ namespace lidarshooter
         void resetRayHit(RTCRayHit& _ray);
         void setRayHitOrigin(RTCRayHit& _ray, float _px, float _py, float _pz);
         void setRayHitDirection(RTCRayHit& _ray, float _dx, float _dy, float _dz);
-        int nextRay(RTCRayHit& _ray);
+
+        /**
+         * @brief Abstraction of the \c nextRayNN functions
+         * 
+         * This function decides which \c nextRayNN to call base on what the
+         * value of \c RAY_PACKET_SIZE is. Note also that \c RayHitType is a
+         * \c typedef which depends on the packet size as well.
+         * 
+         * @param _ray Ray or packet of rays to trace
+         * @param _valid Which rays to be traced (-1 for yes, 0 for no)
+         * @return int 1 if all rays have been iterated, 0 otherwise (continue)
+         */
+        int nextRay(RayHitType& _ray, int *_valid);
+        int nextRay1(RTCRayHit& _ray, int *_valid);
         int nextRay4(RTCRayHit4& _ray, int *_valid);
         int nextRay8(RTCRayHit8& _ray, int *_valid);
+
+        /**
+         * @brief Transforms an origin-basis coordinate to sensor coordinates
+         * 
+         * @param _sensor Vector to transform; in global basis
+         */
         void originToSensor(Eigen::Vector3f& _sensor);
         void reset();
         unsigned int getTotalRays();

@@ -1,4 +1,17 @@
+/**
+ * @file MeshProjector.hpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief MeshProjector class which traces objects
+ * @version 0.1
+ * @date 2022-08-18
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #pragma once
+
+#include "LidarShooter.hpp"
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -24,10 +37,6 @@
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
-
-#undef USE_RAY_PACKETS
-#define USE_RAY_PACKETS
-#define RAY_PACKET_SIZE 8
 
 namespace lidarshooter
 {
@@ -81,6 +90,17 @@ private:
      */
     void updateMeshPolygons(int frameIndex);
 
+#define GET_MESH_INTERSECT_BASE getMeshIntersect
+#define GET_MESH_INTERSECT(__valid, __rayhit) GLUE(GET_MESH_INTERSECT_BASE, RAY_PACKET_SIZE)(__valid, __rayhit)
+
+    /**
+     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectRAY_PACKET_SIZE
+     * 
+     * Ray packet size generalization function; this will automatically
+     * select which ray packet size to use based on the system preprocessor
+     */
+    void getMeshIntersect(int *_valid, RayHitType *_rayhit);
+
     /**
      * @brief Get the intersection of a single ray with the \c _scene
      * 
@@ -93,6 +113,15 @@ private:
      * @param rayhit Input/output ray/hit structure
      */
     void getMeshIntersect1(float ox, float oy, float oz, float dx, float dy, float dz, RTCRayHit *rayhit);
+
+    /**
+     * @brief Get the intersection of a packet of 4 rays with the \c _scene
+     * 
+     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
+     *                  where -1 indicates do compute its intersection and 0 don't
+     * @param rayhit The input/output ray hit data structure
+     */
+    void getMeshIntersect4(const int *validRays, RTCRayHit4 *rayhit);
 
     /**
      * @brief Get the intersection of a packet of 8 rays with the \c _scene

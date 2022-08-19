@@ -1,9 +1,20 @@
+/**
+ * @file objtracker.cpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief Object mesh broadcast node
+ * @version 0.1
+ * @date 2022-08-18
+ * 
+ * @copyright Copyright (c) 2022
+ */
+
 #include <ros/ros.h>
 #include <pcl/PolygonMesh.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl_msgs/PolygonMesh.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <iostream>
+#include "LidarShooter.hpp"
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 

@@ -1,3 +1,14 @@
+/**
+ * @file lidarshooter.cpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief Tracing backend
+ * @version 0.1
+ * @date 2022-08-18
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <ros/ros.h>
 #include <boost/program_options.hpp>
 
