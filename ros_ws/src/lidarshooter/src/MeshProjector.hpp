@@ -50,7 +50,7 @@ public:
      * @brief ROS receiving callback function handling incoming mesh
      * 
      * This function is called by ROS every time it receives a message from the
-     * \c /objtracer node to which it subscribes. When it is received, it is painted
+     * \c /objtracker node to which it subscribes. When it is received, it is painted
      * into an Embree \c RTCScene and an explicit ground is finally added. After this
      * the intersection of each ray from a \c LidarDevice is calculated and sent to
      * the \c lidar_XXXX node to which it corresponds.
