@@ -11,7 +11,7 @@
 /**
  * Application name handed to the logger
  */
-#define APPLICATION_NAME LiDARShooter
+#define APPLICATION_NAME "LiDARShooter"
 
 /**
  * Helper function for macro generation

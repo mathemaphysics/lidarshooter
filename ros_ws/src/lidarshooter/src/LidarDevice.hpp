@@ -81,7 +81,7 @@ namespace lidarshooter
         /**
          * @brief Name of the application to use as global logger reference
          */
-        const std::string _applicationName = "LiDARShooter";
+        const std::string _applicationName = APPLICATION_NAME;
 
         /**
          * @brief Index of the current LiDAR channel being output

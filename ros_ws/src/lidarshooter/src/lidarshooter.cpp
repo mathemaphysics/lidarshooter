@@ -12,7 +12,11 @@
 #include <ros/ros.h>
 
 #include <boost/program_options.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
+#include "LidarShooter.hpp"
 #include "MeshProjector.hpp"
 
 int main(int argc, char **argv)
@@ -58,6 +62,11 @@ int main(int argc, char **argv)
         std::cout << "Config file not given but is required" << std::endl;
         return -1;
     }
+
+    // Set up the logger
+    auto logger = spdlog::get(APPLICATION_NAME);
+    if (logger == nullptr)
+        logger = spdlog::stdout_color_mt(APPLICATION_NAME);
 
     // Start up the mesh projector
     lidarshooter::MeshProjector meshProjector(configFile);

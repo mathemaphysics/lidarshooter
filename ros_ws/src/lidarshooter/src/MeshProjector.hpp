@@ -62,7 +62,7 @@ public:
 private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
-    const std::string _applicationName = "LiDARShooter";
+    const std::string _applicationName = APPLICATION_NAME;
     std::shared_ptr<spdlog::logger> _logger;
     LidarDevice _config;
     float *_objectVertices;

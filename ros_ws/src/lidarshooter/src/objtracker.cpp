@@ -18,6 +18,9 @@
 #include <iostream>
 
 #include <boost/program_options.hpp>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "LidarShooter.hpp"
 #include "XYZIRBytes.hpp"
@@ -67,6 +70,11 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    // Set up the logger
+    auto logger = spdlog::get(APPLICATION_NAME);
+    if (logger == nullptr)
+        logger = spdlog::stdout_color_mt(APPLICATION_NAME);
+
     // Publisher node needs to be global; no namespace
     ros::NodeHandle nodeHandle;
     ros::Publisher meshPublisher = nodeHandle.advertise<pcl_msgs::PolygonMesh>("objtracker", 20);
@@ -74,12 +82,11 @@ int main(int argc, char **argv)
     // Load the objects to track
     pcl::PolygonMesh trackObject;
     pcl::io::loadPolygonFileSTL(meshFile, trackObject);
-    std::cout << "Points in tracked object      : " << trackObject.cloud.width * trackObject.cloud.height << std::endl;
-    std::cout << "Triangles in tracked object   : " << trackObject.polygons.size() << std::endl;
+    logger->info("Points in tracked object      : {}", trackObject.cloud.width * trackObject.cloud.height);
+    logger->info("Triangles in tracked object   : {}", trackObject.polygons.size());
 
     // The main loop; each iteration produces a new point cloud
     ros::Rate rate(10);
-    int frameIndex = 200;
     while (ros::ok())
     {
         // Convert mesh to pcl_msgs::PolygonMesh
@@ -99,7 +106,6 @@ int main(int argc, char **argv)
         meshPublisher.publish(trackObjectMsg); // Eventually this will be a path and update each send
         ros::spinOnce();
         rate.sleep();
-        ++frameIndex;
     }
 
     return 0;
