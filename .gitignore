@@ -170,6 +170,10 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+CMakeFiles/**
+
 # ROS files
-ros/**
-!ros/src/
+ros_ws/build/**
+ros_ws/devel/**
+ros_ws/.catkin_tools/**
+#!ros_ws/src
