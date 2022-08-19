@@ -42,19 +42,87 @@ namespace lidarshooter
     class LidarDevice
     {
     public:
+        /**
+         * @brief Construct a new LidarDevice
+         * 
+         * For those cases when you need a default constructor because you don't
+         * have all the information to start up before creating the object; you
+         * can call \c initialize with the configuration file when the path is
+         * known.
+         */
         LidarDevice();
+
+        /**
+         * @brief Construct a new LidarDevice
+         * 
+         * For cases in which you already know the path to the JSON
+         * configuration file; calling this constructor is identical to calling
+         * the no-arguments constructor and then calling \c initialize.
+         * 
+         * @param _config Path to the JSON configuration file for the device
+         */
         LidarDevice(const std::string& _config);
+
+        /**
+         * @brief Destroy the LidarDevice object
+         * 
+         * A default destructor; no need to put anything in the source file.
+         */
         ~LidarDevice() = default;
+
+        /**
+         * @brief Fills in the transform and configuration variables
+         *
+         * Does all the work loading transform and device configuration
+         * variables except for initializing the logger.
+         *  
+         * @param _config Path to the JSON configuration file for the device
+         */
         void initialize(const std::string& _config);
+
+        /**
+         * @brief Initialize the ROS message with its header
+         * 
+         * @param _msg PointCloud2 message whose header needs filling in
+         * @param _frameIndex Index of the frame for this message
+         */
         void initMessage(sensor_msgs::PointCloud2& _msg, int _frameIndex);
+
+        /**
+         * @brief Set \c RTCRayHit structure to pre-hit status
+         * 
+         * Function that sets the \c RTCRayHit structure to the initial state
+         * required for the \c MeshProjector::getMeshIntersect function to
+         * properly calculate a hit or miss.
+         * 
+         * @param _ray \c RTCRayHit to reset
+         */
         void resetRayHit(RTCRayHit& _ray);
+
+        /**
+         * @brief Sets the origin of the \c RTCRayHit object
+         * 
+         * @param _ray Ray whose origin needs setting
+         * @param _px X-coordinate of the origin
+         * @param _py Y-coordinate of the origin
+         * @param _pz Z-coordinate of the origin
+         */
         void setRayHitOrigin(RTCRayHit& _ray, float _px, float _py, float _pz);
+
+        /**
+         * @brief Sets the direction of the \c RTCRayHit object
+         * 
+         * @param _ray Ray whose direction needs setting
+         * @param _dx X-coordinate of the direction
+         * @param _dy Y-coordinate of the direction
+         * @param _dz Z-coordinate of the direction
+         */
         void setRayHitDirection(RTCRayHit& _ray, float _dx, float _dy, float _dz);
 
         /**
          * @brief Abstraction of the \c nextRayNN functions
          * 
-         * This function decides which \c nextRayNN to call base on what the
+         * This function decides which \c nextRayNN to call based on what the
          * value of \c RAY_PACKET_SIZE is. Note also that \c RayHitType is a
          * \c typedef which depends on the packet size as well.
          * 
@@ -63,8 +131,41 @@ namespace lidarshooter
          * @return int 1 if all rays have been iterated, 0 otherwise (continue)
          */
         int nextRay(RayHitType& _ray, int *_valid);
+
+        /**
+         * @brief Returns a single initialized ray from device's sequence
+         *
+         * NOTE: This function is called by the macro inside of \c nextRay if
+         * \c RAY_PACKET_SIZE = 1.
+         *  
+         * @param _ray A single ray from the device
+         * @param _valid Ignored for a single ray
+         * @return int State of the system; 1 means all rays have been returns, 0 means continue
+         */
         int nextRay1(RTCRayHit& _ray, int *_valid);
+
+        /**
+         * @brief Returns a single initialized ray from device's sequence
+         * 
+         * NOTE: This function is called by the macro inside of \c nextRay if
+         * \c RAY_PACKET_SIZE = 4.
+         * 
+         * @param _ray A single ray from the device
+         * @param _valid Array of \c int of length 4; 0 means don't compute, -1 means compute
+         * @return int State of the system; 1 means all rays have been returns, 0 means continue
+         */
         int nextRay4(RTCRayHit4& _ray, int *_valid);
+
+        /**
+         * @brief Returns a single initialized ray from device's sequence
+         * 
+         * NOTE: This function is called by the macro inside of \c nextRay if
+         * \c RAY_PACKET_SIZE = 8.
+         * 
+         * @param _ray A single ray from the device
+         * @param _valid Array of \c int of length 8; 0 means don't compute, -1 means compute
+         * @return int State of the system; 1 means all rays have been returns, 0 means continue
+         */
         int nextRay8(RTCRayHit8& _ray, int *_valid);
 
         /**
@@ -146,13 +247,13 @@ namespace lidarshooter
             std::vector<float> vertical;
             struct {
                 struct {
-                    float begin;    // Included in count
-                    float end;      // Included in count
+                    float begin;    ///< Included in count
+                    float end;      ///< Included in count
                 } range;
-                float step;         // = (horizontal.end - horizontal.begin) / (horizontal.count - 1)
-                unsigned int count; // The total number of points made; inclusive of endpoints
+                float step;         ///< = (horizontal.end - horizontal.begin) / (horizontal.count - 1)
+                unsigned int count; ///< The total number of points made; inclusive of endpoints
             } horizontal;
-            unsigned int count;     // = horizontal.count * vertical.size()
+            unsigned int count;     ///< = horizontal.count * vertical.size()
         } _channels;
 
         // Related to the transformation
