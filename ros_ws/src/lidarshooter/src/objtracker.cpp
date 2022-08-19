@@ -37,7 +37,7 @@ int main(int argc, char **argv)
         ("help", "Display help")
         ("version", "Returns the version of test executive")
         ("ros-args", "ROS arguments")
-        ("-r", "ROS arguments")
+        ("r", "ROS arguments")
         ("mesh", boost::program_options::value<std::string>(), "Path to the STL mesh to load")
     ;
 
