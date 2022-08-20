@@ -43,7 +43,8 @@ namespace lidarshooter
 class MeshProjector
 {
 public:
-    MeshProjector(const std::string& _configFile = "");
+    MeshProjector();
+    MeshProjector(const std::string& _configFile);
     ~MeshProjector();
 
     /**

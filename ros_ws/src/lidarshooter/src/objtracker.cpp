@@ -17,7 +17,6 @@
 
 #include <iostream>
 
-#include <boost/program_options.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -31,53 +30,19 @@ int main(int argc, char **argv)
     // Initialize ROS to eat the --ros-args flags first
     ros::init(argc, argv, "objtracker");
 
-    // Handle command line input
-    boost::program_options::options_description desc("Allowed options");
-    desc.add_options()
-        ("help", "Display help")
-        ("version", "Returns the version of test executive")
-        ("ros-args", "ROS arguments")
-        ("r", "ROS arguments")
-        ("mesh", boost::program_options::value<std::string>(), "Path to the STL mesh to load")
-    ;
-
-    // Parse and store command line variables for later
-    boost::program_options::variables_map variables;
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), variables);
-    boost::program_options::notify(variables);
-
-    // Stop if help requested
-    if (variables.count("help") > 0)
-    {
-        std::cout << desc << std::endl;
-        return 0;
-    }
-
-    // Stop if version requested
-    if (variables.count("version") > 0)
-    {
-        std::cout << "LiDARShooter" << std::endl;
-        return 0;
-    }
-
-    // Grab the config file name
-    std::string meshFile;
-    if (variables.count("mesh") > 0)
-        meshFile = variables["mesh"].as<std::string>();
-    else
-    {
-        std::cout << "Mesh file not given but is required" << std::endl;
-        return -1;
-    }
-
     // Set up the logger
     auto logger = spdlog::get(APPLICATION_NAME);
     if (logger == nullptr)
         logger = spdlog::stdout_color_mt(APPLICATION_NAME);
 
     // Publisher node needs to be global; no namespace
-    ros::NodeHandle nodeHandle;
+    ros::NodeHandle nodeHandle("~");
     ros::Publisher meshPublisher = nodeHandle.advertise<pcl_msgs::PolygonMesh>("objtracker", 20);
+
+    // Get value from the publisher node
+    std::string meshFile = "mesh.stl";
+    nodeHandle.param("meshfile", meshFile, meshFile);
+    logger->info("Loading mesh file {}", meshFile);
 
     // Load the objects to track
     pcl::PolygonMesh trackObject;

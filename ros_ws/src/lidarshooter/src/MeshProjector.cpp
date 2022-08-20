@@ -17,28 +17,54 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
+lidarshooter::MeshProjector::MeshProjector()
+    : _nodeHandle("~")
 {
-    // Create the pubsub situation
-    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker", 1, &MeshProjector::meshCallback, this);
-
     // Set up the logger
     _logger = spdlog::get(_applicationName);
     if (_logger == nullptr)
         _logger = spdlog::stdout_color_mt(_applicationName);
 
     // Load file given on the command line
-    if (_configFile.length() > 0)
-    {
-        _logger->info("Loading device configuration from {}", _configFile);
-        _config.initialize(_configFile);
-    }
-    else
-        _logger->warn("Failed to load a configuration file; proceed with caution");
+    _logger->info("Starting up MeshProjector");
+
+    // Get value from the publisher node
+    std::string configFile = "config.json";
+    _nodeHandle.param("configfile", configFile, configFile);
+
+    // Initializing the LiDAR device
+    _logger->info("Loading config file {}", configFile);
+    _config.initialize(configFile);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
+
+    // Create the pubsub situation
+    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/objtracker", 1, &MeshProjector::meshCallback, this);
+}
+
+lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
+    : _nodeHandle("~")
+{
+    // Set up the logger
+    _logger = spdlog::get(_applicationName);
+    if (_logger == nullptr)
+        _logger = spdlog::stdout_color_mt(_applicationName);
+
+    // Load file given on the command line
+    _logger->info("Starting up MeshProjector");
+
+    // Initializing the LiDAR device
+    _logger->info("Loading device configuration from {}", _configFile);
+    _config.initialize(_configFile);
+
+    // When object is created we start at frame index 0
+    _frameIndex = 0;
+
+    // Create the pubsub situation
+    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/objtracker", 1, &MeshProjector::meshCallback, this);
 }
 
 lidarshooter::MeshProjector::~MeshProjector()
