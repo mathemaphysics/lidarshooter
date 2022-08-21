@@ -292,7 +292,7 @@ void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor)
         _device.transform.baseToOrigin.ty,
         _device.transform.sensorToBase.tz
     );
-    _sensor = _device.transform.sensorToBase.R.inverse() * translated;
+    _sensor = _device.transform.sensorToBase.Rinv * translated;
 }
 
 void lidarshooter::LidarDevice::reset()
@@ -463,6 +463,7 @@ int lidarshooter::LidarDevice::loadTransformation(std::string __requestUrl)
             _device.transform.sensorToBase.q.y() = _device.transform.sensorToBase.qy;
             _device.transform.sensorToBase.q.z() = _device.transform.sensorToBase.qz;
             _device.transform.sensorToBase.R = _device.transform.sensorToBase.q.toRotationMatrix();
+            _device.transform.sensorToBase.Rinv = _device.transform.sensorToBase.q.toRotationMatrix().inverse();
         }
         else
             _logger->warn("Section sensor_to_base missing from transform data");

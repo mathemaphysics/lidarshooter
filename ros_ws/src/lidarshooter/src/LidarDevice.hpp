@@ -226,6 +226,7 @@ namespace lidarshooter
                     float qz;
                     Eigen::Quaternionf q;
                     Eigen::Matrix3f R;
+                    Eigen::Matrix3f Rinv;
                     float tz;
                 } sensorToBase;
                 struct {
