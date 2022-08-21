@@ -205,7 +205,9 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
         std::uint32_t vert2 = poly.vertices[1];
         std::uint32_t vert3 = poly.vertices[2];
 
-        _objectTriangles[3 * idx + 0] = vert1; _objectTriangles[3 * idx + 1] = vert2; _objectTriangles[3 * idx + 2] = vert3; // Mesh triangle
+        _objectTriangles[3 * idx + 0] = vert1;
+        _objectTriangles[3 * idx + 1] = vert2;
+        _objectTriangles[3 * idx + 2] = vert3; // Mesh triangle
         ++idx;
     }
 
@@ -221,7 +223,9 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
         Eigen::Vector3f ptrans(px, py, pz);
         _config.originToSensor(ptrans);
 
-        _objectVertices[3 * jdx + 0] = ptrans.x(); _objectVertices[3 * jdx + 1] = ptrans.y(); _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
+        _objectVertices[3 * jdx + 0] = ptrans.x();
+        _objectVertices[3 * jdx + 1] = ptrans.y();
+        _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
     }
 }
 
