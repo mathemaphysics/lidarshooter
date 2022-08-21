@@ -15,6 +15,7 @@
 
 #include <regex>
 #include <sstream>
+#include <functional>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -60,6 +61,7 @@ lidarshooter::MeshProjector::MeshProjector()
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
+    _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
 }
 
 lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
@@ -98,6 +100,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
+    _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
 }
 
 lidarshooter::MeshProjector::~MeshProjector()
@@ -116,14 +119,11 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     _logger->info("Points in tracked object      : {}", _trackObject.cloud.width * _trackObject.cloud.height);
     _logger->info("Triangles in tracked object   : {}", _trackObject.polygons.size());
 
-    // Make the output location for the cloud
-    sensor_msgs::PointCloud2 msg;
-
     // Trace out the Hesai configuration for now
-    _config.initMessage(msg, ++_frameIndex);
-
-    // Just do this for the sake of surety
-    msg.data.clear();
+    _publishMutex.lock();
+    _config.initMessage(_currentState, ++_frameIndex);
+    _currentState.data.clear();
+    _publishMutex.unlock();
 
     // For the time being we *must* initialize the scene here; make _device and _scene local variables?
     _device = rtcNewDevice(nullptr);
@@ -197,16 +197,24 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
                     rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
                     64.0, rayRings[ri]
                 );
-                cloudBytes.AddToCloud(msg);
+                _publishMutex.lock();
+                cloudBytes.AddToCloud(_currentState);
+                _publishMutex.unlock();
             }
             validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
         }
     }
 
     // Spoof the LiDAR device
-    _cloudPublisher.publish(msg);
     rtcReleaseScene(_scene);
     rtcReleaseDevice(_device);
+}
+
+void lidarshooter::MeshProjector::publishCloud()
+{
+    _publishMutex.lock();
+    _cloudPublisher.publish(_currentState);
+    _publishMutex.unlock();
 }
 
 void lidarshooter::MeshProjector::updateGround()

@@ -31,6 +31,8 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
+#include <thread>
+#include <mutex>
 
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
@@ -59,6 +61,7 @@ public:
      * @param _mesh Mesh of type \c pcl_msgs::PolygonMesh::ConstPtr
      */
     void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
+    void publishCloud();
 
 private:
     // Setting the publish frequency
@@ -72,10 +75,13 @@ private:
     float *_groundVertices;
     unsigned *_groundQuadrilaterals;
     pcl::PolygonMesh _trackObject;
+    sensor_msgs::PointCloud2 _currentState;
     RTCDevice _device;
     RTCScene _scene;
     RTCGeometry _objectGeometry;
     RTCGeometry _groundGeometry;
+    ros::Timer _publishTimer;
+    std::mutex _publishMutex;
     ros::NodeHandle _nodeHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _meshSubscriber;
