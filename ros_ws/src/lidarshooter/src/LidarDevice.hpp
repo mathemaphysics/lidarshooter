@@ -79,6 +79,7 @@ namespace lidarshooter
          * @param _config Path to the JSON configuration file for the device
          */
         void initialize(const std::string& _config);
+        void initialize(const std::string& _sensorUid, const std::string& _config);
 
         /**
          * @brief Initialize the ROS message with its header
@@ -189,6 +190,7 @@ namespace lidarshooter
         void reset();
         unsigned int getTotalRays();
         void getCurrentIndex(int *_verticalIndex, int *_horizontalIndex);
+        const std::string& getSensorUid() const;
 
     private:
         /**

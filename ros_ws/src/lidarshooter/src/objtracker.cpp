@@ -37,11 +37,13 @@ int main(int argc, char **argv)
 
     // Publisher node needs to be global; no namespace
     ros::NodeHandle nodeHandle("~");
-    ros::Publisher meshPublisher = nodeHandle.advertise<pcl_msgs::PolygonMesh>("objtracker", 20);
+
+    // Advertise the mesh state
+    ros::Publisher meshPublisher = nodeHandle.advertise<pcl_msgs::PolygonMesh>("meshstate", 20);
 
     // Get value from the publisher node
     std::string meshFile = "mesh.stl";
-    nodeHandle.param("meshfile", meshFile, meshFile);
+    nodeHandle.param("/objtracker/meshfile", meshFile, meshFile);
     logger->info("Loading mesh file {}", meshFile);
 
     // Load the objects to track

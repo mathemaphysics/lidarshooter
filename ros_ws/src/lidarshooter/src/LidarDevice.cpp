@@ -80,6 +80,25 @@ void lidarshooter::LidarDevice::initialize(const std::string& _config)
     reset();
 }
 
+void lidarshooter::LidarDevice::initialize(const std::string& _sensorUid, const std::string& _config)
+{
+    // Load the configuration defining rays here from _config
+    _channels.count = 0;
+    if (_config.length() > 0)
+        loadConfiguration(_config);
+
+    // Load the transformation for this device
+    loadTransformation(
+        _device.sensorApiUrl + ":"
+        + std::to_string((unsigned int)_device.sensorApiPort)
+        + _sensrGetEndpoint
+        + _sensorUid
+    );
+
+    // Set the index pointing to current ray to zero
+    reset();
+}
+
 void lidarshooter::LidarDevice::initMessage(
     sensor_msgs::PointCloud2& _msg,
     int _frameIndex
@@ -312,6 +331,11 @@ void lidarshooter::LidarDevice::getCurrentIndex(int *__verticalIndex, int *__hor
 {
     *__verticalIndex = _verticalIndex;
     *__horizontalIndex = _horizontalIndex;
+}
+
+const std::string& lidarshooter::LidarDevice::getSensorUid() const
+{
+    return _device.sensorUid;
 }
 
 int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)

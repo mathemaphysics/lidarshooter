@@ -13,6 +13,9 @@
 
 #include <ros/ros.h>
 
+#include <regex>
+#include <sstream>
+
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -28,20 +31,35 @@ lidarshooter::MeshProjector::MeshProjector()
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
 
+    // Get the sensorUid we want to run
+    std::string nodeNamespace = _nodeHandle.getNamespace();
+    std::regex slashRegex("/");
+    auto strippedSensorUid = std::ostringstream();
+    std::regex_replace(
+        std::ostreambuf_iterator<char>(strippedSensorUid),
+        nodeNamespace.begin(), nodeNamespace.end(), slashRegex, ""
+    );
+    _sensorUid = strippedSensorUid.str();
+    _logger->info("SensorUID from namespace is {}", _sensorUid);
+
     // Get value from the publisher node
     std::string configFile = "config.json";
     _nodeHandle.param("configfile", configFile, configFile);
 
     // Initializing the LiDAR device
     _logger->info("Loading config file {}", configFile);
-    _config.initialize(configFile);
+    _config.initialize(_sensorUid, configFile);
+
+    // Check that they match
+    if (_sensorUid != _config.getSensorUid())
+        _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/objtracker", 1, &MeshProjector::meshCallback, this);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
 }
 
 lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
@@ -54,17 +72,32 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
+    
+    // Get the sensorUid we want to run
+    std::string nodeNamespace = _nodeHandle.getNamespace();
+    std::regex slashRegex("/");
+    auto strippedSensorUid = std::ostringstream();
+    std::regex_replace(
+        std::ostreambuf_iterator<char>(strippedSensorUid),
+        nodeNamespace.begin(), nodeNamespace.end(), slashRegex, ""
+    );
+    _sensorUid = strippedSensorUid.str();
+    _logger->info("SensorUID from namespace is {}", _sensorUid);
 
     // Initializing the LiDAR device
     _logger->info("Loading device configuration from {}", _configFile);
     _config.initialize(_configFile);
+
+    // Check that they match
+    if (_sensorUid != _config.getSensorUid())
+        _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/objtracker", 1, &MeshProjector::meshCallback, this);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
 }
 
 lidarshooter::MeshProjector::~MeshProjector()

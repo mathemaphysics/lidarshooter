@@ -21,7 +21,7 @@
 int main(int argc, char **argv)
 {
     // Initialize ROS to eat the --ros-args flags first
-    ros::init(argc, argv, "pandar");
+    ros::init(argc, argv, "sensoruid");
 
     // Set up the logger
     auto logger = spdlog::get(APPLICATION_NAME);

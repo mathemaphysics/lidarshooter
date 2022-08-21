@@ -63,6 +63,7 @@ public:
 private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
+    std::string _sensorUid; // This *should* match _config._device.sensorUid
     const std::string _applicationName = APPLICATION_NAME;
     std::shared_ptr<spdlog::logger> _logger;
     LidarDevice _config;
