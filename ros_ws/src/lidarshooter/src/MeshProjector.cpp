@@ -50,6 +50,7 @@ lidarshooter::MeshProjector::MeshProjector()
     // Initializing the LiDAR device
     _logger->info("Loading config file {}", configFile);
     _config.initialize(_sensorUid, configFile);
+    _config.initMessage(_currentState, _frameIndex);
 
     // Check that they match
     if (_sensorUid != _config.getSensorUid())
@@ -61,7 +62,7 @@ lidarshooter::MeshProjector::MeshProjector()
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
-    //_publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
+    _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
 }
 
 lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
@@ -89,6 +90,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
     // Initializing the LiDAR device
     _logger->info("Loading device configuration from {}", _configFile);
     _config.initialize(_configFile);
+    _config.initMessage(_currentState, _frameIndex);
 
     // Check that they match
     if (_sensorUid != _config.getSensorUid())
@@ -100,7 +102,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
-    //_publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
+    _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
 }
 
 lidarshooter::MeshProjector::~MeshProjector()
@@ -171,12 +173,11 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 
     // Trace out the Hesai configuration for now
     // Initialize ray state for batch processing
+    _publishMutex.lock();
+    _config.initMessage(_currentState, ++_frameIndex);
+    _currentState.data.clear();
     int rayState = 0;
     _config.reset();
-    //_publishMutex.lock();
-    sensor_msgs::PointCloud2 localCurrentState;
-    _config.initMessage(localCurrentState, ++_frameIndex);
-    localCurrentState.data.clear();
     while (rayState == 0)
     {
         // Fill up the next ray in the buffer
@@ -196,13 +197,12 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
                     rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
                     64.0, rayRings[ri]
                 );
-                cloudBytes.AddToCloud(localCurrentState);
+                cloudBytes.AddToCloud(_currentState);
             }
             validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
         }
     }
-    _cloudPublisher.publish(localCurrentState);
-    //_publishMutex.unlock();
+    _publishMutex.unlock();
 
     // Spoof the LiDAR device
     rtcReleaseScene(_scene);
@@ -212,6 +212,7 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 void lidarshooter::MeshProjector::publishCloud()
 {
     _publishMutex.lock();
+    _cloudPublisher.publish(_currentState);
     _publishMutex.unlock();
 }
 

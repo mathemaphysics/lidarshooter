@@ -105,8 +105,8 @@ void lidarshooter::LidarDevice::initMessage(
 )
 {
     // Transfer fields into the header
-    if (_message.fields.size() > 0)
-        _message.fields.clear(); // We might be reusing a PointCloud2
+    if (_msg.fields.size() > 0)
+        _msg.fields.clear(); // We might be reusing a PointCloud2
     for (auto field : _message.fields)
         _msg.fields.push_back(field);
 
