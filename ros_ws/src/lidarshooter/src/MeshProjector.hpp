@@ -83,7 +83,6 @@ private:
     ros::Timer _publishTimer;
     std::mutex _publishMutex;
     ros::NodeHandle _nodeHandle;
-    ros::NodeHandle _publishHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _meshSubscriber;
 
