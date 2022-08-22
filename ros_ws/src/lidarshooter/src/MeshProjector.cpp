@@ -50,14 +50,20 @@ lidarshooter::MeshProjector::MeshProjector()
     // Initializing the LiDAR device
     _logger->info("Loading config file {}", configFile);
     _config.initialize(_sensorUid, configFile);
+
+    // When object is created we start at frame index 0
+    _frameIndex = 0;
+    
+    /**
+     * This is critical because without initialization of the header of the
+     * current cloud state, publishing this to SENSR will cause some memory
+     * strangeness and permanently mangles plotting.
+     */
     _config.initMessage(_currentState, _frameIndex);
 
     // Check that they match
     if (_sensorUid != _config.getSensorUid())
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
-
-    // When object is created we start at frame index 0
-    _frameIndex = 0;
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
@@ -90,14 +96,20 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
     // Initializing the LiDAR device
     _logger->info("Loading device configuration from {}", _configFile);
     _config.initialize(_configFile);
+
+    // When object is created we start at frame index 0
+    _frameIndex = 0;
+
+    /**
+     * This is critical because without initialization of the header of the
+     * current cloud state, publishing this to SENSR will cause some memory
+     * strangeness and permanently mangles plotting.
+     */
     _config.initMessage(_currentState, _frameIndex);
 
     // Check that they match
     if (_sensorUid != _config.getSensorUid())
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
-
-    // When object is created we start at frame index 0
-    _frameIndex = 0;
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
