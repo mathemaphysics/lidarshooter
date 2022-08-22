@@ -22,7 +22,8 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 lidarshooter::MeshProjector::MeshProjector()
-    : _nodeHandle("~")
+    : _nodeHandle("~"),
+      _publishHandle("~")
 {
     // Set up the logger
     _logger = spdlog::get(_applicationName);
@@ -59,13 +60,14 @@ lidarshooter::MeshProjector::MeshProjector()
     _frameIndex = 0;
 
     // Create the pubsub situation
-    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
+    _cloudPublisher = _publishHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
     _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
 }
 
 lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
-    : _nodeHandle("~")
+    : _nodeHandle("~"),
+      _publishHandle("~")
 {
     // Set up the logger
     _logger = spdlog::get(_applicationName);
@@ -98,7 +100,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
     _frameIndex = 0;
 
     // Create the pubsub situation
-    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
+    _cloudPublisher = _publishHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
     _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
 }
@@ -118,12 +120,6 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     pcl_conversions::toPCL(*_mesh, _trackObject);
     _logger->info("Points in tracked object      : {}", _trackObject.cloud.width * _trackObject.cloud.height);
     _logger->info("Triangles in tracked object   : {}", _trackObject.polygons.size());
-
-    // Trace out the Hesai configuration for now
-    _publishMutex.lock();
-    _config.initMessage(_currentState, ++_frameIndex);
-    _currentState.data.clear();
-    _publishMutex.unlock();
 
     // For the time being we *must* initialize the scene here; make _device and _scene local variables?
     _device = rtcNewDevice(nullptr);
@@ -175,9 +171,14 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
         rayRings[i] = -1;
     RayHitType rayhitn;
 
+    // Trace out the Hesai configuration for now
     // Initialize ray state for batch processing
     int rayState = 0;
     _config.reset();
+    _publishMutex.lock();
+    _currentState = sensor_msgs::PointCloud2();
+    _config.initMessage(_currentState, ++_frameIndex);
+    _currentState.data.clear();
     while (rayState == 0)
     {
         // Fill up the next ray in the buffer
@@ -197,13 +198,12 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
                     rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
                     64.0, rayRings[ri]
                 );
-                _publishMutex.lock();
                 cloudBytes.AddToCloud(_currentState);
-                _publishMutex.unlock();
             }
             validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
         }
     }
+    _publishMutex.unlock();
 
     // Spoof the LiDAR device
     rtcReleaseScene(_scene);
