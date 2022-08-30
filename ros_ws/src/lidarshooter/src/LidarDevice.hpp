@@ -243,7 +243,7 @@ namespace lidarshooter
          *
          * These will be loaded dynamically from a JSON-formatted configuration file.
          */
-        struct{
+        struct {
             std::string frameId;
             std::uint32_t pointStep = 32;
             bool isBigendian = false;

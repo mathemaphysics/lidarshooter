@@ -13,6 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   sensor_msgs
+  geometry_msgs
+  pcl_msgs
+  pcl_conversions
   message_generation
 )
 
