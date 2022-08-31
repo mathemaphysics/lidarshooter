@@ -44,7 +44,9 @@
 		"matepek.vscode-catch2-test-adapter",
 		"go2sh.cmake-integration-vscode",
 		"mischelebuha.cmake-extension-pack",
-		"ms-iot.vscode-ros"
+		"ms-iot.vscode-ros",
+		"wayou.vscode-todo-highlight",
+		"Gruntfuggly.todo-tree"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

@@ -4,6 +4,9 @@
 #include <numeric>
 #include <iostream>
 #include <chrono>
+
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
  
 void accumulate(std::vector<int>::iterator first,
                 std::vector<int>::iterator last,
@@ -40,4 +43,8 @@ int main()
     std::thread new_work_thread(do_work, std::move(barrier));
     barrier_future.wait();
     new_work_thread.join();
+
+    // Make some vectors and shit
+    Eigen::Vector3d x;
+    x << 1, 2, 3;
 }

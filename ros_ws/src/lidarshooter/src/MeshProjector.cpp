@@ -21,8 +21,11 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-lidarshooter::MeshProjector::MeshProjector()
-    : _nodeHandle("~")
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+
+lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::Duration __tracePeriod)
+    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod)
 {
     // Set up the logger
     _logger = spdlog::get(_applicationName);
@@ -65,14 +68,23 @@ lidarshooter::MeshProjector::MeshProjector()
     if (_sensorUid != _config.getSensorUid())
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
 
+    // Set velocities to zero
+    _linearVelocity.setZero();
+    _angularVelocity.setZero();
+
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
-    _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", 1, &MeshProjector::joystickCallback, this);
+    _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
+    _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
+
+    // Admit we updated the mesh because this is the first iteration
+    _meshWasUpdated.store(true);
 }
 
-lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
-    : _nodeHandle("~")
+lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod, ros::Duration __tracePeriod)
+    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod)
 {
     // Set up the logger
     _logger = spdlog::get(_applicationName);
@@ -111,10 +123,19 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile)
     if (_sensorUid != _config.getSensorUid())
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
 
+    // Set velocities to zero
+    _linearVelocity.setZero();
+    _angularVelocity.setZero();
+
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
-    _publishTimer = _nodeHandle.createTimer(ros::Duration(0.1), std::bind(&MeshProjector::publishCloud, this));
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", 1, &MeshProjector::joystickCallback, this);
+    _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
+    _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
+
+    // Admit we updated the mesh because this is the first iteration
+    _meshWasUpdated.store(true);
 }
 
 lidarshooter::MeshProjector::~MeshProjector()
@@ -133,6 +154,12 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     _logger->info("Points in tracked object      : {}", _trackObject.cloud.width * _trackObject.cloud.height);
     _logger->info("Triangles in tracked object   : {}", _trackObject.polygons.size());
 
+    // Admit that we changed the mesh and it needs to be retraced
+    _meshWasUpdated.store(true);
+}
+
+void lidarshooter::MeshProjector::traceMesh()
+{
     // For the time being we *must* initialize the scene here; make _device and _scene local variables?
     _device = rtcNewDevice(nullptr);
     _scene = rtcNewScene(_device);
@@ -221,8 +248,33 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     rtcReleaseDevice(_device);
 }
 
+void lidarshooter::MeshProjector::traceMeshWrapper()
+{
+    if (_meshWasUpdated.load() == true)
+    {
+        // Update _currentState
+        traceMesh();
+
+        // Turn off mesh updated flag
+        _meshWasUpdated.store(false);
+    }
+}
+
+void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel)
+{
+    _joystickMutex.lock();
+    _linearVelocity += Eigen::Vector3f(_vel->linear.x, _vel->linear.y, _vel->linear.z);
+    _angularVelocity += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
+    _joystickMutex.unlock();
+
+    // Admit that we changed the mesh and it needs to be retraced
+    if (_linearVelocity.norm() > 0.001)
+        _meshWasUpdated.store(true); // Only claim updated if velocity is zero
+}
+
 void lidarshooter::MeshProjector::publishCloud()
 {
+    // This runs whether the cloud was updated or not; constant stream
     _publishMutex.lock();
     _cloudPublisher.publish(_currentState);
     _publishMutex.unlock();
@@ -231,7 +283,7 @@ void lidarshooter::MeshProjector::publishCloud()
 void lidarshooter::MeshProjector::updateGround()
 {
     // Set the ground; eventually make this its own function
-    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config.originToSensor(corner1);
+    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config.originToSensor(corner1); // TODO: Allow configuration of the ground in JSON format
     Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config.originToSensor(corner2);
     Eigen::Vector3f corner3( 50.0,  50.0, 0.0); _config.originToSensor(corner3);
     Eigen::Vector3f corner4( 50.0, -50.0, 0.0); _config.originToSensor(corner4);
@@ -272,12 +324,22 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
         auto point = lidarshooter::XYZIRPoint(rawData);
         point.getPoint(&px, &py, &pz, nullptr, nullptr);
 
+        // Rotate into the local coordinate frame for this device
         Eigen::Vector3f ptrans(px, py, pz);
         _config.originToSensor(ptrans);
 
+        // If either linear or angular velocities are non-zero then _meshWasUpdated
+        ptrans += static_cast<float>(_publishPeriod.toSec()) * _linearVelocity;
+
+        // Linear position update here
+        _joystickMutex.lock();
         _objectVertices[3 * jdx + 0] = ptrans.x();
         _objectVertices[3 * jdx + 1] = ptrans.y();
         _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
+        _joystickMutex.unlock();
+
+        // Finish up with the angular update here
+        // TODO: Angular update
     }
 }
 
