@@ -326,10 +326,10 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
 
         // Rotate into the local coordinate frame for this device
         Eigen::Vector3f ptrans(px, py, pz);
-        _config.originToSensor(ptrans);
 
-        // If either linear or angular velocities are non-zero then _meshWasUpdated
-        ptrans += static_cast<float>(_publishPeriod.toSec()) * _linearVelocity;
+        // Must translate along the velocity vector before origin to sensor b/c velocity in origin coordinate system
+        ptrans += static_cast<float>(_publishPeriod.toSec()) * _linearVelocity; // TODO: Test that this translates correctly in the global frame
+        _config.originToSensor(ptrans);
 
         // Linear position update here
         _joystickMutex.lock();
