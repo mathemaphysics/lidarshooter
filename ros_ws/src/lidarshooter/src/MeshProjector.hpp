@@ -15,6 +15,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/Twist.h>
 #include <pcl/PolygonMesh.h>
 #include <pcl_msgs/PolygonMesh.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -33,6 +34,7 @@
 #include <memory>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
@@ -40,13 +42,16 @@
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
 
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+
 namespace lidarshooter
 {
 class MeshProjector
 {
 public:
-    MeshProjector();
-    MeshProjector(const std::string& _configFile);
+    MeshProjector(ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1));
+    MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1));
     ~MeshProjector();
 
     /**
@@ -61,6 +66,31 @@ public:
      * @param _mesh Mesh of type \c pcl_msgs::PolygonMesh::ConstPtr
      */
     void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
+
+    /**
+     * @brief Updates the present velocity of the mesh
+     * 
+     * @param _vel Twist message from the joystick
+     */
+    void joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel);
+
+    /**
+     * @brief Perform raytracing on \c _currentState
+     */
+    void traceMesh();
+
+    /**
+     * @brief ROS Timer function to watch for changes in the mesh and retrace
+     * 
+     * This function calls \c traceMesh whenever \c _meshWasUpdated evaluates
+     * to \c true . This is necessary to avoid running any raytracing when there
+     * is no update to the mesh that produced the last trace.
+     */
+    void traceMeshWrapper();
+
+    /**
+     * @brief Publishes the currently buffered traced cloud
+     */
     void publishCloud();
 
 private:
@@ -80,12 +110,19 @@ private:
     RTCScene _scene;
     RTCGeometry _objectGeometry;
     RTCGeometry _groundGeometry;
+    std::atomic<bool> _meshWasUpdated;
+    ros::Duration _publishPeriod;
     ros::Timer _publishTimer;
+    ros::Duration _tracePeriod;
+    ros::Timer _traceTimer;
     std::mutex _publishMutex;
     ros::NodeHandle _nodeHandle;
-    ros::NodeHandle _publishHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _meshSubscriber;
+    ros::Subscriber _joystickSubscriber;
+    std::mutex _joystickMutex;
+    Eigen::Vector3f _linearVelocity;
+    Eigen::Vector3f _angularVelocity;
 
     /**
      * @brief Draws the ground into the \c _scene geometry
