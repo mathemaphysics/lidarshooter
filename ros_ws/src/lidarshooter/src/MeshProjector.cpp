@@ -61,6 +61,10 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
      * This is critical because without initialization of the header of the
      * current cloud state, publishing this to SENSR will cause some memory
      * strangeness and permanently mangles plotting.
+     * 
+     * TODO: Need to have an empty initializer that sets the container claim
+     * it contains zero points; it's rendering some garbage that doesn't go
+     * away still, if only a couple points.
      */
     _config.initMessage(_currentState, _frameIndex);
 
@@ -116,6 +120,10 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
      * This is critical because without initialization of the header of the
      * current cloud state, publishing this to SENSR will cause some memory
      * strangeness and permanently mangles plotting.
+     * 
+     * TODO: Need to have an empty initializer that sets the container claim
+     * it contains zero points; it's rendering some garbage that doesn't go
+     * away still, if only a couple points.
      */
     _config.initMessage(_currentState, _frameIndex);
 
