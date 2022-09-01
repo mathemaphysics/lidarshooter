@@ -47,4 +47,10 @@ int main()
     // Make some vectors and shit
     Eigen::Vector3d x;
     x << 1, 2, 3;
+
+    Eigen::AngleAxisf a(0.5, Eigen::Vector3f::UnitX());
+    Eigen::Translation3f b(Eigen::Vector3f(0.1, -2.8, 7.0));
+    Eigen::Affine3f trans = a * b * a.inverse();
+    Eigen::AngleAxisf axis1;
+    trans *= Eigen::Vector3f(1, 2, 3);
 }

@@ -33,3 +33,9 @@
 #define RAY_HIT_BASE RTCRayHit
 #define RAY_HIT_TYPE GLUE(RAY_HIT_BASE, RAY_PACKET_SIZE)
 typedef RAY_HIT_TYPE RayHitType;
+
+/**
+ * @brief Parameters for the queue
+ */
+#define MESH_SUB_QUEUE_SIZE 20
+#define JOYSTICK_SUB_QUEUE_SIZE 100

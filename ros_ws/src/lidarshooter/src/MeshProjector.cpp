@@ -69,13 +69,13 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
 
     // Set velocities to zero
-    _linearVelocity.setZero();
-    _angularVelocity.setZero();
+    _linearDisplacement.setZero();
+    _angularDisplacement.setZero();
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", 1, &MeshProjector::joystickCallback, this);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
@@ -124,13 +124,13 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
 
     // Set velocities to zero
-    _linearVelocity.setZero();
-    _angularVelocity.setZero();
+    _linearDisplacement.setZero();
+    _angularDisplacement.setZero();
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", 1, &MeshProjector::meshCallback, this);
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", 1, &MeshProjector::joystickCallback, this);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
@@ -263,13 +263,12 @@ void lidarshooter::MeshProjector::traceMeshWrapper()
 void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel)
 {
     _joystickMutex.lock();
-    _linearVelocity += Eigen::Vector3f(_vel->linear.x, _vel->linear.y, _vel->linear.z);
-    _angularVelocity += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
+    _linearDisplacement += Eigen::Vector3f(_vel->linear.x, _vel->linear.y, _vel->linear.z);
+    _angularDisplacement += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
     _joystickMutex.unlock();
 
-    // Admit that we changed the mesh and it needs to be retraced
-    if (_linearVelocity.norm() > 0.001)
-        _meshWasUpdated.store(true); // Only claim updated if velocity is zero
+    // Hint to the tracer that it needs to run again
+    _meshWasUpdated.store(true);
 }
 
 void lidarshooter::MeshProjector::publishCloud()
@@ -316,6 +315,8 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
     }
 
     // Set the actual vertex positions
+    _logger->info("Linear velocity update: {}, {}, {}",
+        _linearDisplacement.x(), _linearDisplacement.y(), _linearDisplacement.z());
     for (std::size_t jdx = 0; jdx < _trackObject.cloud.width * _trackObject.cloud.height; ++jdx)
     {
         auto rawData = _trackObject.cloud.data.data() + jdx * _trackObject.cloud.point_step;
@@ -328,7 +329,20 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
         Eigen::Vector3f ptrans(px, py, pz);
 
         // Must translate along the velocity vector before origin to sensor b/c velocity in origin coordinate system
-        ptrans += static_cast<float>(_publishPeriod.toSec()) * _linearVelocity; // TODO: Test that this translates correctly in the global frame
+        //ptrans += _linearDisplacement; // Original method for translation
+
+        // Build the transformation according to the present position in
+        // _linearDisplacement and _angularDisplacement
+        Eigen::Translation3f translation(_linearDisplacement);
+        Eigen::AngleAxisf xRotation(_angularDisplacement.x(), Eigen::Vector3f::UnitX());
+        Eigen::AngleAxisf yRotation(_angularDisplacement.y(), Eigen::Vector3f::UnitY());
+        Eigen::AngleAxisf zRotation(_angularDisplacement.z(), Eigen::Vector3f::UnitZ());
+
+        // Rotate first, then translate; remember, left-to-right operation order means rightmost goes first
+        Eigen::Affine3f transform = translation * zRotation * yRotation * xRotation;
+        
+        // Apply the affine transformation and then transf
+        ptrans = transform * ptrans;
         _config.originToSensor(ptrans);
 
         // Linear position update here

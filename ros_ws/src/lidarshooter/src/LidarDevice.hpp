@@ -187,9 +187,37 @@ namespace lidarshooter
          * @param _sensor Vector to transform; in global basis
          */
         void originToSensor(Eigen::Vector3f& _sensor);
+
+        /**
+         * @brief Reset ray batch variables \c _verticalIndex and \c _horizontalIndex to start over
+         */
         void reset();
+
+        /**
+         * @brief Get the total number of rays for the \c LidarDevice
+         * 
+         * @return unsigned int Total count of rays
+         */
         unsigned int getTotalRays();
+
+        /**
+         * @brief Get the current vertical and horizontal ray index position
+         * 
+         * This might be useful if you need to know under the hood how many rays you've
+         * already received and processed and can't keep count otherwise.
+         * 
+         * @param _verticalIndex Output for the current \b vertical angular index
+         * @param _horizontalIndex Output for the current \b horizontal angular index
+         */
         void getCurrentIndex(int *_verticalIndex, int *_horizontalIndex);
+
+        /**
+         * @brief Get the Sensor Uid object
+         * 
+         * @return const std::string& The \c sensorUid which may or may not show
+         * up in the JSON configuration file for your device; ideally it's set
+         * via ROS command line variable as the namespace (-r __ns:=/lidar_0000).
+         */
         const std::string& getSensorUid() const;
 
     private:

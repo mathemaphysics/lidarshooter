@@ -121,8 +121,8 @@ private:
     ros::Subscriber _meshSubscriber;
     ros::Subscriber _joystickSubscriber;
     std::mutex _joystickMutex;
-    Eigen::Vector3f _linearVelocity;
-    Eigen::Vector3f _angularVelocity;
+    Eigen::Vector3f _linearDisplacement; // The cumulative linear displacement since instantiation
+    Eigen::Vector3f _angularDisplacement; // The cumulative angular displacement since instantiation
 
     /**
      * @brief Draws the ground into the \c _scene geometry
