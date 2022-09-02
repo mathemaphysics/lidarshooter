@@ -166,6 +166,134 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     _meshWasUpdated.store(true);
 }
 
+void lidarshooter::MeshProjector::traceMeshWrapper()
+{
+    if (_meshWasUpdated.load() == true)
+    {
+        // Update _currentState
+        traceMesh();
+
+        // Turn off mesh updated flag
+        _meshWasUpdated.store(false);
+    }
+}
+
+void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel)
+{
+    // TODO: Move this into its own function and replace everywhere
+    Eigen::Vector3f globalDisplacement = transformToGlobal(Eigen::Vector3f(_vel->linear.x, _vel->linear.y, _vel->linear.z));
+    
+    // Output actual displacement applied after rotation to local coordinates
+    // TODO: Set both of these info() calls to debug() as soon as settled
+    _logger->info("Joystick signal: {}, {}, {}, {}, {}, {}",
+                  _vel->linear.x, _vel->linear.y, _vel->linear.z,
+                  _vel->angular.x, _vel->angular.y, _vel->angular.z);
+    _logger->info("Global displacement: {}, {}, {}, {}, {}, {}",
+                  globalDisplacement.x(), globalDisplacement.y(), globalDisplacement.z(),
+                  _vel->angular.x, _vel->angular.y, _vel->angular.z);
+
+    // Update the linear total linear and angular displacement
+    _joystickMutex.lock();
+    _linearDisplacement += globalDisplacement;
+    _angularDisplacement += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
+    _joystickMutex.unlock();
+
+    // Hint to the tracer that it needs to run again
+    _meshWasUpdated.store(true); // TODO: Don't update when the signal is (0, 0, 0, 0, 0, 0)
+}
+
+void lidarshooter::MeshProjector::publishCloud()
+{
+    // This runs whether the cloud was updated or not; constant stream
+    _publishMutex.lock();
+    _cloudPublisher.publish(_currentState);
+    _publishMutex.unlock();
+}
+
+inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(Eigen::Vector3f _displacement)
+{
+    // Just for an Affine3f transform using an empty translation
+    Eigen::AngleAxisf xRotation(_angularDisplacement.x(), Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf yRotation(_angularDisplacement.y(), Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf zRotation(_angularDisplacement.z(), Eigen::Vector3f::UnitZ());
+    Eigen::Affine3f localRotation = Eigen::Translation3f(Eigen::Vector3f::Zero()) * zRotation * yRotation * xRotation;
+    Eigen::Vector3f localDisplacement = localRotation * _displacement;
+    return localDisplacement;
+}
+
+void lidarshooter::MeshProjector::updateGround()
+{
+    // Set the ground; eventually make this its own function
+    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config.originToSensor(corner1); // TODO: Allow configuration of the ground in JSON format
+    Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config.originToSensor(corner2);
+    Eigen::Vector3f corner3( 50.0,  50.0, 0.0); _config.originToSensor(corner3);
+    Eigen::Vector3f corner4( 50.0, -50.0, 0.0); _config.originToSensor(corner4);
+
+    _groundVertices[0] = corner1.x(); _groundVertices[1]  = corner1.y(); _groundVertices[2]  = corner1.z();
+    _groundVertices[3] = corner2.x(); _groundVertices[4]  = corner2.y(); _groundVertices[5]  = corner2.z();
+    _groundVertices[6] = corner3.x(); _groundVertices[7]  = corner3.y(); _groundVertices[8]  = corner3.z();
+    _groundVertices[9] = corner4.x(); _groundVertices[10] = corner4.y(); _groundVertices[11] = corner4.z();
+
+    _groundQuadrilaterals[0] = 0;
+    _groundQuadrilaterals[1] = 1;
+    _groundQuadrilaterals[2] = 2;
+    _groundQuadrilaterals[3] = 3;
+}
+
+void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
+{
+    // Set the triangle element indexes 
+    std::size_t idx = 0;
+    for (auto poly : _trackObject.polygons)
+    {
+        std::uint32_t vert1 = poly.vertices[0];
+        std::uint32_t vert2 = poly.vertices[1];
+        std::uint32_t vert3 = poly.vertices[2];
+
+        _objectTriangles[3 * idx + 0] = vert1;
+        _objectTriangles[3 * idx + 1] = vert2;
+        _objectTriangles[3 * idx + 2] = vert3; // Mesh triangle
+        ++idx;
+    }
+
+    // Set the actual vertex positions
+    _logger->info("Current net displacement: {}, {}, {}, {}, {}, {}",
+                  _linearDisplacement.x(), _linearDisplacement.y(), _linearDisplacement.z(),
+                  _angularDisplacement.x(), _angularDisplacement.y(), _angularDisplacement.z());
+    for (std::size_t jdx = 0; jdx < _trackObject.cloud.width * _trackObject.cloud.height; ++jdx)
+    {
+        auto rawData = _trackObject.cloud.data.data() + jdx * _trackObject.cloud.point_step;
+        
+        float px, py, pz;
+        auto point = lidarshooter::XYZIRPoint(rawData);
+        point.getPoint(&px, &py, &pz, nullptr, nullptr);
+
+        // Rotate into the local coordinate frame for this device
+        Eigen::Vector3f ptrans(px, py, pz);
+
+        // Build the transformation according to the present position in
+        // _linearDisplacement and _angularDisplacement
+        Eigen::Translation3f translation(_linearDisplacement);
+        Eigen::AngleAxisf xRotation(_angularDisplacement.x(), Eigen::Vector3f::UnitX());
+        Eigen::AngleAxisf yRotation(_angularDisplacement.y(), Eigen::Vector3f::UnitY());
+        Eigen::AngleAxisf zRotation(_angularDisplacement.z(), Eigen::Vector3f::UnitZ());
+
+        // Rotate first, then translate; remember, right-to-left operation order means rightmost goes first
+        Eigen::Affine3f transform = translation * zRotation * yRotation * xRotation;
+        
+        // Apply the affine transformation and then transf
+        ptrans = transform * ptrans;
+        _config.originToSensor(ptrans);
+
+        // Linear position update here
+        _joystickMutex.lock();
+        _objectVertices[3 * jdx + 0] = ptrans.x();
+        _objectVertices[3 * jdx + 1] = ptrans.y();
+        _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
+        _joystickMutex.unlock();
+    }
+}
+
 void lidarshooter::MeshProjector::traceMesh()
 {
     // For the time being we *must* initialize the scene here; make _device and _scene local variables?
@@ -254,115 +382,6 @@ void lidarshooter::MeshProjector::traceMesh()
     // Spoof the LiDAR device
     rtcReleaseScene(_scene);
     rtcReleaseDevice(_device);
-}
-
-void lidarshooter::MeshProjector::traceMeshWrapper()
-{
-    if (_meshWasUpdated.load() == true)
-    {
-        // Update _currentState
-        traceMesh();
-
-        // Turn off mesh updated flag
-        _meshWasUpdated.store(false);
-    }
-}
-
-void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel)
-{
-    _joystickMutex.lock();
-    _linearDisplacement += Eigen::Vector3f(_vel->linear.x, _vel->linear.y, _vel->linear.z);
-    _angularDisplacement += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
-    _joystickMutex.unlock();
-
-    // Hint to the tracer that it needs to run again
-    _meshWasUpdated.store(true);
-}
-
-void lidarshooter::MeshProjector::publishCloud()
-{
-    // This runs whether the cloud was updated or not; constant stream
-    _publishMutex.lock();
-    _cloudPublisher.publish(_currentState);
-    _publishMutex.unlock();
-}
-
-void lidarshooter::MeshProjector::updateGround()
-{
-    // Set the ground; eventually make this its own function
-    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config.originToSensor(corner1); // TODO: Allow configuration of the ground in JSON format
-    Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config.originToSensor(corner2);
-    Eigen::Vector3f corner3( 50.0,  50.0, 0.0); _config.originToSensor(corner3);
-    Eigen::Vector3f corner4( 50.0, -50.0, 0.0); _config.originToSensor(corner4);
-
-    _groundVertices[0] = corner1.x(); _groundVertices[1]  = corner1.y(); _groundVertices[2]  = corner1.z();
-    _groundVertices[3] = corner2.x(); _groundVertices[4]  = corner2.y(); _groundVertices[5]  = corner2.z();
-    _groundVertices[6] = corner3.x(); _groundVertices[7]  = corner3.y(); _groundVertices[8]  = corner3.z();
-    _groundVertices[9] = corner4.x(); _groundVertices[10] = corner4.y(); _groundVertices[11] = corner4.z();
-
-    _groundQuadrilaterals[0] = 0;
-    _groundQuadrilaterals[1] = 1;
-    _groundQuadrilaterals[2] = 2;
-    _groundQuadrilaterals[3] = 3;
-}
-
-void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
-{
-    // Set the triangle element indexes 
-    std::size_t idx = 0;
-    for (auto poly : _trackObject.polygons)
-    {
-        std::uint32_t vert1 = poly.vertices[0];
-        std::uint32_t vert2 = poly.vertices[1];
-        std::uint32_t vert3 = poly.vertices[2];
-
-        _objectTriangles[3 * idx + 0] = vert1;
-        _objectTriangles[3 * idx + 1] = vert2;
-        _objectTriangles[3 * idx + 2] = vert3; // Mesh triangle
-        ++idx;
-    }
-
-    // Set the actual vertex positions
-    _logger->info("Linear velocity update: {}, {}, {}",
-        _linearDisplacement.x(), _linearDisplacement.y(), _linearDisplacement.z());
-    for (std::size_t jdx = 0; jdx < _trackObject.cloud.width * _trackObject.cloud.height; ++jdx)
-    {
-        auto rawData = _trackObject.cloud.data.data() + jdx * _trackObject.cloud.point_step;
-        
-        float px, py, pz;
-        auto point = lidarshooter::XYZIRPoint(rawData);
-        point.getPoint(&px, &py, &pz, nullptr, nullptr);
-
-        // Rotate into the local coordinate frame for this device
-        Eigen::Vector3f ptrans(px, py, pz);
-
-        // Must translate along the velocity vector before origin to sensor b/c velocity in origin coordinate system
-        //ptrans += _linearDisplacement; // Original method for translation
-
-        // Build the transformation according to the present position in
-        // _linearDisplacement and _angularDisplacement
-        Eigen::Translation3f translation(_linearDisplacement);
-        Eigen::AngleAxisf xRotation(_angularDisplacement.x(), Eigen::Vector3f::UnitX());
-        Eigen::AngleAxisf yRotation(_angularDisplacement.y(), Eigen::Vector3f::UnitY());
-        Eigen::AngleAxisf zRotation(_angularDisplacement.z(), Eigen::Vector3f::UnitZ());
-
-        // Rotate first, then translate; remember, left-to-right operation order means rightmost goes first
-        Eigen::Affine3f transform = translation * zRotation * yRotation * xRotation;
-        
-        // Apply the affine transformation and then transf
-        ptrans = transform * ptrans;
-        _config.originToSensor(ptrans);
-
-        // Linear position update here
-        _joystickMutex.lock();
-        _objectVertices[3 * jdx + 0] = ptrans.x();
-        _objectVertices[3 * jdx + 1] = ptrans.y();
-        _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
-        _joystickMutex.unlock();
-
-        // Finish up with the angular update here
-        // TODO: Angular update
-    }
 }
 
 void lidarshooter::MeshProjector::getMeshIntersect(int *_valid, RayHitType *_rayhit)

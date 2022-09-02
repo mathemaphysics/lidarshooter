@@ -53,4 +53,5 @@ int main()
     Eigen::Affine3f trans = a * b * a.inverse();
     Eigen::AngleAxisf axis1;
     trans *= Eigen::Vector3f(1, 2, 3);
+    Eigen::Affine3f something = a * Eigen::Translation3f(Eigen::Vector3f::Zero());
 }

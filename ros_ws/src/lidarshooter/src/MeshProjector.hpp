@@ -68,18 +68,6 @@ public:
     void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
 
     /**
-     * @brief Updates the present velocity of the mesh
-     * 
-     * @param _vel Twist message from the joystick
-     */
-    void joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel);
-
-    /**
-     * @brief Perform raytracing on \c _currentState
-     */
-    void traceMesh();
-
-    /**
      * @brief ROS Timer function to watch for changes in the mesh and retrace
      * 
      * This function calls \c traceMesh whenever \c _meshWasUpdated evaluates
@@ -87,6 +75,13 @@ public:
      * is no update to the mesh that produced the last trace.
      */
     void traceMeshWrapper();
+
+    /**
+     * @brief Updates the present velocity of the mesh
+     * 
+     * @param _vel Twist message from the joystick
+     */
+    void joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel);
 
     /**
      * @brief Publishes the currently buffered traced cloud
@@ -125,6 +120,21 @@ private:
     Eigen::Vector3f _angularDisplacement; // The cumulative angular displacement since instantiation
 
     /**
+     * @brief Transforms a joystick signal to global coordinates
+     * 
+     * When the joystick says move 1 unit forward along the y-axis, we want it
+     * to move 1 unit forward along the \c _trackObject 's frame of reference
+     * rotated to its current configuration, i.e. the new y-axis given by
+     * rotating the \c _displacement by \c _angularDisplacement , which is the
+     * current mesh orientation. So when you say "go forward", it moves in the
+     * direction the object is facing, and not along the fixed global y-axis.
+     * 
+     * @param _displacement Vector to move along relative to global coordinate system
+     * @return Eigen::Vector3f Displacement to apply to the mesh
+     */
+    inline Eigen::Vector3f transformToGlobal(Eigen::Vector3f _displacement);
+
+    /**
      * @brief Draws the ground into the \c _scene geometry
      */
     void updateGround();
@@ -135,6 +145,11 @@ private:
      * @param frameIndex Which frame we're currently in (possibly irrelevant now)
      */
     void updateMeshPolygons(int frameIndex);
+
+    /**
+     * @brief Perform raytracing on \c _currentState
+     */
+    void traceMesh();
 
 #define GET_MESH_INTERSECT_BASE getMeshIntersect
 #define GET_MESH_INTERSECT(__valid, __rayhit) GLUE(GET_MESH_INTERSECT_BASE, RAY_PACKET_SIZE)(__valid, __rayhit)
