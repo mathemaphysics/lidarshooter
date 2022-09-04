@@ -50,7 +50,21 @@ namespace lidarshooter
 class MeshProjector
 {
 public:
+    /**
+     * @brief Construct a new \c MeshProjector to run in the node
+     * 
+     * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
+     * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
+     */
     MeshProjector(ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1));
+
+    /**
+     * @brief Construct a new \c MeshProjector to run in the node
+     * 
+     * @param _configFile Path to device configuration file to load for this node
+     * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
+     * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
+     */
     MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1));
     ~MeshProjector();
 
