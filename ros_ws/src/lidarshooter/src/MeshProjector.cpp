@@ -16,6 +16,8 @@
 #include <regex>
 #include <sstream>
 #include <functional>
+#include <thread>
+#include <mutex>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -272,7 +274,8 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
         Eigen::Vector3f ptrans(px, py, pz);
 
         // Build the transformation according to the present position in
-        // _linearDisplacement and _angularDisplacement
+        // _linearDisplacement and _angularDisplacement; TODO: Encapsulate this
+        // into a function
         Eigen::Translation3f translation(_linearDisplacement);
         Eigen::AngleAxisf xRotation(_angularDisplacement.x(), Eigen::Vector3f::UnitX());
         Eigen::AngleAxisf yRotation(_angularDisplacement.y(), Eigen::Vector3f::UnitY());
@@ -337,46 +340,68 @@ void lidarshooter::MeshProjector::traceMesh()
     rtcReleaseGeometry(_groundGeometry);
     rtcCommitScene(_scene);
 
-    // Set up packet processing
-    int validRays[RAY_PACKET_SIZE]; // Initialize all invalid
-    int rayRings[RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
-    for (int i = 0; i < RAY_PACKET_SIZE; ++i)
-        validRays[i] = 0;
-    for (int i = 0; i < RAY_PACKET_SIZE; ++i)
-        rayRings[i] = -1;
-    RayHitType rayhitn;
-
     // Trace out the Hesai configuration for now
     // Initialize ray state for batch processing
     _publishMutex.lock();
     _config.initMessage(_currentState, ++_frameIndex);
     _currentState.data.clear();
-    int rayState = 0;
     _config.reset();
-    while (rayState == 0)
-    {
-        // Fill up the next ray in the buffer
-        rayState = _config.nextRay(rayhitn, validRays);
-        for (int idx = 0; idx < RAY_PACKET_SIZE; ++idx)
-            rayRings[idx] = 0;
+    unsigned int numTotalRays = _config.getTotalRays();
+    unsigned int numIterations = numTotalRays / RAY_PACKET_SIZE + (numTotalRays % RAY_PACKET_SIZE > 0 ? 1 : 0);
+    unsigned int numThreads = 4;
+    unsigned int chunkSize = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
-        // Execute when the buffer is full
-        getMeshIntersect(validRays, &rayhitn);
-        for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
-        {
-            if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
-            {
-                lidarshooter::XYZIRBytes cloudBytes(
-                    rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri],
-                    rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri],
-                    rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
-                    64.0, rayRings[ri]
-                );
-                cloudBytes.AddToCloud(_currentState);
+    std::mutex configMutex, stateMutex, meshMutex;
+    std::vector<std::thread> threads;
+    for (int rayChunk = 0; rayChunk < numThreads; ++rayChunk)
+    {
+        //unsigned int startPosition = rayChunk * chunkSize;
+        threads.emplace_back(
+            [this, &configMutex, &stateMutex, &meshMutex, chunkSize](){
+                for (int ix = 0; ix < chunkSize; ++ix)
+                {
+                    // Set up packet processing
+                    int rayState = 0;
+                    int validRays[RAY_PACKET_SIZE]; // Initialize all invalid
+                    int rayRings[RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
+                    for (int i = 0; i < RAY_PACKET_SIZE; ++i)
+                        validRays[i] = 0;
+                    for (int i = 0; i < RAY_PACKET_SIZE; ++i)
+                        rayRings[i] = -1;
+                    RayHitType rayhitn;
+
+                    // Fill up the next ray in the buffer
+                    configMutex.lock();
+                    rayState = this->_config.nextRay(rayhitn, validRays);
+                    configMutex.unlock();
+                    for (int idx = 0; idx < RAY_PACKET_SIZE; ++idx)
+                        rayRings[idx] = 0;
+
+                    // Execute when the buffer is full
+                    this->getMeshIntersect(validRays, &rayhitn);
+                    for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
+                    {
+                        if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
+                        {
+                            lidarshooter::XYZIRBytes cloudBytes(
+                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri],
+                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri],
+                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
+                                64.0, rayRings[ri]
+                            );
+                            stateMutex.lock();
+                            cloudBytes.AddToCloud(this->_currentState);
+                            stateMutex.unlock();
+                        }
+                        validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
+                    }
+                }
             }
-            validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
-        }
+        );
     }
+    for (auto th = threads.begin(); th != threads.end(); ++th)
+        th->join();
+
     _publishMutex.unlock();
 
     // Spoof the LiDAR device
