@@ -346,6 +346,8 @@ void lidarshooter::MeshProjector::traceMesh()
     _config.initMessage(_currentState, ++_frameIndex);
     _currentState.data.clear();
     _config.reset();
+
+    // Count the total iterations because the limits are needed for threading
     unsigned int numTotalRays = _config.getTotalRays();
     unsigned int numIterations = numTotalRays / RAY_PACKET_SIZE + (numTotalRays % RAY_PACKET_SIZE > 0 ? 1 : 0);
     unsigned int numThreads = 4;
