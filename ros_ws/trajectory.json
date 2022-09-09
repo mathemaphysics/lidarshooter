@@ -1,0 +1,24 @@
+{
+    // These messages can be converted to bag format for streaming to the mesh
+    // projector
+    "trajectory": [
+        {
+            "dt": 10.0,
+            "linear": [
+                0.0, 5.0, 0.0
+            ],
+            "angular": [
+                0.0, 0.0, 1.0
+            ]
+        },
+        {
+            "dt": 5.0,
+            "linear": [
+                1.0, 0.0, 0.0
+            ],
+            "angular": [
+                0.0, 0.0, -1.0
+            ]
+        }
+    ]
+}

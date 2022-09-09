@@ -1,0 +1,15 @@
+<launch>
+    <node pkg="lidarshooter" type="lidarshooter" name="lidar_0000" output="screen">
+        <param name="configfile" value="/home/hti/ros_ws/hesai-pandar-XT-32.json"/>
+    </node>
+    <node pkg="lidarshooter" type="lidarshooter" name="lidar_0001" output="screen">
+        <param name="configfile" value="/home/hti/ros_ws/hesai-pandar-XT-32.json"/>
+    </node>
+    <node pkg="lidarshooter" type="objtracker" name="objtracker" output="screen">
+        <param name="meshfile" value="/workspaces/lidarshooter/ros_ws/ben.stl"/>
+    </node>
+    <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" ns="/joystick" output="screen">
+        <param name="speed" value="0.09"/>
+        <param name="turn" value="0.15"/>
+    </node>
+</launch>

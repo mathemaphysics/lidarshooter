@@ -1,4 +1,4 @@
-FROM mathemaphysics/spatial:0.0.1
+FROM mathemaphysics/spatial-gpu:0.0.2
 
 ARG DEVUSER devuser
 
