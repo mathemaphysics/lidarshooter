@@ -6,7 +6,7 @@
 		"dockerfile": "Dockerfile",
 		"args": { "DEVUSER": "devuser" }
 	},
-	"runArgs": ["--gpus=all"],
+	"runArgs": ["--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": {},
@@ -59,10 +59,13 @@
 	"remoteUser": "devuser",
 
 	"remoteEnv": {
+		"DISPLAY": ":1"
 	},
 
 	// Maps the .ssh/ folder from your ${HOME} into /home/devuser/.ssh
 	"mounts": [
-		"source=/c/Users/rdaly/.ssh,target=/home/devuser/.ssh,type=bind,consistency=cached"
+		"source=${localEnv:HOME}/.ssh,target=/home/devuser/.ssh,type=bind,consistency=cached",
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+		"source=/run/user/1000/gdm/Xauthority,target=/home/devuser/.Xauthority,type=bind"
 	]
 }
