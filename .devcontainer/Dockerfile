@@ -1,4 +1,4 @@
-FROM mathemaphysics/spatial-gpu:0.0.2
+FROM mathemaphysics/cmake-base:3.24.3
 
 ARG DEVUSER devuser
 
@@ -16,13 +16,11 @@ RUN apt-get -y update \
 					       vim \
 					       sudo \
 					       libboost-all-dev \
+						   python3-pip \
  && python3 -m pip install cookiecutter sphinx breathe sphinx_rtd_theme catkin-tools
-WORKDIR /builds
-RUN git clone https://github.com/Kitware/CMake.git -b v3.22.1 \
- && cd CMake && ./configure --prefix=/usr && make && make install
 
 RUN apt-get -y update \
-	&& apt-get -y install ros-desktop-full libtf2-sensor-msgs-dev \
+	&& apt-get -y install catkin ros-desktop-full libtf2-sensor-msgs-dev \
 	libstd-srvs-dev ros-std-srvs python3-std-srvs libroslib-dev python3-roslib \
 	python3-rostest librostest-dev ros-geometry-msgs libjsoncpp-dev libpoco-dev \
 	libspdlog-dev ros-pcl-msgs libpcl-msgs-dev libpcl-conversions-dev

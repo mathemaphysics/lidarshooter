@@ -1,6 +1,6 @@
 # Welcome to LiDARShooter
 
-
+Eventualy this area will contain instructions on how to set up and run LiDARShooter.
 
 # Prerequisites
 
