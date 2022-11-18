@@ -1,19 +1,18 @@
-# Welcome to YOLO3D
-
+# Welcome to LiDARShooter
 
 
 
 # Prerequisites
 
-Building YOLO3D requires the following software installed:
+Building LiDARShooter requires the following software installed:
 
 * A C++17-compliant compiler
-* CMake `>= 3.9`
-* Doxygen (optional, documentation building is skipped if missing)* Python `>= 3.6` for building Python bindings
+* CMake `>= 3.19`
+* Doxygen (optional, documentation building is skipped if missing) Python `>= 3.6` for building Python bindings
 
-# Building YOLO3D
+# Building LiDARShooter
 
-The following sequence of commands builds YOLO3D.
+The following sequence of commands builds LiDARShooter.
 It assumes that your current working directory is the top-level directory
 of the freshly cloned repository:
 
@@ -40,10 +39,10 @@ can do so using `pip` from the root directory:
 python -m pip install .
 ```
 
-# Testing YOLO3D
+# Testing LiDARShooter
 
 When built according to the above explanation (with `-DBUILD_TESTING=ON`),
-the C++ test suite of `YOLO3D` can be run using
+the C++ test suite of `LiDARShooter` can be run using
 `ctest` from the build directory:
 
 ```
@@ -51,17 +50,9 @@ cd build
 ctest
 ```
 
-The Python test suite can be run by first `pip`-installing the Python package
-and then running `pytest` from the top-level directory:
-
-```
-python -m pip install .
-pytest
-```
-
 # Documentation
 
-YOLO3D provides a Doxygen documentation. You can build
+LiDARShooter provides a Doxygen documentation. You can build
 the documentation locally by making sure that `Doxygen` is installed on your system
 and running this command from the top-level build directory:
 
