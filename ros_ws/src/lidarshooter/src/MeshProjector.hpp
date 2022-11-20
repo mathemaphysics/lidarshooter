@@ -113,7 +113,7 @@ private:
     unsigned *_objectTriangles;
     float *_groundVertices;
     unsigned *_groundQuadrilaterals;
-    pcl::PolygonMesh _trackObject;
+    pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector
     sensor_msgs::PointCloud2 _currentState;
     RTCDevice _device;
     RTCScene _scene;
