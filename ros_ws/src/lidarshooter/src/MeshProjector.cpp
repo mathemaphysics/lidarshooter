@@ -350,17 +350,18 @@ void lidarshooter::MeshProjector::traceMesh()
     // Count the total iterations because the limits are needed for threading
     unsigned int numTotalRays = _config.getTotalRays();
     unsigned int numIterations = numTotalRays / RAY_PACKET_SIZE + (numTotalRays % RAY_PACKET_SIZE > 0 ? 1 : 0);
-    unsigned int numThreads = 4;
-    unsigned int chunkSize = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
     std::mutex configMutex, stateMutex, meshMutex;
     std::vector<std::thread> threads;
     for (int rayChunk = 0; rayChunk < numThreads; ++rayChunk)
     {
-        //unsigned int startPosition = rayChunk * chunkSize;
+        //unsigned int startPosition = rayChunk * numChunks;
+        // TODO: Convert the contents of the thread into a "chunk" function to simplify
         threads.emplace_back(
-            [this, &configMutex, &stateMutex, &meshMutex, chunkSize](){
-                for (int ix = 0; ix < chunkSize; ++ix)
+            [this, &configMutex, &stateMutex, &meshMutex, numChunks](){
+                for (int ix = 0; ix < numChunks; ++ix)
                 {
                     // Set up packet processing
                     int rayState = 0;
@@ -380,7 +381,7 @@ void lidarshooter::MeshProjector::traceMesh()
                         rayRings[idx] = 0;
 
                     // Execute when the buffer is full
-                    this->getMeshIntersect(validRays, &rayhitn);
+                    this->getMeshIntersect(validRays, &rayhitn); // TODO: Make sure meshMutex doesn't need set?
                     for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
                     {
                         if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
