@@ -275,7 +275,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets spdlog::spdlog)
 
 set_target_properties(LiDARShooterGUI PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

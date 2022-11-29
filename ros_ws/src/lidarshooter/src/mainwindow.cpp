@@ -5,7 +5,13 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    // UI/MOC setup
     ui->setupUi(this);
+
+    // Set up the logger
+    logger = spdlog::get("LiDARShooter"); // If it isn't already there then make it
+    if (logger == nullptr)
+        logger = spdlog::stdout_color_mt("LiDARShooter");
 
     // Set up the quit action
     quitConnection = connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
@@ -26,4 +32,5 @@ MainWindow::~MainWindow()
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
     configFile = _fileName;
+    logger->info("Set the config file name to {}", configFile.toStdString());
 }

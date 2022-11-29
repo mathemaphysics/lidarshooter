@@ -9,6 +9,7 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,6 +31,9 @@ private slots:
 private:
     // UI instance
     Ui::MainWindow *ui;
+
+    // Create the logger
+    std::shared_ptr<spdlog::logger> logger;
 
     // Manually created connections
     QMetaObject::Connection quitConnection;
