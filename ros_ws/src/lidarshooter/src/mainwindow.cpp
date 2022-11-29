@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete configFileDialog;
 }
 
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
