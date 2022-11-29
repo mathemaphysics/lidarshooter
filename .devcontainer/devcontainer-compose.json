@@ -1,0 +1,12 @@
+{
+    "name": "LiDARShooter Development",
+    "dockerComposeFile": [
+        "docker-compose.yml",
+        "windows/docker-compose-windows.yml"
+    ],
+    "runServices": [
+        "devcontainer"
+    ],
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces/lidarshooter"
+}
