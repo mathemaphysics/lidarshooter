@@ -8,8 +8,8 @@
 #include <memory>
 
 #include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/qt_sinks.h>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

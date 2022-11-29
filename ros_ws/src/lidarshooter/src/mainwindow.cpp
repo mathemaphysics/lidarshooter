@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Set up the logger
     logger = spdlog::get("LiDARShooter"); // If it isn't already there then make it
     if (logger == nullptr)
-        logger = spdlog::stdout_color_mt("LiDARShooter");
+        logger = spdlog::qt_logger_mt("LiDARShooter", ui->logTextTop);
 
     // Set up the quit action
     quitConnection = connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
