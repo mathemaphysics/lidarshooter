@@ -10,7 +10,6 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/qt_sinks.h>
 
-
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -27,6 +26,7 @@ signals:
 
 private slots:
     void slotReceiveConfigFile(QString);
+    void slotInitMeshProjector();
 
 private:
     // UI instance

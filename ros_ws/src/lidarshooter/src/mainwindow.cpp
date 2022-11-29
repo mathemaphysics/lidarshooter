@@ -34,3 +34,8 @@ void MainWindow::slotReceiveConfigFile(const QString _fileName)
     configFile = _fileName;
     logger->info("Set the config file name to {}", configFile.toStdString());
 }
+
+void MainWindow::slotInitMeshProjector()
+{
+    // Initializes the mesh projection process
+}

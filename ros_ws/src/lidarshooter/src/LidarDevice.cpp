@@ -26,6 +26,7 @@
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
+#include <Poco/Net/NetException.h>
 #include <Poco/StreamCopier.h>
 #include <Poco/Path.h>
 #include <Poco/URI.h>
@@ -439,18 +440,43 @@ int lidarshooter::LidarDevice::loadTransformation(std::string __requestUrl)
 
     // Take care of empty paths
     std::string path(uri.getPathAndQuery());
+    _logger->info("Connecting to {}", path);
     if (path.empty())
         path = "/";
 
     // Send request
-    HTTPRequest req(HTTPRequest::HTTP_GET, path, HTTPMessage::HTTP_1_1);
-    session.sendRequest(req);
+    try
+    {
+        HTTPRequest req(HTTPRequest::HTTP_GET, path, HTTPMessage::HTTP_1_1);
+        session.sendRequest(req);
+    }
+    catch (const Net::HostNotFoundException& ex)
+    {
+        _logger->warn("Could not find host: {}", ex.message());
+    }
+    catch (const Net::NetException& ex)
+    {
+        _logger->warn("Unspecified network exception: {}", ex.message());
+    }
 
     // Process response
     HTTPResponse res;
-    std::istream &is = session.receiveResponse(res);
+
     auto jsonInput = std::ostringstream();
-    StreamCopier::copyStream(is, jsonInput);
+    try
+    {
+        std::istream &is = session.receiveResponse(res);
+        StreamCopier::copyStream(is, jsonInput);
+    }
+    catch (const Net::HostNotFoundException& ex)
+    {
+        _logger->warn("Could not find host: {}", ex.message());
+    }
+    catch (const Net::NetException& ex)
+    {
+        _logger->warn("Unspecified network exception: {}", ex.message());
+    }
+
     auto jsonBuffer = std::istringstream();
     jsonBuffer.str(jsonInput.str());
 
@@ -459,7 +485,15 @@ int lidarshooter::LidarDevice::loadTransformation(std::string __requestUrl)
     Json::CharReaderBuilder builder;
     std::string errs;
     builder["collectComments"] = false;
-    _transformLoaded = Json::parseFromStream(builder, jsonBuffer, &jsonData, &errs);
+    
+    try
+    {
+        _transformLoaded = Json::parseFromStream(builder, jsonBuffer, &jsonData, &errs);
+    }
+    catch(const Json::Exception& ex)
+    {
+        _logger->warn("Error parsing JSON input: {}", ex.what());
+    }
 
     // Only access jsonData if we know it was parsed correcctly
     if (_transformLoaded)

@@ -1,7 +1,7 @@
 {
     "device": {
         "sensorUid": "lidar_0000",
-        "sensorApiUrl": "od-dacc-dev.hti-sys.com",
+        "sensorApiUrl": "http://od-dacc-dev.hti-sys.com",
         "sensorApiPort": 9080
     },
     "message": {
