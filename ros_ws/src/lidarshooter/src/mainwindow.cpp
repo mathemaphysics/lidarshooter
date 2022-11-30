@@ -7,6 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     // UI/MOC setup
     ui->setupUi(this);
+    this->setWindowTitle("LiDARShooterGUI");
 
     // Set up the visualization
     auto renderer = vtkSmartPointer<vtkRenderer>::New();
