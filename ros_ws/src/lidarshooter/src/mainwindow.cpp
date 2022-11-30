@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     window = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
     window->AddRenderer(renderer);
     viewer.reset(new pcl::visualization::PCLVisualizer(renderer, window, "viewer", false));
+    viewer->addCoordinateSystem(0.2);
     ui->openGLWidget->setRenderWindow(viewer->getRenderWindow());
     ui->openGLWidget->update();
 
