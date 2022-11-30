@@ -8,5 +8,6 @@ services:
       args:
         DEVUSER: devuser
     user: devuser
+    command: "sleep infinity"
     volumes:
       - ..:/workspaces/lidarshooter
