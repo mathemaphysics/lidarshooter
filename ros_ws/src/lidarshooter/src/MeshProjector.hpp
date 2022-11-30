@@ -108,17 +108,27 @@ private:
     std::string _sensorUid; // This *should* match _config._device.sensorUid
     const std::string _applicationName = APPLICATION_NAME;
     std::shared_ptr<spdlog::logger> _logger;
+
+    // Device with everyone you need to know about your scanner
     LidarDevice _config;
+
+    // Storage of actual geometries for Embree
     float *_objectVertices;
     unsigned *_objectTriangles;
     float *_groundVertices;
     unsigned *_groundQuadrilaterals;
+
+    // Messages in class format
     pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector
     sensor_msgs::PointCloud2 _currentState;
+
+    // Raytracing items
     RTCDevice _device;
     RTCScene _scene;
     RTCGeometry _objectGeometry;
     RTCGeometry _groundGeometry;
+
+    // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;
     ros::Duration _publishPeriod;
     ros::Timer _publishTimer;
@@ -130,6 +140,8 @@ private:
     ros::Subscriber _meshSubscriber;
     ros::Subscriber _joystickSubscriber;
     std::mutex _joystickMutex;
+
+    // Current net state of the mesh
     Eigen::Vector3f _linearDisplacement; // The cumulative linear displacement since instantiation
     Eigen::Vector3f _angularDisplacement; // The cumulative angular displacement since instantiation
 
