@@ -1,8 +1,8 @@
 <launch>
-    <node pkg="lidarshooter" type="meshprojector" name="lidar_0000" output="screen">
+    <node pkg="lidarshooter" type="projector" name="lidar_0000" output="screen">
         <param name="configfile" value="/workspaces/lidarshooter/ros_ws/hesai-pandar-XT-32.json"/>
     </node>
-    <node pkg="lidarshooter" type="meshprojector" name="lidar_0001" output="screen">
+    <node pkg="lidarshooter" type="projector" name="lidar_0001" output="screen">
         <param name="configfile" value="/workspaces/lidarshooter/ros_ws/hesai-pandar-XT-32.json"/>
     </node>
     <node pkg="lidarshooter" type="objtracker" name="objtracker" output="screen">
