@@ -12,8 +12,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/visualization/qvtk_compatibility.h>
 #include <vtkRenderWindow.h>
+#include <vtkGenericOpenGLRenderWindow.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -35,6 +35,7 @@ private slots:
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
+    vtkSmartPointer<vtkGenericOpenGLRenderWindow> window;
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud;
 
 private:

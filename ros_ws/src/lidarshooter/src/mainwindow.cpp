@@ -8,6 +8,23 @@ MainWindow::MainWindow(QWidget *parent)
     // UI/MOC setup
     ui->setupUi(this);
 
+    // Set up the visualization
+    auto renderer = vtkSmartPointer<vtkRenderer>::New();
+    window = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
+    window->AddRenderer(renderer);
+    viewer.reset(new pcl::visualization::PCLVisualizer(renderer, window, "viewer", false));
+    ui->openGLWidget->setRenderWindow(viewer->getRenderWindow());
+    //viewer->setupInteractor(ui->openGLWidget->interactor(), ui->openGLWidget->renderWindow());
+    ui->openGLWidget->update();
+
+    // Do something like this
+    //  auto renderer = vtkSmartPointer<vtkRenderer>::New();
+    //  _renderWindow = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
+    //  _renderWindow->AddRenderer(renderer);
+    //  _viewer.reset(new PCLVisualizer(renderer, _renderWindow, "viewer", false));
+    //  this->SetRenderWindow(_viewer->getRenderWindow());
+    //  this->update();
+
     // Set up the logger
     logger = spdlog::get("LiDARShooter"); // If it isn't already there then make it
     if (logger == nullptr)

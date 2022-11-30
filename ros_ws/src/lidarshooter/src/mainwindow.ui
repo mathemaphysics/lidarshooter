@@ -18,21 +18,21 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>20</y>
-      <width>731</width>
-      <height>290</height>
+      <y>30</y>
+      <width>391</width>
+      <height>411</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="3" column="0">
-      <widget class="QPlainTextEdit" name="logTextBottom">
+     <item row="2" column="0">
+      <widget class="QPlainTextEdit" name="logTextTop">
        <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QPlainTextEdit" name="logTextTop">
+     <item row="0" column="0">
+      <widget class="QPlainTextEdit" name="logTextBottom">
        <property name="readOnly">
         <bool>true</bool>
        </property>
@@ -44,7 +44,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>330</y>
+      <y>450</y>
       <width>211</width>
       <height>41</height>
      </rect>
@@ -57,13 +57,23 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>330</y>
+      <y>450</y>
       <width>511</width>
       <height>41</height>
      </rect>
     </property>
     <property name="readOnly">
      <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="PCLQVTKWidget" name="openGLWidget">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>30</y>
+      <width>331</width>
+      <height>411</height>
+     </rect>
     </property>
    </widget>
   </widget>
@@ -73,7 +83,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>39</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -91,6 +101,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PCLQVTKWidget</class>
+   <extends>QOpenGLWidget</extends>
+   <header location="global">pcl/visualization/qvtk_compatibility.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
