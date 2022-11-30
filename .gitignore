@@ -177,3 +177,10 @@ ros_ws/build/**
 ros_ws/devel/**
 ros_ws/.catkin_tools/**
 #!ros_ws/src
+
+ros_ws/src/build-lidarshooter*/**
+ros_ws/src/build-LiDARShooterGUI*/**
+ros_ws/src/lidarshooter/build-lidarshooter*/**
+ros_ws/src/lidarshooter/build-LiDARShooterGUI*/**
+ros_ws/src/lidarshooter/src/build-lidarshooter*/**
+ros_ws/src/lidarshooter/src/build-LiDARShooterGUI*/**
