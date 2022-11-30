@@ -3,13 +3,13 @@ project(lidarshooter VERSION 0.1 LANGUAGES CXX)
 
 include(FetchContent)
 
-FetchContent_Declare(
-    spdlog
-    GIT_REPOSITORY  https://github.com/gabime/spdlog.git
-    GIT_TAG         v1.9.2
-)
-
-FetchContent_MakeAvailable(spdlog)
+#FetchContent_Declare(
+#    spdlog
+#    GIT_REPOSITORY  https://github.com/gabime/spdlog.git
+#    GIT_TAG         v1.9.2
+#)
+#
+#FetchContent_MakeAvailable(spdlog)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -143,8 +143,8 @@ include_directories(
 
 find_package(PCL REQUIRED)
 find_package(Poco COMPONENTS Net REQUIRED)
-find_package(jsoncpp REQUIRED)
-#find_package(spdlog REQUIRED)
+#find_package(jsoncpp REQUIRED)
+find_package(spdlog REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS program_options system)
 
@@ -283,7 +283,8 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets spdlog::spdlog)
+target_include_directories(LiDARShooterGUI PRIVATE ${PCL_INCLUDE_DIRS} /usr/include/jsoncpp /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp ${catkin_LIBRARIES})
 
 set_target_properties(LiDARShooterGUI PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -299,15 +300,22 @@ endif()
 
 add_dependencies(LiDARShooterGUI ${catkin_EXPORTED_TARGETS})
 
-add_executable(lidarshooter src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/XYZIRPoint.cpp src/LidarDevice.cpp src/MeshProjector.cpp)
-target_compile_features(lidarshooter PUBLIC cxx_std_17)
-target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog)
-add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
+add_executable(meshprojector src/lidarshooter.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/XYZIRPoint.cpp src/LidarDevice.cpp src/MeshProjector.cpp)
+target_compile_features(meshprojector PUBLIC cxx_std_17)
+target_include_directories(meshprojector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_directories(meshprojector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
+target_link_libraries(meshprojector ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog)
+add_dependencies(meshprojector ${catkin_EXPORTED_TARGETS})
 
 add_executable(objtracker src/objtracker.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/XYZIRPoint.cpp)
 target_compile_features(objtracker PUBLIC cxx_std_17)
 target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_libraries(objtracker ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog)
 add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
+
+add_library(lidarshooter src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/XYZIRPoint.cpp src/LidarDevice.cpp src/MeshProjector.cpp)
+target_compile_features(lidarshooter PUBLIC cxx_std_17)
+target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
+target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog)
+add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})

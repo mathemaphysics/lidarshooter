@@ -1,4 +1,4 @@
-FROM mathemaphysics/cmake-base:3.24.3
+FROM ubuntu:22.04
 
 ARG DEVUSER devuser
 
@@ -14,7 +14,8 @@ RUN apt-get -y update \
 	&& apt-get -y install catkin ros-desktop-full libtf2-sensor-msgs-dev \
 	libstd-srvs-dev ros-std-srvs python3-std-srvs libroslib-dev python3-roslib \
 	python3-rostest librostest-dev ros-geometry-msgs libjsoncpp-dev libpoco-dev \
-	ros-pcl-msgs libpcl-msgs-dev libpcl-conversions-dev rosbash libusb-1.0-0-dev
+	ros-pcl-msgs libpcl-msgs-dev libpcl-conversions-dev rosbash libusb-1.0-0-dev \
+	libspdlog-dev
 
 RUN apt-get -y update \
 	&& apt-get -y install qtbase5-dev qtbase5-dev-tools libqwt-qt5-dev libqwt-headers

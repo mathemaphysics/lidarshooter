@@ -9,6 +9,11 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/qt_sinks.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/qvtk_compatibility.h>
+#include <vtkRenderWindow.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,6 +32,10 @@ signals:
 private slots:
     void slotReceiveConfigFile(QString);
     void slotInitMeshProjector();
+
+protected:
+    pcl::visualization::PCLVisualizer::Ptr viewer;
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud;
 
 private:
     // UI instance
@@ -47,4 +56,5 @@ private:
     // Private variables
     QString configFile;
 };
+
 #endif // MAINWINDOW_H
