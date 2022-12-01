@@ -283,6 +283,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
+target_compile_features(LiDARShooterGUI PUBLIC cxx_std_17)
 target_include_directories(LiDARShooterGUI PRIVATE ${PCL_INCLUDE_DIRS} /usr/include/jsoncpp /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp fmt ${catkin_LIBRARIES})
 

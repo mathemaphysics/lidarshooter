@@ -5,7 +5,8 @@
         "functional": "cpp",
         "memory": "cpp",
         "optional": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "filesystem": "cpp"
     },
     "cmake.sourceDirectory": "${workspaceFolder}/ros_ws/src"
 }
