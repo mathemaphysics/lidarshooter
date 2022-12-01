@@ -19,6 +19,8 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <exception>
+#include <stdexcept>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -65,6 +67,28 @@ lidarshooter::LidarDevice::LidarDevice(const std::string& _config)
     initialize(_config);
 }
 
+lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::string& _sensorUid)
+{
+    // Set up the logger
+    _logger = spdlog::get(_applicationName);
+    if (_logger == nullptr)
+        _logger = spdlog::stdout_color_mt(_applicationName);
+
+    // Load configuration and transformation
+    initialize(_config, _sensorUid);
+}
+
+lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile)
+{
+    // Set up the logger
+    _logger = spdlog::get(_applicationName);
+    if (_logger == nullptr)
+        _logger = spdlog::stdout_color_mt(_applicationName);
+
+    // Load configuration and transformation
+    initialize(_config, _sensorUid, _transformFile);
+}
+
 void lidarshooter::LidarDevice::initialize(const std::string& _config)
 {
     // Load the configuration defining rays here from _config
@@ -73,18 +97,22 @@ void lidarshooter::LidarDevice::initialize(const std::string& _config)
         loadConfiguration(_config);
 
     // Load the transformation for this device
-    loadTransformation(
+    int loadResult = loadTransformationFromUrl(
         _device.sensorApiUrl + ":"
         + std::to_string((unsigned int)_device.sensorApiPort)
         + _sensrGetEndpoint
         + _device.sensorUid
     );
 
+    // Check
+    if (loadResult < 0)
+        _logger->warn("Something went wrong while loading the transform");
+
     // Set the index pointing to current ray to zero
     reset();
 }
 
-void lidarshooter::LidarDevice::initialize(const std::string& _sensorUid, const std::string& _config)
+void lidarshooter::LidarDevice::initialize(const std::string& _config, const std::string& _sensorUid)
 {
     // Load the configuration defining rays here from _config
     _channels.count = 0;
@@ -92,12 +120,36 @@ void lidarshooter::LidarDevice::initialize(const std::string& _sensorUid, const 
         loadConfiguration(_config);
 
     // Load the transformation for this device
-    loadTransformation(
+    int loadResult = loadTransformationFromUrl(
         _device.sensorApiUrl + ":"
         + std::to_string((unsigned int)_device.sensorApiPort)
         + _sensrGetEndpoint
         + _sensorUid
     );
+
+    // Check
+    if (loadResult < 0)
+        _logger->warn("Something went wrong while loading the transform");
+
+    // Set the index pointing to current ray to zero
+    reset();
+}
+
+void lidarshooter::LidarDevice::initialize(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile)
+{
+    // Load the configuration defining rays here from _config
+    _channels.count = 0;
+    if (_config.length() > 0)
+        loadConfiguration(_config);
+
+    // Load the transformation for this device
+    int loadResult = loadTransformationFromFile(
+        _transformFile
+    );
+
+    // Check
+    if (loadResult < 0)
+        _logger->warn("Something went wrong while loading the transform");
 
     // Set the index pointing to current ray to zero
     reset();
@@ -429,13 +481,20 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
     else
         _logger->error("Configuration file {} is missing channels section", _config);
 
+    if (jsonData.isMember("outputFolder"))
+    {
+        _outputFolder = jsonData.get("outputFolder", ".").asString();
+    }
+    else
+        _logger->warn("Configuration file {} lacks an explicit output folder; defaulting to CWD");
+
     // Probably do some checking here first to make sure it loaded correctly
     _configLoaded = true;
 
     return 0;
 }
 
-int lidarshooter::LidarDevice::loadTransformation(std::string __requestUrl)
+int lidarshooter::LidarDevice::loadTransformationFromUrl(std::string __requestUrl)
 {
     // Create an initialize a session
     URI uri(__requestUrl.c_str());
@@ -534,11 +593,86 @@ int lidarshooter::LidarDevice::loadTransformation(std::string __requestUrl)
     else
         _logger->error("Transform data could not be parsed");
 
+    // Make sure that folder exists first
+    auto folderPath = std::filesystem::path(_outputFolder);
+    if (!std::filesystem::exists(folderPath))
+    {
+        _logger->error("Path to transform output directory {} does not exist", folderPath.string());
+        return -1;
+    }
+
     // Dump the raw transformation if debugging
-    auto fullPath = std::filesystem::path("/workspaces/lidarshooter/ros_ws");
-    auto transformStream = std::ofstream((fullPath / fmt::format("transform-{}.json", _device.sensorUid)).string());
+    auto transformStream = std::ofstream((folderPath / fmt::format("transform-{}.json", _device.sensorUid)).string());
     transformStream << jsonInput.str();
     transformStream.close();
+
+    return 0;
+}
+
+int lidarshooter::LidarDevice::loadTransformationFromFile(std::string _transformFile)
+{
+    // Read directly from an ifstream for parsing
+    auto transformPath = std::filesystem::path(_transformFile);
+    if (!std::filesystem::exists(transformPath))
+    {
+        _logger->error("Path to transform file {} does not exist", transformPath.string());
+        return -1;
+    }
+    auto jsonBuffer = std::ifstream(_transformFile);
+    
+    // Extract to JSON; stored in private
+	Json::Value jsonData;
+    Json::CharReaderBuilder builder;
+    std::string errs;
+    builder["collectComments"] = false;
+    
+    try
+    {
+        _transformLoaded = Json::parseFromStream(builder, jsonBuffer, &jsonData, &errs);
+    }
+    catch(const Json::Exception& ex)
+    {
+        _logger->warn("Error parsing JSON input: {}", ex.what());
+    }
+
+    // Only access jsonData if we know it was parsed correcctly
+    if (_transformLoaded)
+    {
+        // Load the base-to-origin translation
+        if (jsonData.isMember("base_to_origin"))
+        {
+            _device.transform.baseToOrigin.tx = jsonData["base_to_origin"].get("tx", 0.0).asFloat();
+            _device.transform.baseToOrigin.ty = jsonData["base_to_origin"].get("ty", 0.0).asFloat();
+        }
+        else
+            _logger->warn("Section base_to_origin missing from transform data");
+        
+        // Load the sensor-to-base transformation
+        if (jsonData.isMember("sensor_to_base"))
+        {
+            // Extract with defaults assumed
+            _device.transform.sensorToBase.qw = jsonData["sensor_to_base"].get("qw", 0.0).asFloat();
+            _device.transform.sensorToBase.qx = jsonData["sensor_to_base"].get("qx", 0.0).asFloat();
+            _device.transform.sensorToBase.qy = jsonData["sensor_to_base"].get("qy", 0.0).asFloat();
+            _device.transform.sensorToBase.qz = jsonData["sensor_to_base"].get("qz", 0.0).asFloat();
+            _device.transform.sensorToBase.tz = jsonData["sensor_to_base"].get("tz", 0.0).asFloat();
+
+            // Set the stored quaternion
+            _device.transform.sensorToBase.q.w() = _device.transform.sensorToBase.qw;
+            _device.transform.sensorToBase.q.x() = _device.transform.sensorToBase.qx;
+            _device.transform.sensorToBase.q.y() = _device.transform.sensorToBase.qy;
+            _device.transform.sensorToBase.q.z() = _device.transform.sensorToBase.qz;
+            _device.transform.sensorToBase.R = _device.transform.sensorToBase.q.toRotationMatrix();
+            _device.transform.sensorToBase.Rinv = _device.transform.sensorToBase.q.toRotationMatrix().inverse();
+        }
+        else
+            _logger->warn("Section sensor_to_base missing from transform data");
+    }
+    else
+        _logger->error("Transform data could not be parsed");
+
+    // In URL version of this function we would save the transform JSON here;
+    // but we just read it from a file ;-)
 
     return 0;
 }

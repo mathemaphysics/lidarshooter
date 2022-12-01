@@ -62,6 +62,8 @@ public:
      * @param _config Path to the JSON configuration file for the device
      */
     LidarDevice(const std::string& _config);
+    LidarDevice(const std::string& _config, const std::string& _sensorUid);
+    LidarDevice(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile);
 
     /**
      * @brief Destroy the LidarDevice object
@@ -79,7 +81,8 @@ public:
      * @param _config Path to the JSON configuration file for the device
      */
     void initialize(const std::string& _config);
-    void initialize(const std::string& _sensorUid, const std::string& _config);
+    void initialize(const std::string& _config, const std::string& _sensorUid);
+    void initialize(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile);
 
     /**
      * @brief Initialize the ROS message with its header
@@ -227,6 +230,16 @@ private:
     const std::string _applicationName = APPLICATION_NAME;
 
     /**
+     * @brief Folder into which output files are written when needed
+     * 
+     * For example, when running \c roslaunch \c lidarshooter \c lidarshooter.launch
+     * unless disabled the transform JSON data for each sensor device UID will be
+     * dumped into a file named \c transform-[_device.sensorUid].json where the bracketed
+     * variable is replaced with each device UID. These files will end up in this folder.
+     */
+    std::string _outputFolder = "."; // Defaults to ., not the folder you launch from; beware
+
+    /**
      * @brief Index of the current LiDAR channel being output
      * 
      * Stateful setup for calling \c nextRayXX() to get the next item to trace
@@ -322,7 +335,15 @@ private:
      * @param __requestUrl URL of the SENSR host
      * @return int Zero if okay, < 0 if failure
      */
-    int loadTransformation(std::string __requestUrl);
+    int loadTransformationFromUrl(std::string __requestUrl);
+    
+    /**
+     * @brief Reads the configuration of \c _sensorUid device from SENSR API
+     * 
+     * @param _transformJson URL of the SENSR host
+     * @return int Zero if okay, < 0 if failure
+     */
+    int loadTransformationFromFile(std::string _transformFile);
 
     /**
      * @brief Iterate one ray forward; return 1 of done, else 0

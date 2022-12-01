@@ -54,7 +54,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Initializing the LiDAR device
     _logger->info("Loading config file {}", configFile);
-    _config.initialize(_sensorUid, configFile);
+    _config.initialize(configFile, _sensorUid);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;

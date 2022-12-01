@@ -56,5 +56,7 @@
             },
             "count": 150
         }
-    }
+    },
+    // Folder into which any output file are dumped
+    "outputFolder": "/workspaces/lidarshooter"
 }
