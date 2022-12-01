@@ -16,6 +16,9 @@
 #include <sstream>
 #include <vector>
 #include <memory>
+#include <filesystem>
+#include <iostream>
+#include <string>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -31,12 +34,12 @@
 #include <Poco/Path.h>
 #include <Poco/URI.h>
 #include <Poco/Exception.h>
-#include <iostream>
-#include <string>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+
+#include <fmt/format.h>
 
 #include <Eigen/Dense>
 
@@ -530,6 +533,12 @@ int lidarshooter::LidarDevice::loadTransformation(std::string __requestUrl)
     }
     else
         _logger->error("Transform data could not be parsed");
+
+    // Dump the raw transformation if debugging
+    auto fullPath = std::filesystem::path("/workspaces/lidarshooter/ros_ws");
+    auto transformStream = std::ofstream((fullPath / fmt::format("transform-{}.json", _device.sensorUid)).string());
+    transformStream << jsonInput.str();
+    transformStream.close();
 
     return 0;
 }

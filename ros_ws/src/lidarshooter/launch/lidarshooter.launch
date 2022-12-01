@@ -1,12 +1,12 @@
 <launch>
     <node pkg="lidarshooter" type="projector" name="lidar_0000" output="screen">
-        <param name="configfile" value="/workspaces/lidarshooter/ros_ws/hesai-pandar-XT-32.json"/>
+        <param name="configfile" value="/workspaces/lidarshooter/config/hesai-pandar-XT-32-lidar_0000.json"/>
     </node>
     <node pkg="lidarshooter" type="projector" name="lidar_0001" output="screen">
-        <param name="configfile" value="/workspaces/lidarshooter/ros_ws/hesai-pandar-XT-32.json"/>
+        <param name="configfile" value="/workspaces/lidarshooter/config/hesai-pandar-XT-32-lidar_0001.json"/>
     </node>
     <node pkg="lidarshooter" type="objtracker" name="objtracker" output="screen">
-        <param name="meshfile" value="/workspaces/lidarshooter/ros_ws/ben.stl"/>
+        <param name="meshfile" value="/workspaces/lidarshooter/mesh/ben.stl"/>
     </node>
     <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" ns="/joystick" output="screen">
         <param name="speed" value="0.09"/>

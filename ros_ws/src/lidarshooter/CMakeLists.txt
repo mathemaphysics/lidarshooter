@@ -284,7 +284,7 @@ else()
 endif()
 
 target_include_directories(LiDARShooterGUI PRIVATE ${PCL_INCLUDE_DIRS} /usr/include/jsoncpp /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp ${catkin_LIBRARIES})
+target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp fmt ${catkin_LIBRARIES})
 
 set_target_properties(LiDARShooterGUI PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -304,18 +304,18 @@ add_executable(projector src/projector.cpp src/IntBytes.cpp src/FloatBytes.cpp s
 target_compile_features(projector PUBLIC cxx_std_17)
 target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(projector ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog)
+target_link_libraries(projector ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
 add_dependencies(projector ${catkin_EXPORTED_TARGETS})
 
 add_executable(objtracker src/objtracker.cpp src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/XYZIRPoint.cpp)
 target_compile_features(objtracker PUBLIC cxx_std_17)
 target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_libraries(objtracker ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog)
+target_link_libraries(objtracker ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt)
 add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
 
 add_library(lidarshooter src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/XYZIRPoint.cpp src/LidarDevice.cpp src/MeshProjector.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog)
+target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})

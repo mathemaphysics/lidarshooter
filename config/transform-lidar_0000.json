@@ -1,0 +1,31 @@
+{
+  "uid": "lidar_0000",
+  "name": "Hesai1",
+  "topic": "lidar_0000/pandar",
+  "sensor": "Hesai XT-32",
+  "stack_capacity": 0,
+  "detection_radius": 1000,
+  "horizontal_angle_range": [
+    -180,
+    180
+  ],
+  "use_lidar_timestamp": false,
+  "use_intensity_filtering": true,
+  "minimum_intensity": 5,
+  "base_to_origin": {
+    "tx": 6.531124114990234,
+    "ty": -12.605232238769531
+  },
+  "sensor_to_base": {
+    "tz": 5.01811408996582,
+    "qw": 0.5208402872085571,
+    "qx": 0.01054596621543169,
+    "qy": -0.006359677296131849,
+    "qz": -0.8535653948783875
+  },
+  "arguments": {
+    "server_ip": "192.168.1.29",
+    "gps_port": "10110",
+    "lidar_recv_port": "2368"
+  }
+}

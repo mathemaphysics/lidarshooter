@@ -1,0 +1,60 @@
+{
+    "device": {
+        "sensorUid": "lidar_0001",
+        "sensorApiUrl": "http://od-dacc-dev.hti-sys.com",
+        "sensorApiPort": 9080
+    },
+    "message": {
+        "frameId": "PandarXT-32",
+        "pointStep": 32,
+        "isBigendian": false,
+        "isDense": true,
+        "pointFields": [
+            {
+                "name": "x",
+                "offset": 0,
+                "datatype": 7,
+                "count": 1
+            },
+            {
+                "name": "y",
+                "offset": 4,
+                "datatype": 7,
+                "count": 1
+            },
+            {
+                "name": "z",
+                "offset": 8,
+                "datatype": 7,
+                "count": 1
+            },
+            {
+                "name": "intensity",
+                "offset": 16,
+                "datatype": 7,
+                "count": 1
+            },
+            {
+                "name": "ring",
+                "offset": 20,
+                "datatype": 4,
+                "count": 1
+            }
+        ]
+    },
+    "channels": {
+        // Units: Degrees above and below horizontal
+        "vertical": [
+            15.0, 14.0, 13.0, 12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0,
+            3.0, 2.0, 1.0, 0.0, -1.0, -2.0, -3.0, -4.0, -5.0, -6.0, -7.0, -8.0,
+            -9.0, -10.0, -11.0, -12.0, -13.0, -14.0, -15.0, -16.0
+        ],
+        "horizontal": {
+            "range": {
+                "begin": 0.0,
+                "end": 360.0
+            },
+            "count": 150
+        }
+    }
+}

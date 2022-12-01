@@ -15,7 +15,7 @@ RUN apt-get -y update \
 	libstd-srvs-dev ros-std-srvs python3-std-srvs libroslib-dev python3-roslib \
 	python3-rostest librostest-dev ros-geometry-msgs libjsoncpp-dev libpoco-dev \
 	ros-pcl-msgs libpcl-msgs-dev libpcl-conversions-dev rosbash libusb-1.0-0-dev \
-	libspdlog-dev
+	libspdlog-dev libfmt-dev
 
 RUN apt-get -y update \
 	&& apt-get -y install qtbase5-dev qtbase5-dev-tools libqwt-qt5-dev libqwt-headers
