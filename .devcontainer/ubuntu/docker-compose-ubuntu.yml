@@ -4,7 +4,8 @@ services:
   devcontainer:
     environment:
       - DISPLAY=:1
+      - XAUTHORITY=/home/devuser/.Xauthority
     volumes:
       - ${HOME}/.ssh:/home/devuser/.ssh:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - /run/user/1000/gdm/Xauthority:/home/devuser/.Xauthority:rw
+      - ${XAUTHORITY}:/home/devuser/.Xauthority:rw
