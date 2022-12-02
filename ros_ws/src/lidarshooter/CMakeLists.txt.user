@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 6.0.2, 2022-11-29T23:16:55. -->
+<!-- Written by QtCreator 6.0.2, 2022-12-01T08:10:46. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -311,9 +311,9 @@
     <valuelist type="QVariantList" key="CustomOutputParsers"/>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">meshprojector</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.meshprojector</value>
-    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">meshprojector</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">objtracker</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.objtracker</value>
+    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">objtracker</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>
@@ -328,9 +328,9 @@
     <valuelist type="QVariantList" key="CustomOutputParsers"/>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">objtracker</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.objtracker</value>
-    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">objtracker</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">projector</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">CMakeProjectManager.CMakeRunConfiguration.projector</value>
+    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">projector</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>

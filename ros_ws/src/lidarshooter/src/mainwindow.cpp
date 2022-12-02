@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+
 #include <filesystem>
+
+#include <Eigen/Dense>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -25,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     window = vtkSmartPointer<vtkGenericOpenGLRenderWindow>::New();
     window->AddRenderer(renderer);
     viewer.reset(new pcl::visualization::PCLVisualizer(renderer, window, "viewer", false));
-    viewer->addCoordinateSystem(0.2);
+    viewer->addCoordinateSystem(1.0);
     ui->openGLWidget->setRenderWindow(viewer->getRenderWindow());
     ui->openGLWidget->update();
 
@@ -76,7 +79,25 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
     {
         pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *mesh);
         viewer->addPolygonMesh(*mesh, "mesh");
+        viewer->resetCamera();
+        auto pose = viewer->getViewerPose();
     }
+}
+
+void MainWindow::slotLogPoseTranslation()
+{
+    auto translation = viewer->getViewerPose().translation();
+    loggerBottom->info("Translation:");
+    loggerBottom->info("{}, {}, {}", translation.x(), translation.y(), translation.z());
+}
+
+void MainWindow::slotLogPoseRotation()
+{
+    auto rotation = viewer->getViewerPose().rotation();
+    loggerBottom->info("Rotation matrix:");
+    loggerBottom->info("{}, {}, {}", rotation(0, 0), rotation(0, 1), rotation(0, 2));
+    loggerBottom->info("{}, {}, {}", rotation(1, 0), rotation(1, 1), rotation(1, 2));
+    loggerBottom->info("{}, {}, {}", rotation(2, 0), rotation(2, 0), rotation(2, 2));
 }
 
 void MainWindow::slotInitMeshProjector()

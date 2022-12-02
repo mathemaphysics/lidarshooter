@@ -35,6 +35,8 @@ signals:
 private slots:
     void slotReceiveConfigFile(QString);
     void slotReceiveMeshFile(QString);
+    void slotLogPoseTranslation();
+    void slotLogPoseRotation();
     void slotInitMeshProjector();
 
 protected:
