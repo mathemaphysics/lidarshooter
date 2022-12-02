@@ -253,6 +253,9 @@ set(PROJECT_SOURCES
         src/mainwindow.cpp
         src/mainwindow.h
         src/mainwindow.ui
+        src/logdialog.cpp
+        src/logdialog.h
+        src/logdialog.ui
         src/${TS_FILES}
 )
 

@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "logdialog.h"
 #include "./ui_mainwindow.h"
 
 #include <filesystem>
@@ -12,6 +13,10 @@ MainWindow::MainWindow(QWidget *parent)
     // UI/MOC setup
     ui->setupUi(this);
     this->setWindowTitle("LiDARShooterGUI");
+
+    // Create popup logging window
+    logDialog = new LogDialog(ui->centralwidget);
+    logDialog->show();
 
     // Set up the loggerTop
     loggerTop = spdlog::get("LiDARShooterTop"); // If it isn't already there then make it
@@ -56,6 +61,7 @@ MainWindow::~MainWindow()
     delete ui;
     delete configFileDialog;
     delete meshFileDialog;
+    delete logDialog;
 }
 
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
@@ -80,7 +86,6 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
         pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *mesh);
         viewer->addPolygonMesh(*mesh, "mesh");
         viewer->resetCamera();
-        auto pose = viewer->getViewerPose();
     }
 }
 
@@ -104,3 +109,9 @@ void MainWindow::slotInitMeshProjector()
 {
     // Initializes the mesh projection process
 }
+
+void MainWindow::on_pushButtonDialog_clicked()
+{
+    logDialog->show();
+}
+

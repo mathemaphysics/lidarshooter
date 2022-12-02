@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QMetaObject>
 #include <QFileDialog>
+#include "logdialog.h"
 
 #include <memory>
 #include <filesystem>
@@ -39,6 +40,8 @@ private slots:
     void slotLogPoseRotation();
     void slotInitMeshProjector();
 
+    void on_pushButtonDialog_clicked();
+
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
     vtkSmartPointer<vtkGenericOpenGLRenderWindow> window;
@@ -64,6 +67,7 @@ private:
     // Other QObjects not in UI; why can't QFileDialog be in UI?
     QFileDialog* configFileDialog;
     QFileDialog* meshFileDialog;
+    LogDialog* logDialog;
 
     // Private variables
     QString configFile;

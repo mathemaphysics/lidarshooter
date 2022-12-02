@@ -184,6 +184,19 @@
      </item>
     </layout>
    </widget>
+   <widget class="QPushButton" name="pushButtonDialog">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>590</y>
+      <width>101</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open Dialog</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -216,6 +229,18 @@
    <header location="global">pcl/visualization/qvtk_compatibility.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>logTextBottom</tabstop>
+  <tabstop>logTextTop</tabstop>
+  <tabstop>pushButtonConfigFile</tabstop>
+  <tabstop>lineEditConfigFile</tabstop>
+  <tabstop>pushButtonMeshFile</tabstop>
+  <tabstop>lineEditMeshFile</tabstop>
+  <tabstop>pushButtonTranslation</tabstop>
+  <tabstop>lineEditTranslation</tabstop>
+  <tabstop>pushButtonRotation</tabstop>
+  <tabstop>lineEditRotation</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
