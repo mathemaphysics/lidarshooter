@@ -6,7 +6,7 @@
 		"dockerfile": "Dockerfile",
 		"args": { "DEVUSER": "devuser" }
 	},
-	"runArgs": [], //["--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
+	"runArgs": ["--network=host"], //["--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": {},
@@ -59,13 +59,16 @@
 	"remoteUser": "devuser",
 
 	"remoteEnv": {
-		"DISPLAY": ":1"
+		"DISPLAY": "${localEnv:DISPLAY}",
+		"XAUTHORITY": "/home/devuser/.Xauthority",
+		"ROS_IP": "${localEnv:ROS_IP}",
+		"ROS_MASTER_URI": "${localEnv:ROS_MASTER_URI}"
 	},
 
 	// Maps the .ssh/ folder from your ${HOME} into /home/devuser/.ssh
 	"mounts": [
 		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/devuser/.ssh,type=bind,consistency=cached",
 		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
-		"source=/run/user/1000/gdm/Xauthority,target=/home/devuser/.Xauthority,type=bind"
+		"source=${localEnv:XAUTHORITY},target=/home/devuser/.Xauthority,type=bind"
 	]
 }
