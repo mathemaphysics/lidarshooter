@@ -8,4 +8,4 @@ services:
     volumes:
       - ${HOME}/.ssh:/home/devuser/.ssh:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - ${XAUTHORITY}:/home/devuser/.Xauthority:rw
+      - ${LOCAL_XAUTHORITY}:/home/devuser/.Xauthority:rw
