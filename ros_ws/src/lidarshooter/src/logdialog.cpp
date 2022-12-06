@@ -12,3 +12,13 @@ LogDialog::~LogDialog()
 {
     delete ui;
 }
+
+QTextEdit* LogDialog::getTextEditTop()
+{
+    return ui->textEditLogTop;
+}
+
+QTextEdit* LogDialog::getTextEditBottom()
+{
+    return ui->textEditLogBottom;
+}

@@ -14,38 +14,12 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QWidget" name="gridLayoutWidget">
+   <widget class="PCLQVTKWidget" name="openGLWidget">
     <property name="geometry">
      <rect>
       <x>30</x>
       <y>30</y>
-      <width>391</width>
-      <height>411</height>
-     </rect>
-    </property>
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="2" column="0">
-      <widget class="QPlainTextEdit" name="logTextTop">
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QPlainTextEdit" name="logTextBottom">
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-   <widget class="PCLQVTKWidget" name="openGLWidget">
-    <property name="geometry">
-     <rect>
-      <x>430</x>
-      <y>30</y>
-      <width>331</width>
+      <width>731</width>
       <height>411</height>
      </rect>
     </property>
@@ -194,7 +168,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Open Dialog</string>
+     <string>Open Logs</string>
     </property>
    </widget>
   </widget>
@@ -230,8 +204,6 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>logTextBottom</tabstop>
-  <tabstop>logTextTop</tabstop>
   <tabstop>pushButtonConfigFile</tabstop>
   <tabstop>lineEditConfigFile</tabstop>
   <tabstop>pushButtonMeshFile</tabstop>

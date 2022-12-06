@@ -50,7 +50,7 @@ public:
      * can call \c initialize with the configuration file when the path is
      * known.
      */
-    LidarDevice();
+    LidarDevice(std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Construct a new LidarDevice
@@ -61,9 +61,9 @@ public:
      * 
      * @param _config Path to the JSON configuration file for the device
      */
-    LidarDevice(const std::string& _config);
-    LidarDevice(const std::string& _config, const std::string& _sensorUid);
-    LidarDevice(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile);
+    LidarDevice(const std::string& _config, std::shared_ptr<spdlog::logger> __logger = nullptr);
+    LidarDevice(const std::string& _config, const std::string& _sensorUid, std::shared_ptr<spdlog::logger> __logger = nullptr);
+    LidarDevice(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile, std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Destroy the LidarDevice object

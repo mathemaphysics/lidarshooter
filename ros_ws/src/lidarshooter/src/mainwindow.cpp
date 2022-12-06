@@ -21,12 +21,12 @@ MainWindow::MainWindow(QWidget *parent)
     // Set up the loggerTop
     loggerTop = spdlog::get("LiDARShooterTop"); // If it isn't already there then make it
     if (loggerTop == nullptr)
-        loggerTop = spdlog::qt_logger_mt("LiDARShooterTop", ui->logTextTop);
+        loggerTop = spdlog::qt_logger_mt("LiDARShooterTop", logDialog->getTextEditTop());
 
     // Set up the loggerBottom
     loggerBottom = spdlog::get("LiDARShooterBottom"); // If it isn't already there then make it
     if (loggerBottom == nullptr)
-        loggerBottom = spdlog::qt_logger_mt("LiDARShooterBottom", ui->logTextBottom);
+        loggerBottom = spdlog::qt_logger_mt("LiDARShooterBottom", logDialog->getTextEditBottom());
 
     // Set up the visualization
     auto renderer = vtkSmartPointer<vtkRenderer>::New();
