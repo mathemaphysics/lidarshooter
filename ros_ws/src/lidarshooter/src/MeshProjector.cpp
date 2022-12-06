@@ -43,6 +43,12 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
     
+    // Initialize to zero buffer size; dynamic allocation is okay
+    _objectVerticesBufferSize = 0;
+    _objectElementsBufferSize = 0;
+    _groundVerticesBufferSize = 0;
+    _groundElementsBufferSize = 0;
+    
     // Set up geometry
     setupObjectGeometryBuffers(3000, 6000);
     setupGroundGeometryBuffers(8, 2);
@@ -115,6 +121,12 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
+    
+    // Initialize to zero buffer size; dynamic allocation is okay
+    _objectVerticesBufferSize = 0;
+    _objectElementsBufferSize = 0;
+    _groundVerticesBufferSize = 0;
+    _groundElementsBufferSize = 0;
 
     // Set up geometry
     setupObjectGeometryBuffers(3000, 6000);
