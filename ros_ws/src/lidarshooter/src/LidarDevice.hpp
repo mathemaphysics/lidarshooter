@@ -60,9 +60,36 @@ public:
      * the no-arguments constructor and then calling \c initialize.
      * 
      * @param _config Path to the JSON configuration file for the device
+     * @param __logger Logger to use instead of creating a 
      */
     LidarDevice(const std::string& _config, std::shared_ptr<spdlog::logger> __logger = nullptr);
+
+    /**
+     * @brief Construct a new LidarDevice
+     * 
+     * For cases in which you already know the path to the JSON
+     * configuration file; calling this constructor is identical to calling
+     * the no-arguments constructor and then calling \c initialize.
+     * 
+     * @param _config Path to the JSON configuration file for the device
+     * @param _sensorUid UID of the specific sensor to emulate, e.g. lidar_0000
+     * @param __logger Logger to use instead of creating a 
+     */
     LidarDevice(const std::string& _config, const std::string& _sensorUid, std::shared_ptr<spdlog::logger> __logger = nullptr);
+
+    /**
+     * @brief Construct a new LidarDevice
+     * 
+     * For cases in which you already know the path to the JSON
+     * configuration file; calling this constructor is identical to calling
+     * the no-arguments constructor and then calling \c initialize.
+     * 
+     * @param _config Path to the JSON configuration file for the device
+     * @param _sensorUid UID of the specific sensor to emulate, e.g. lidar_0000
+     * @param _transformFile File containing output of SENSR configuration
+     *                       endpoint for sensor UID _sensorUid
+     * @param __logger Logger to use instead of creating a 
+     */
     LidarDevice(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile, std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**

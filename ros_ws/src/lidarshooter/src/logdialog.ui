@@ -24,9 +24,23 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
+     <widget class="QLabel" name="labelTextEditBottom">
+      <property name="text">
+       <string>LiDAR Device Log</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTextEdit" name="textEditLogTop">
       <property name="readOnly">
        <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="labelTextEditTop">
+      <property name="text">
+       <string>Mesh Log</string>
       </property>
      </widget>
     </item>
