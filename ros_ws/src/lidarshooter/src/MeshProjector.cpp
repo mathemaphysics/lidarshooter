@@ -26,14 +26,19 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::Duration __tracePeriod)
+lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device))
 {
     // Set up the logger
-    _logger = spdlog::get(_applicationName);
-    if (_logger == nullptr)
-        _logger = spdlog::stdout_color_mt(_applicationName);
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get(_applicationName);
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt(_applicationName);
+    }
+    else
+        _logger = __logger;
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
@@ -94,14 +99,19 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _meshWasUpdated.store(true);
 }
 
-lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod, ros::Duration __tracePeriod)
+lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device))
 {
     // Set up the logger
-    _logger = spdlog::get(_applicationName);
-    if (_logger == nullptr)
-        _logger = spdlog::stdout_color_mt(_applicationName);
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get(_applicationName);
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt(_applicationName);
+    }
+    else
+        _logger = __logger;
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
