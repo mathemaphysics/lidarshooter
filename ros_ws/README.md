@@ -5,4 +5,4 @@ files for testing the RailSentry system.
 
 There are two node programs that build and install via the catkin build system:
 1. `objtracker`
-2. `lidarshooter`
+2. `projector`

@@ -118,6 +118,16 @@ private:
     float *_groundVertices;
     unsigned *_groundQuadrilaterals;
 
+    // Object and ground buffer allocation size
+    long _objectVerticesBufferSize;
+    long _objectElementsBufferSize;
+    long _groundVerticesBufferSize;
+    long _groundElementsBufferSize;
+    RTCBuffer _objectVerticesBuffer;
+    RTCBuffer _objectElementsBuffer;
+    RTCBuffer _groundVerticesBuffer;
+    RTCBuffer _groundElementsBuffer;
+
     // Messages in class format
     pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector
     sensor_msgs::PointCloud2 _currentState;
@@ -227,5 +237,25 @@ private:
      * @param rayhit The input/output ray hit data structure
      */
     void getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit);
+
+    /**
+     * @brief Set up object geometry buffers
+     */
+    void setupObjectGeometryBuffers(int _numVertices, int _numElements);
+    
+    /**
+     * @brief Set up ground geometry buffers
+     */
+    void setupGroundGeometryBuffers(int _numVertices, int _numElements);
+
+    /**
+     * @brief Clean up object geometry buffers
+     */
+    void releaseObjectGeometryBuffers();
+
+    /**
+     * @brief Clean up ground geometry buffers
+     */
+    void releaseGroundGeometryBuffers();
 };
 }

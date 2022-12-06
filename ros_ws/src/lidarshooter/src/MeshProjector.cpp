@@ -27,7 +27,8 @@
 #include <Eigen/Geometry>
 
 lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::Duration __tracePeriod)
-    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod)
+    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+      _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device))
 {
     // Set up the logger
     _logger = spdlog::get(_applicationName);
@@ -36,6 +37,10 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
+    
+    // Set up geometry
+    setupObjectGeometryBuffers(3000, 6000);
+    setupGroundGeometryBuffers(8, 2);
 
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
@@ -90,7 +95,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 }
 
 lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod, ros::Duration __tracePeriod)
-    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod)
+    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+      _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device))
 {
     // Set up the logger
     _logger = spdlog::get(_applicationName);
@@ -99,7 +105,11 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
-    
+
+    // Set up geometry
+    setupObjectGeometryBuffers(3000, 6000);
+    setupGroundGeometryBuffers(8, 2);
+
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
     std::regex slashRegex("/");
@@ -152,6 +162,8 @@ lidarshooter::MeshProjector::~MeshProjector()
 {
     // Probably some geometry cleanup if possible here when making the geometry
     // buffers persistent gets sorted
+    releaseObjectGeometryBuffers();
+    releaseGroundGeometryBuffers();
 }
 
 void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh)
@@ -299,45 +311,13 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
 
 void lidarshooter::MeshProjector::traceMesh()
 {
-    // For the time being we *must* initialize the scene here; make _device and _scene local variables?
-    _device = rtcNewDevice(nullptr);
-    _scene = rtcNewScene(_device);
-
-    // Create the geometry buffers for tracked object's vertices and indexes
-    _objectGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    _objectVertices = (float*) rtcSetNewGeometryBuffer(
-        _objectGeometry, RTC_BUFFER_TYPE_VERTEX, 0,
-        RTC_FORMAT_FLOAT3, 3 * sizeof(float),
-        _trackObject.cloud.width * _trackObject.cloud.height
-    );
-    _objectTriangles = (unsigned*) rtcSetNewGeometryBuffer(
-        _objectGeometry, RTC_BUFFER_TYPE_INDEX, 0,
-        RTC_FORMAT_UINT3, 3 * sizeof(unsigned),
-        _trackObject.polygons.size()
-    );
-
-    // Create the geometry buffers for the ground vertices and indexes
-    _groundGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_QUAD);
-    _groundVertices = (float*) rtcSetNewGeometryBuffer(
-        _groundGeometry, RTC_BUFFER_TYPE_VERTEX, 0,
-        RTC_FORMAT_FLOAT3, 3 * sizeof(float),
-        4
-    );
-    _groundQuadrilaterals = (unsigned*) rtcSetNewGeometryBuffer(
-        _groundGeometry, RTC_BUFFER_TYPE_INDEX, 0,
-        RTC_FORMAT_UINT4, 4 * sizeof(unsigned),
-        1
-    );
-
     // Update mesh with new locations and possibly structure
     updateGround();
     updateMeshPolygons(_frameIndex);
     rtcCommitGeometry(_objectGeometry);
     rtcCommitGeometry(_groundGeometry);
-    rtcAttachGeometry(_scene, _objectGeometry);
-    rtcAttachGeometry(_scene, _groundGeometry);
-    rtcReleaseGeometry(_objectGeometry);
-    rtcReleaseGeometry(_groundGeometry);
+    //rtcReleaseGeometry(_objectGeometry);
+    //rtcReleaseGeometry(_groundGeometry);
     rtcCommitScene(_scene);
 
     // Trace out the Hesai configuration for now
@@ -406,10 +386,6 @@ void lidarshooter::MeshProjector::traceMesh()
         th->join();
 
     _publishMutex.unlock();
-
-    // Spoof the LiDAR device
-    rtcReleaseScene(_scene);
-    rtcReleaseDevice(_device);
 }
 
 void lidarshooter::MeshProjector::getMeshIntersect(int *_valid, RayHitType *_rayhit)
@@ -451,4 +427,72 @@ void lidarshooter::MeshProjector::getMeshIntersect16(const int *validRays, RTCRa
     // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
     // at a distance of rayhit.ray.tfar
     rtcIntersect16(validRays, _scene, &context, rayhit);
+}
+
+void lidarshooter::MeshProjector::setupObjectGeometryBuffers(int _numVertices, int _numElements)
+{
+    // Create the geometry itself
+    _objectGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+
+    // Now create the actual storage space for the vertices and set up
+    _objectVertices = new float[_numVertices * 3 * sizeof(float)];
+    _objectVerticesBuffer = rtcNewSharedBuffer(_device, _objectVertices, _numVertices * 3 * sizeof(float));
+    rtcSetSharedGeometryBuffer(_objectGeometry, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, _objectVertices, 0, 3 * sizeof(float), _numVertices);
+
+    // Now create the actual storage space for the elements and set up
+    _objectTriangles = new unsigned[3 * sizeof(unsigned) * _numElements];
+    _objectElementsBuffer = rtcNewSharedBuffer(_device, _objectTriangles, _numElements * 3 * sizeof(unsigned));
+    rtcSetSharedGeometryBuffer(_objectGeometry, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, _objectTriangles, 0, 3 * sizeof(unsigned), _numElements);
+
+    // Attach this geometry to the global scene
+    rtcAttachGeometry(_scene, _objectGeometry);
+
+    // Save in case we need to check for insufficient allocated space
+    _objectVerticesBufferSize = _numVertices;
+    _objectElementsBufferSize = _numElements;
+}
+
+void lidarshooter::MeshProjector::setupGroundGeometryBuffers(int _numVertices, int _numElements)
+{
+    // Create the geometry buffers for the ground vertices; just a quadrilateral
+    _groundGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_QUAD);
+
+    // Do the allocation
+    _groundVertices = new float[_numVertices * 3 * sizeof(float)];
+    _groundVerticesBuffer = rtcNewSharedBuffer(_device, _groundVertices, _numVertices * 3 * sizeof(float));
+    rtcSetSharedGeometryBuffer(_groundGeometry, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, _groundVertices, 0, 3 * sizeof(float), _numVertices);
+    
+    // Repeat for the elements
+    _groundQuadrilaterals = new unsigned[_numElements * 4 * sizeof(unsigned)];
+    _groundElementsBuffer = rtcNewSharedBuffer(_device, _groundQuadrilaterals, _numElements * 4 * sizeof(unsigned));
+    rtcSetSharedGeometryBuffer(_groundGeometry, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, _groundQuadrilaterals, 0, 4 * sizeof(unsigned), _numElements);
+
+    // Attach the ground geometry to the global scene for tracing
+    rtcAttachGeometry(_scene, _groundGeometry);
+
+    // Save in case we need to check for insufficient allocated space
+    _groundVerticesBufferSize = _numVertices;
+    _groundElementsBufferSize = _numElements;
+}
+
+void lidarshooter::MeshProjector::releaseObjectGeometryBuffers()
+{
+    // Allow embree to do its thing
+    rtcReleaseBuffer(_objectVerticesBuffer);
+    rtcReleaseBuffer(_objectElementsBuffer);
+
+    // Release the memory
+    delete [] _objectVertices;
+    delete [] _objectTriangles;
+}
+
+void lidarshooter::MeshProjector::releaseGroundGeometryBuffers()
+{
+    // Allow embree to do its thing
+    rtcReleaseBuffer(_groundVerticesBuffer);
+    rtcReleaseBuffer(_groundElementsBuffer);
+
+    // Release the memory
+    delete [] _groundVertices;
+    delete [] _groundQuadrilaterals;
 }
