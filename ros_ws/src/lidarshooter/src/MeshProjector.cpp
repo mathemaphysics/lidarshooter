@@ -50,8 +50,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _groundElementsBufferSize = 0;
     
     // Set up geometry
-    setupObjectGeometryBuffers(3000, 6000);
-    setupGroundGeometryBuffers(8, 2);
+    setupObjectGeometryBuffers(3000, 6000); // TODO: Fix this immediately
+    setupGroundGeometryBuffers(8, 2);       // TODO: You need automatic buffer sizing
 
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
