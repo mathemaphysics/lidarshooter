@@ -97,7 +97,7 @@
       <x>430</x>
       <y>450</y>
       <width>331</width>
-      <height>131</height>
+      <height>101</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -115,22 +115,6 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditTranslation">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="pushButtonRotation">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -144,15 +128,15 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditRotation">
+      <widget class="QPushButton" name="pushButton">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="readOnly">
-        <bool>true</bool>
+       <property name="text">
+        <string>Save Mesh</string>
        </property>
       </widget>
      </item>
@@ -209,9 +193,6 @@
   <tabstop>pushButtonMeshFile</tabstop>
   <tabstop>lineEditMeshFile</tabstop>
   <tabstop>pushButtonTranslation</tabstop>
-  <tabstop>lineEditTranslation</tabstop>
-  <tabstop>pushButtonRotation</tabstop>
-  <tabstop>lineEditRotation</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -247,9 +228,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>slotPushButtonSaveMesh()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>582</x>
+     <y>590</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>575</x>
+     <y>634</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>slotLogPoseRotation()</slot>
   <slot>slotLogPoseTranslation()</slot>
+  <slot>slotPushButtonSaveMesh()</slot>
  </slots>
 </ui>

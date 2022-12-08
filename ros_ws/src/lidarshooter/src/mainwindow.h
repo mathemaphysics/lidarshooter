@@ -15,6 +15,7 @@
 #include <pcl/point_types.h>
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
+#include <pcl/common/transforms.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <vtkRenderWindow.h>
 #include <vtkGenericOpenGLRenderWindow.h>
@@ -39,8 +40,7 @@ private slots:
     void slotLogPoseTranslation();
     void slotLogPoseRotation();
     void slotInitMeshProjector();
-
-    void on_pushButtonDialog_clicked();
+    void slotPushButtonSaveMesh();
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;

@@ -6,6 +6,8 @@
 
 #include <Eigen/Dense>
 
+#include "XYZIRPoint.hpp"
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -110,8 +112,8 @@ void MainWindow::slotInitMeshProjector()
     // Initializes the mesh projection process
 }
 
-void MainWindow::on_pushButtonDialog_clicked()
+void MainWindow::slotPushButtonSaveMesh()
 {
-    logDialog->show();
+    //pcl::transformPointCloud<pcl::PointXYZRGBA>(*cloud, *cloud, viewer->getViewerPose().matrix());
+    pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }
-
