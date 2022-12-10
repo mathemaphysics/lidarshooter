@@ -9,6 +9,7 @@
  */
 
 #include "LidarDevice.hpp"
+#include "Exceptions.hpp"
 
 #include <cstdint>
 #include <string>
@@ -431,9 +432,38 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
     // Device
     if (jsonData.isMember("device"))
     {
-        _device.sensorUid = jsonData["device"].get("sensorUid", "lidar_0000").asString();
-        _device.sensorApiUrl = jsonData["device"].get("sensorApiUrl", "localhost").asString();
-        _device.sensorApiPort = jsonData["device"].get("sensorApiPort", 9080).asUInt();
+        if (jsonData["device"].isMember("sensorConfig"))
+        {
+            // Full configuration was specified; this takes precedent
+            loadTransformationFromJson(jsonData["device"]["sensorConfig"]);
+        }
+        else if (jsonData["device"].isMember("sensorConfigFile"))
+        {
+            // File is specified; use this before API endpoint if present
+            auto fullPath = std::filesystem::path(
+                jsonData["device"]
+                    .get("sensorConfigFile", "transform-device.json")
+                    .asString());
+            if (!std::filesystem::exists(fullPath))
+            {
+                _logger->error("File not found: {}", fullPath.string());
+                throw(
+                    ConfigurationException(
+                        fullPath.string(),
+                        __FILE__,
+                        "File not found",
+                        1
+                    )
+                );
+            }
+            loadTransformationFromFile(jsonData["device"].get("sensorConfigFile", "").asString());
+        }
+        else
+        {
+            _device.sensorUid = jsonData["device"].get("sensorUid", "lidar_0000").asString();
+            _device.sensorApiUrl = jsonData["device"].get("sensorApiUrl", "localhost").asString();
+            _device.sensorApiPort = jsonData["device"].get("sensorApiPort", 9080).asUInt();
+        }
     }
     else
         _logger->error("Configuration file {} is missing device section", _config);
@@ -579,37 +609,7 @@ int lidarshooter::LidarDevice::loadTransformationFromUrl(std::string __requestUr
 
     // Only access jsonData if we know it was parsed correcctly
     if (_transformLoaded)
-    {
-        // Load the base-to-origin translation
-        if (jsonData.isMember("base_to_origin"))
-        {
-            _device.transform.baseToOrigin.tx = jsonData["base_to_origin"].get("tx", 0.0).asFloat();
-            _device.transform.baseToOrigin.ty = jsonData["base_to_origin"].get("ty", 0.0).asFloat();
-        }
-        else
-            _logger->warn("Section base_to_origin missing from transform data");
-        
-        // Load the sensor-to-base transformation
-        if (jsonData.isMember("sensor_to_base"))
-        {
-            // Extract with defaults assumed
-            _device.transform.sensorToBase.qw = jsonData["sensor_to_base"].get("qw", 0.0).asFloat();
-            _device.transform.sensorToBase.qx = jsonData["sensor_to_base"].get("qx", 0.0).asFloat();
-            _device.transform.sensorToBase.qy = jsonData["sensor_to_base"].get("qy", 0.0).asFloat();
-            _device.transform.sensorToBase.qz = jsonData["sensor_to_base"].get("qz", 0.0).asFloat();
-            _device.transform.sensorToBase.tz = jsonData["sensor_to_base"].get("tz", 0.0).asFloat();
-
-            // Set the stored quaternion
-            _device.transform.sensorToBase.q.w() = _device.transform.sensorToBase.qw;
-            _device.transform.sensorToBase.q.x() = _device.transform.sensorToBase.qx;
-            _device.transform.sensorToBase.q.y() = _device.transform.sensorToBase.qy;
-            _device.transform.sensorToBase.q.z() = _device.transform.sensorToBase.qz;
-            _device.transform.sensorToBase.R = _device.transform.sensorToBase.q.toRotationMatrix();
-            _device.transform.sensorToBase.Rinv = _device.transform.sensorToBase.q.toRotationMatrix().inverse();
-        }
-        else
-            _logger->warn("Section sensor_to_base missing from transform data");
-    }
+        loadTransformationFromJson(jsonData);
     else
         _logger->error("Transform data could not be parsed");
 
@@ -657,39 +657,47 @@ int lidarshooter::LidarDevice::loadTransformationFromFile(std::string _transform
 
     // Only access jsonData if we know it was parsed correcctly
     if (_transformLoaded)
-    {
-        // Load the base-to-origin translation
-        if (jsonData.isMember("base_to_origin"))
-        {
-            _device.transform.baseToOrigin.tx = jsonData["base_to_origin"].get("tx", 0.0).asFloat();
-            _device.transform.baseToOrigin.ty = jsonData["base_to_origin"].get("ty", 0.0).asFloat();
-        }
-        else
-            _logger->warn("Section base_to_origin missing from transform data");
-        
-        // Load the sensor-to-base transformation
-        if (jsonData.isMember("sensor_to_base"))
-        {
-            // Extract with defaults assumed
-            _device.transform.sensorToBase.qw = jsonData["sensor_to_base"].get("qw", 0.0).asFloat();
-            _device.transform.sensorToBase.qx = jsonData["sensor_to_base"].get("qx", 0.0).asFloat();
-            _device.transform.sensorToBase.qy = jsonData["sensor_to_base"].get("qy", 0.0).asFloat();
-            _device.transform.sensorToBase.qz = jsonData["sensor_to_base"].get("qz", 0.0).asFloat();
-            _device.transform.sensorToBase.tz = jsonData["sensor_to_base"].get("tz", 0.0).asFloat();
-
-            // Set the stored quaternion
-            _device.transform.sensorToBase.q.w() = _device.transform.sensorToBase.qw;
-            _device.transform.sensorToBase.q.x() = _device.transform.sensorToBase.qx;
-            _device.transform.sensorToBase.q.y() = _device.transform.sensorToBase.qy;
-            _device.transform.sensorToBase.q.z() = _device.transform.sensorToBase.qz;
-            _device.transform.sensorToBase.R = _device.transform.sensorToBase.q.toRotationMatrix();
-            _device.transform.sensorToBase.Rinv = _device.transform.sensorToBase.q.toRotationMatrix().inverse();
-        }
-        else
-            _logger->warn("Section sensor_to_base missing from transform data");
-    }
+        loadTransformationFromJson(jsonData);
     else
         _logger->error("Transform data could not be parsed");
+
+    // In URL version of this function we would save the transform JSON here;
+    // but we just read it from a file ;-)
+
+    return 0;
+}
+
+int lidarshooter::LidarDevice::loadTransformationFromJson(const Json::Value& _transformJson)
+{
+    // Load the base-to-origin translation
+    if (_transformJson.isMember("base_to_origin"))
+    {
+        _device.transform.baseToOrigin.tx = _transformJson["base_to_origin"].get("tx", 0.0).asFloat();
+        _device.transform.baseToOrigin.ty = _transformJson["base_to_origin"].get("ty", 0.0).asFloat();
+    }
+    else
+        _logger->warn("Section base_to_origin missing from transform data");
+    
+    // Load the sensor-to-base transformation
+    if (_transformJson.isMember("sensor_to_base"))
+    {
+        // Extract with defaults assumed
+        _device.transform.sensorToBase.qw = _transformJson["sensor_to_base"].get("qw", 0.0).asFloat();
+        _device.transform.sensorToBase.qx = _transformJson["sensor_to_base"].get("qx", 0.0).asFloat();
+        _device.transform.sensorToBase.qy = _transformJson["sensor_to_base"].get("qy", 0.0).asFloat();
+        _device.transform.sensorToBase.qz = _transformJson["sensor_to_base"].get("qz", 0.0).asFloat();
+        _device.transform.sensorToBase.tz = _transformJson["sensor_to_base"].get("tz", 0.0).asFloat();
+
+        // Set the stored quaternion
+        _device.transform.sensorToBase.q.w() = _device.transform.sensorToBase.qw;
+        _device.transform.sensorToBase.q.x() = _device.transform.sensorToBase.qx;
+        _device.transform.sensorToBase.q.y() = _device.transform.sensorToBase.qy;
+        _device.transform.sensorToBase.q.z() = _device.transform.sensorToBase.qz;
+        _device.transform.sensorToBase.R = _device.transform.sensorToBase.q.toRotationMatrix();
+        _device.transform.sensorToBase.Rinv = _device.transform.sensorToBase.q.toRotationMatrix().inverse();
+    }
+    else
+        _logger->warn("Section sensor_to_base missing from transform data");
 
     // In URL version of this function we would save the transform JSON here;
     // but we just read it from a file ;-)

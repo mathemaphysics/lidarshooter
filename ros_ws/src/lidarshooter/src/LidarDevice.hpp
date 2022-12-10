@@ -367,10 +367,18 @@ private:
     /**
      * @brief Reads the configuration of \c _sensorUid device from SENSR API
      * 
-     * @param _transformJson URL of the SENSR host
+     * @param _transformFile Path to the file to load
      * @return int Zero if okay, < 0 if failure
      */
     int loadTransformationFromFile(std::string _transformFile);
+
+    /**
+     * @brief Reads the configuration of \c _sensorUid device from SENSR API
+     * 
+     * @param _transformJson Json::Value containing the transformation data
+     * @return int Zero if okay, < 0 if failure
+     */
+    int loadTransformationFromJson(const Json::Value& _transformJson);
 
     /**
      * @brief Iterate one ray forward; return 1 of done, else 0

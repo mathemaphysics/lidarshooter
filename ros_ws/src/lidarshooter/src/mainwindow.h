@@ -63,6 +63,7 @@ private:
     QMetaObject::Connection pushButtonMeshConnection;
     QMetaObject::Connection lineEditMeshConnection;
     QMetaObject::Connection receiveMeshConnection;
+    QMetaObject::Connection pushButtonShowDialogConnection;
 
     // Other QObjects not in UI; why can't QFileDialog be in UI?
     QFileDialog* configFileDialog;

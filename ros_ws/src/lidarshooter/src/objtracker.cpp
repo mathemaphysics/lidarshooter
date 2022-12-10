@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     logger->info("Triangles in tracked object   : {}", trackObject.polygons.size());
 
     // The main loop; each iteration produces a new point cloud
-    ros::Rate rate(10);
+    ros::Rate rate(10); // TODO: Make this an input parameter
     while (ros::ok())
     {
         // Convert mesh to pcl_msgs::PolygonMesh
