@@ -94,40 +94,12 @@ lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::st
     initialize(_config, _sensorUid);
 }
 
-lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile, std::shared_ptr<spdlog::logger> __logger)
-{
-    // Set up the logger
-    if (__logger == nullptr)
-    {
-        _logger = spdlog::get(_applicationName);
-        if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
-    }
-    else
-        _logger = __logger;
-
-    // Load configuration and transformation
-    initialize(_config, _sensorUid, _transformFile);
-}
-
 void lidarshooter::LidarDevice::initialize(const std::string& _config)
 {
     // Load the configuration defining rays here from _config
     _channels.count = 0;
     if (_config.length() > 0)
         loadConfiguration(_config);
-
-    // Load the transformation for this device
-    int loadResult = loadTransformationFromUrl(
-        _device.sensorApiUrl + ":"
-        + std::to_string((unsigned int)_device.sensorApiPort)
-        + _sensrGetEndpoint
-        + _device.sensorUid
-    );
-
-    // Check
-    if (loadResult < 0)
-        _logger->warn("Something went wrong while loading the transform");
 
     // Set the index pointing to current ray to zero
     reset();
@@ -138,39 +110,7 @@ void lidarshooter::LidarDevice::initialize(const std::string& _config, const std
     // Load the configuration defining rays here from _config
     _channels.count = 0;
     if (_config.length() > 0)
-        loadConfiguration(_config);
-
-    // Load the transformation for this device
-    int loadResult = loadTransformationFromUrl(
-        _device.sensorApiUrl + ":"
-        + std::to_string((unsigned int)_device.sensorApiPort)
-        + _sensrGetEndpoint
-        + _sensorUid
-    );
-
-    // Check
-    if (loadResult < 0)
-        _logger->warn("Something went wrong while loading the transform");
-
-    // Set the index pointing to current ray to zero
-    reset();
-}
-
-void lidarshooter::LidarDevice::initialize(const std::string& _config, const std::string& _sensorUid, const std::string& _transformFile)
-{
-    // Load the configuration defining rays here from _config
-    _channels.count = 0;
-    if (_config.length() > 0)
-        loadConfiguration(_config);
-
-    // Load the transformation for this device
-    int loadResult = loadTransformationFromFile(
-        _transformFile
-    );
-
-    // Check
-    if (loadResult < 0)
-        _logger->warn("Something went wrong while loading the transform");
+        loadConfiguration(_config, _sensorUid);
 
     // Set the index pointing to current ray to zero
     reset();
@@ -417,7 +357,7 @@ const std::string& lidarshooter::LidarDevice::getSensorUid() const
     return _device.sensorUid;
 }
 
-int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
+int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, const std::string& _sensorUid)
 {
     // Extract the message
 	Json::Value jsonData;
@@ -436,6 +376,10 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
         {
             // Full configuration was specified; this takes precedent
             loadTransformationFromJson(jsonData["device"]["sensorConfig"]);
+
+            // Overwrite the loaded value of sensorUid if specified
+            if (_sensorUid.length() > 0)
+                _device.sensorUid = _sensorUid;
         }
         else if (jsonData["device"].isMember("sensorConfigFile"))
         {
@@ -457,12 +401,33 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config)
                 );
             }
             loadTransformationFromFile(jsonData["device"].get("sensorConfigFile", "").asString());
+
+            // Overwrite the loaded value of sensorUid if specified
+            if (_sensorUid.length() > 0)
+                _device.sensorUid = _sensorUid;
         }
         else
         {
+            // Set the values and then call the load from URL
             _device.sensorUid = jsonData["device"].get("sensorUid", "lidar_0000").asString();
             _device.sensorApiUrl = jsonData["device"].get("sensorApiUrl", "localhost").asString();
             _device.sensorApiPort = jsonData["device"].get("sensorApiPort", 9080).asUInt();
+
+            // Overwrite the loaded value of sensorUid if specified
+            if (_sensorUid.length() > 0)
+                _device.sensorUid = _sensorUid;
+
+            // Load the transformation for this device
+            int loadResult = loadTransformationFromUrl(
+                _device.sensorApiUrl + ":"
+                + std::to_string((unsigned int)_device.sensorApiPort)
+                + _sensrGetEndpoint
+                + _device.sensorUid
+            );
+
+            // Check that the query worked
+            if (loadResult < 0)
+                _logger->warn("Something went wrong while loading the transform");
         }
     }
     else
