@@ -11,6 +11,7 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/qt_sinks.h>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/vtk_io.h>
@@ -45,7 +46,7 @@ private slots:
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
     vtkSmartPointer<vtkGenericOpenGLRenderWindow> window;
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 
 private:
     // UI instance

@@ -55,12 +55,21 @@ private:
     std::string fileName;
 };
 
-class FileNotFoundException : public ConfigurationException
+class CloudNotSetException : public BaseException
 {
 public:
+    CloudNotSetException() = default;
+    CloudNotSetException(std::string _errorLocation, std::string _errorString, long _errorCode)
+        : BaseException(_errorLocation, _errorString, _errorCode) {}
+    ~CloudNotSetException() = default;
+
+    virtual std::string getError() override
+    {
+        return fmt::format("CloudNotSet error: {} in {} (code {})", getErrorString(), getErrorLocation(), getErrorCode());
+    }
 
 private:
-
+    std::string fileName;
 };
 
 }

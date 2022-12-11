@@ -323,7 +323,7 @@ int lidarshooter::LidarDevice::nextRay16(RTCRayHit16& _ray, int *_valid)
     return 0;
 }
 
-void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor)
+void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor) const
 {
     Eigen::Vector3f translated = _sensor - Eigen::Vector3f(
         _device.transform.baseToOrigin.tx,
@@ -391,14 +391,12 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
             if (!std::filesystem::exists(fullPath))
             {
                 _logger->error("File not found: {}", fullPath.string());
-                throw(
-                    ConfigurationException(
+                throw(ConfigurationException(
                         fullPath.string(),
                         __FILE__,
                         "File not found",
                         1
-                    )
-                );
+                ));
             }
             loadTransformationFromFile(jsonData["device"].get("sensorConfigFile", "").asString());
 

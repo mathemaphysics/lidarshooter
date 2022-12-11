@@ -117,6 +117,7 @@ void MainWindow::slotInitMeshProjector()
 
 void MainWindow::slotPushButtonSaveMesh()
 {
-    //pcl::transformPointCloud<pcl::PointXYZRGBA>(*cloud, *cloud, viewer->getViewerPose().matrix());
+    //pcl::fromPCLPointCloud2(mesh->cloud, *cloud);
+    //pcl::transformPointCloud(mesh->cloud, mesh->cloud, viewer->getViewerPose().matrix());
     pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }

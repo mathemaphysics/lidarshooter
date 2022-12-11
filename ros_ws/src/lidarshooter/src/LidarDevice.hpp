@@ -200,7 +200,7 @@ public:
      * 
      * @param _sensor Vector to transform; in global basis
      */
-    void originToSensor(Eigen::Vector3f& _sensor);
+    void originToSensor(Eigen::Vector3f& _sensor) const;
 
     /**
      * @brief Reset ray batch variables \c _verticalIndex and \c _horizontalIndex to start over
