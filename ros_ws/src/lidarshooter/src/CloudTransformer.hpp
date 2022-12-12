@@ -20,8 +20,6 @@ public:
 	~CloudTransformer() = default;
 
 	void setPointCloud(pcl::PCLPointCloud2::Ptr __cloud);
-	void setTransform(const Eigen::Affine3f& __transform);
-	void setTransform(const Eigen::Vector3f& __translation, Eigen::Vector3f& __rotation);
 	void applyTransform();
 
 private:

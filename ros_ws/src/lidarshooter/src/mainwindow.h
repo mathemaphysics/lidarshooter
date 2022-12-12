@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QMetaObject>
 #include <QFileDialog>
+
 #include "logdialog.h"
 
 #include <memory>

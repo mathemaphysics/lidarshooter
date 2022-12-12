@@ -7,6 +7,8 @@
 #include <Eigen/Dense>
 
 #include "XYZIRPoint.hpp"
+#include "CloudTransformer.hpp"
+#include "LidarDevice.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -117,7 +119,8 @@ void MainWindow::slotInitMeshProjector()
 
 void MainWindow::slotPushButtonSaveMesh()
 {
-    //pcl::fromPCLPointCloud2(mesh->cloud, *cloud);
-    //pcl::transformPointCloud(mesh->cloud, mesh->cloud, viewer->getViewerPose().matrix());
+    auto deviceConfig = lidarshooter::LidarDevice(configFile.toStdString(), loggerTop);
+    lidarshooter::CloudTransformer cloudTransformer(viewer->getViewerPose(), deviceConfig);
+    cloudTransformer.setPointCloud(pcl::PCLPointCloud2::Ptr(&(mesh->cloud)));
     pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }

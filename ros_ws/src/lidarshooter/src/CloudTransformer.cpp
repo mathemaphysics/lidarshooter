@@ -40,6 +40,11 @@ lidarshooter::CloudTransformer::CloudTransformer(const Eigen::Vector3f& __transl
     transformFromComponents(_translation, _rotation);
 }
 
+void lidarshooter::CloudTransformer::setPointCloud(pcl::PCLPointCloud2::Ptr __cloud)
+{
+    _cloud = __cloud;
+}
+
 void lidarshooter::CloudTransformer::applyTransform()
 {
     if (_cloud == nullptr)
