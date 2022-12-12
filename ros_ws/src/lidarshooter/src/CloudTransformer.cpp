@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 
 #include <memory>
+#include <thread>
+#include <chrono>
 
 lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, const LidarDevice& __config)
     : _transform(__transform), _config(__config)
@@ -49,29 +51,58 @@ void lidarshooter::CloudTransformer::applyTransform()
         ));
     }
 
-    for (std::size_t jdx = 0; jdx < _cloud->width * _cloud->height; ++jdx)
+    // TODO: This should be threaded
+    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int startPointIndex = 0;
+
+    // Overall: for (std::size_t jdx = 0; jdx < numTotalPoint; ++jdx)
+    std::vector<std::thread> threads;
+    for (int threadIdx = 0; threadIdx < numThreads; ++threadIdx)
     {
-        auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
-        
-        float px, py, pz;
-        auto point = lidarshooter::XYZIRPoint(rawData);
-        point.getPoint(&px, &py, &pz, nullptr, nullptr);
+        // Number of iterations for the current threadIdx
+        unsigned int numIterations =
+            numTotalPoints / numThreads
+                + (threadIdx < numTotalPoints % numThreads ? 1 : 0);
 
-        // Rotate into the local coordinate frame for this device
-        Eigen::Vector3f ptrans(px, py, pz);
- 
-        // Apply the affine transformation and then transf
-        ptrans = _transform * ptrans;
-        _config.originToSensor(ptrans);
+        // Start thread index threadIdx
+        threads.emplace_back(
+            [this, numIterations, threadIdx, startPointIndex]() {
+                for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
+                {
+                    // No mutex required since we're accessing different locations
+                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
 
-        // Linear position update here
-        point.asPoint.xPos = ptrans.x();
-        point.asPoint.yPos = ptrans.y();
-        point.asPoint.zPos = ptrans.z();
+                    // TODO: Generalize this to what will likely be different point types
+                    float px, py, pz;
+                    auto point = lidarshooter::XYZIRPoint(rawData);
+                    point.getPoint(&px, &py, &pz, nullptr, nullptr);
 
-        // Write it to memory
-        point.writePoint(rawData);
+                    // Rotate into the local coordinate frame for this device
+                    Eigen::Vector3f ptrans(px, py, pz);
+
+                    // Apply the affine transformation and then transf
+                    ptrans = _transform * ptrans;
+                    _config.originToSensor(ptrans);
+
+                    // Linear position update here
+                    point.asPoint.xPos = ptrans.x();
+                    point.asPoint.yPos = ptrans.y();
+                    point.asPoint.zPos = ptrans.z();
+
+                    // Write it to memory; no mutex required
+                    point.writePoint(rawData);
+                }
+            }
+        );
+
+        // Each block might be different size
+        startPointIndex += numIterations;
     }
+
+    // For the sake of sanity block here
+    for (auto threadItr = threads.begin(); threadItr != threads.end(); ++threadItr)
+        threadItr->join();
 }
 
 void lidarshooter::CloudTransformer::transformFromComponents(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation)

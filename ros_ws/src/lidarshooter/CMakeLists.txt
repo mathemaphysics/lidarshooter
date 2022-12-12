@@ -141,12 +141,18 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+option(ENABLE_OPENACC "Enable compilation with OpenACC" OFF)
+
 find_package(PCL REQUIRED)
 find_package(Poco COMPONENTS Net REQUIRED)
 #find_package(jsoncpp REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS program_options system)
+
+if (ENABLE_OPENACC)
+find_package(OpenACC REQUIRED)
+endif(ENABLE_OPENACC)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -319,7 +325,13 @@ add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
 
 add_library(lidarshooter src/IntBytes.cpp src/FloatBytes.cpp src/XYZIRBytes.cpp src/XYZIRPoint.cpp src/LidarDevice.cpp src/MeshProjector.cpp src/CloudTransformer.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
+if (ENABLE_OPENACC)
+    target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
+endif (ENABLE_OPENACC)
 target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
 target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
+if (ENABLE_OPENACC)
+    target_link_libraries(lidarshooter OpenACC::OpenACC_CXX)
+endif (ENABLE_OPENACC)
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
