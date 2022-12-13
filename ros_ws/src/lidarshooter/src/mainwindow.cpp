@@ -120,7 +120,10 @@ void MainWindow::slotInitMeshProjector()
 void MainWindow::slotPushButtonSaveMesh()
 {
     auto deviceConfig = lidarshooter::LidarDevice(configFile.toStdString(), loggerTop);
-    lidarshooter::CloudTransformer cloudTransformer(viewer->getViewerPose(), deviceConfig);
-    cloudTransformer.setPointCloud(pcl::PCLPointCloud2::Ptr(&(mesh->cloud)));
+    auto cloudCopy = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
+    pcl::copyPointCloud(mesh->cloud, *cloudCopy);
+    lidarshooter::CloudTransformer cloudTransformer(cloudCopy, viewer->getViewerPose(), deviceConfig);
+    cloudTransformer.applyTransform();
+    pcl::copyPointCloud(*cloudCopy, mesh->cloud);
     pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }

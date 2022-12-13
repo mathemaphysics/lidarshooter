@@ -375,6 +375,7 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
         if (jsonData["device"].isMember("sensorConfig"))
         {
             // Full configuration was specified; this takes precedent
+            _logger->info("Loading inline sensor config");
             loadTransformationFromJson(jsonData["device"]["sensorConfig"]);
 
             // Overwrite the loaded value of sensorUid if specified
@@ -398,6 +399,7 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
                         1
                 ));
             }
+            _logger->info("Loading sensor config from file {}", fullPath.string());
             loadTransformationFromFile(jsonData["device"].get("sensorConfigFile", "").asString());
 
             // Overwrite the loaded value of sensorUid if specified
@@ -416,6 +418,7 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
                 _device.sensorUid = _sensorUid;
 
             // Load the transformation for this device
+            _logger->info("Getting sensor config from SENSR API");
             int loadResult = loadTransformationFromUrl(
                 _device.sensorApiUrl + ":"
                 + std::to_string((unsigned int)_device.sensorApiPort)
