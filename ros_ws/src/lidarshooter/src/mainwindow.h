@@ -19,8 +19,16 @@
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/common/transforms.h>
 #include <pcl/visualization/pcl_visualizer.h>
+
 #include <vtkRenderWindow.h>
 #include <vtkGenericOpenGLRenderWindow.h>
+
+#include <Eigen/Dense>
+
+#include "XYZIRPoint.hpp"
+#include "CloudTransformer.hpp"
+#include "LidarDevice.hpp"
+#include "MeshProjector.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -41,13 +49,12 @@ private slots:
     void slotReceiveMeshFile(QString);
     void slotLogPoseTranslation();
     void slotLogPoseRotation();
-    void slotInitMeshProjector();
     void slotPushButtonSaveMesh();
+    void slotPushButtonMeshProjector();
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
     vtkSmartPointer<vtkGenericOpenGLRenderWindow> window;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 
 private:
     // UI instance
@@ -76,6 +83,7 @@ private:
     QString configFile;
     QString meshFile;
     pcl::PolygonMesh::Ptr mesh;
+    lidarshooter::MeshProjector* meshProjector;
 };
 
 #endif // MAINWINDOW_H

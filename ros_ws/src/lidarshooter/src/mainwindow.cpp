@@ -2,14 +2,6 @@
 #include "logdialog.h"
 #include "./ui_mainwindow.h"
 
-#include <filesystem>
-
-#include <Eigen/Dense>
-
-#include "XYZIRPoint.hpp"
-#include "CloudTransformer.hpp"
-#include "LidarDevice.hpp"
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -91,7 +83,7 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
     else
     {
         pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *mesh);
-        viewer->addPolygonMesh(*mesh, "mesh");
+        viewer->addPolygonMesh(*mesh, meshFile.toStdString());
         viewer->resetCamera();
     }
 }
@@ -112,9 +104,11 @@ void MainWindow::slotLogPoseRotation()
     loggerBottom->info("{}, {}, {}", rotation(2, 0), rotation(2, 0), rotation(2, 2));
 }
 
-void MainWindow::slotInitMeshProjector()
+void MainWindow::slotPushButtonMeshProjector()
 {
     // Initializes the mesh projection process
+    meshProjector = new lidarshooter::MeshProjector;
+    ros::spin();
 }
 
 void MainWindow::slotPushButtonSaveMesh()
