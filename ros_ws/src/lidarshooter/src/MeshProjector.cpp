@@ -296,6 +296,8 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
     _logger->info("Current net displacement: {}, {}, {}, {}, {}, {}",
                   _linearDisplacement.x(), _linearDisplacement.y(), _linearDisplacement.z(),
                   _angularDisplacement.x(), _angularDisplacement.y(), _angularDisplacement.z());
+
+    // TODO: Replace this whole section with CloudTransformer::applyTransform
     for (std::size_t jdx = 0; jdx < _trackObject.cloud.width * _trackObject.cloud.height; ++jdx)
     {
         auto rawData = _trackObject.cloud.data.data() + jdx * _trackObject.cloud.point_step;
@@ -338,8 +340,6 @@ void lidarshooter::MeshProjector::traceMesh()
     updateMeshPolygons(_frameIndex);
     rtcCommitGeometry(_objectGeometry);
     rtcCommitGeometry(_groundGeometry);
-    //rtcReleaseGeometry(_objectGeometry);
-    //rtcReleaseGeometry(_groundGeometry);
     rtcCommitScene(_scene);
 
     // Trace out the Hesai configuration for now
