@@ -58,6 +58,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete meshProjector;
     delete configFileDialog;
     delete meshFileDialog;
     delete logDialog;
@@ -107,7 +108,8 @@ void MainWindow::slotLogPoseRotation()
 void MainWindow::slotPushButtonMeshProjector()
 {
     // Initializes the mesh projection process
-    meshProjector = new lidarshooter::MeshProjector;
+    meshProjector = new lidarshooter::MeshProjector(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
+    meshProjector->setMesh(mesh);
     ros::spin();
 }
 

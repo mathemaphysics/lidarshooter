@@ -82,6 +82,17 @@ public:
     void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
 
     /**
+     * @brief Set the internal mesh
+     * 
+     * This does the same thing the \c meshCallback function does with the exception
+     * that it requires a \c pcl_msgs::PolygonMeshConstPtr instead of the usual PCL
+     * \c pcl::PolygonMesh::ConstPtr . It turns out not to work with \c meshCallback .
+     * 
+     * @param _mesh Mesh to be copied into the internal mesh state
+     */
+    void setMesh(const pcl::PolygonMesh::ConstPtr& _mesh);
+
+    /**
      * @brief ROS Timer function to watch for changes in the mesh and retrace
      * 
      * This function calls \c traceMesh whenever \c _meshWasUpdated evaluates
