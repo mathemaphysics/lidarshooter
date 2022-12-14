@@ -53,15 +53,27 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Set up the show log button
     pushButtonShowDialogConnection = connect(ui->pushButtonDialog, SIGNAL(clicked(void)), logDialog, SLOT(show(void)));
+
+    // Set up the mesh projector push button
+    pushButtonMeshProjectorConnection = connect(ui->pushButtonMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonMeshProjector(void)));
 }
 
 MainWindow::~MainWindow()
 {
+    // UI elements
     delete ui;
-    delete meshProjector;
+
+    // Clean up the dialogs
     delete configFileDialog;
     delete meshFileDialog;
     delete logDialog;
+
+    // Clean up the mesh projector
+    delete meshProjector;
+    
+    // Clean up the spin thread
+    rosThread->join();
+    delete rosThread;
 }
 
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
@@ -108,9 +120,20 @@ void MainWindow::slotLogPoseRotation()
 void MainWindow::slotPushButtonMeshProjector()
 {
     // Initializes the mesh projection process
-    meshProjector = new lidarshooter::MeshProjector(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
-    meshProjector->setMesh(mesh);
-    ros::spin();
+    rosThread = new std::thread(
+        [this]() {
+            // TODO: Might be better to init ROS outside here
+            // TODO: Move the node handle outside and pass pointer in
+            int rosArgc = 0;
+            char **rosArgv;
+            ros::init(rosArgc, rosArgv, "sensoruid");
+
+            // Make sure to set the mesh before spinning
+            meshProjector = new lidarshooter::MeshProjector(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
+            meshProjector->setMesh(mesh);
+            ros::spin();
+        }
+    );
 }
 
 void MainWindow::slotPushButtonSaveMesh()

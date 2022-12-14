@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <filesystem>
+#include <thread>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/qt_sinks.h>
@@ -73,6 +74,7 @@ private:
     QMetaObject::Connection lineEditMeshConnection;
     QMetaObject::Connection receiveMeshConnection;
     QMetaObject::Connection pushButtonShowDialogConnection;
+    QMetaObject::Connection pushButtonMeshProjectorConnection;
 
     // Other QObjects not in UI; why can't QFileDialog be in UI?
     QFileDialog* configFileDialog;
@@ -84,6 +86,9 @@ private:
     QString meshFile;
     pcl::PolygonMesh::Ptr mesh;
     lidarshooter::MeshProjector* meshProjector;
+
+    // ROS items
+    std::thread* rosThread;
 };
 
 #endif // MAINWINDOW_H
