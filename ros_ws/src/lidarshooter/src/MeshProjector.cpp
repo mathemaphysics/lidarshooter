@@ -410,7 +410,7 @@ void lidarshooter::MeshProjector::traceMesh()
                                 64.0, rayRings[ri]
                             );
                             stateMutex.lock();
-                            cloudBytes.AddToCloud(this->_currentState);
+                            cloudBytes.addToCloud(this->_currentState);
                             stateMutex.unlock();
                         }
                         validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute

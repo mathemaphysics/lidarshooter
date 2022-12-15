@@ -11,7 +11,7 @@ namespace lidarshooter
     {
         XYZIRBytes(float xPosIn, float yPosIn, float zPosIn, float intensityIn, int ringIn);
         XYZIRBytes(std::uint8_t *xBegin, std::uint8_t *yBegin, std::uint8_t *zBegin, std::uint8_t *intensityBegin, std::uint8_t *ringBegin);
-        void AddToCloud(sensor_msgs::PointCloud2& msgIn);
+        void addToCloud(sensor_msgs::PointCloud2& msgIn);
 
         floatBytes xPos;
         floatBytes yPos;
