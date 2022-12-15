@@ -72,7 +72,7 @@ MainWindow::~MainWindow()
     // Clean up the mesh projector
     if (meshProjectorInitialized.load() && meshProjector != nullptr)
     {
-        meshProjector->shutdown();
+        ros::shutdown();
         delete meshProjector;
     }
 }

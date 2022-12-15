@@ -192,7 +192,6 @@ void lidarshooter::MeshProjector::shutdown()
 {
     // Now sure if we need to shut down the node manually
     _nodeHandle.shutdown();
-    ros::shutdown();
 }
 
 void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh)
