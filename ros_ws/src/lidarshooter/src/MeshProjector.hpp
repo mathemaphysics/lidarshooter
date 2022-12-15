@@ -69,6 +69,11 @@ public:
     ~MeshProjector();
 
     /**
+     * @brief Public shutdown function to interrupt \c ros::spin()
+     */
+    void shutdown();
+
+    /**
      * @brief ROS receiving callback function handling incoming mesh
      * 
      * This function is called by ROS every time it receives a message from the

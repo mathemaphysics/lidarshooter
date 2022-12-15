@@ -55,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
     pushButtonShowDialogConnection = connect(ui->pushButtonDialog, SIGNAL(clicked(void)), logDialog, SLOT(show(void)));
 
     // Set up the mesh projector push button
+    meshProjectorInitialized.store(false);
     pushButtonMeshProjectorConnection = connect(ui->pushButtonMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonMeshProjector(void)));
 }
 
@@ -69,17 +70,18 @@ MainWindow::~MainWindow()
     delete logDialog;
 
     // Clean up the mesh projector
-    delete meshProjector;
-    
-    // Clean up the spin thread
-    rosThread->join();
-    delete rosThread;
+    if (meshProjectorInitialized.load() && meshProjector != nullptr)
+    {
+        meshProjector->shutdown();
+        delete meshProjector;
+    }
 }
 
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
     configFile = _fileName;
-    loggerTop->info("Set the config file name to {}", configFile.toStdString());
+    deviceConfig = std::shared_ptr<lidarshooter::LidarDevice>(new lidarshooter::LidarDevice(configFile.toStdString(), loggerTop));
+    loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), configFile.toStdString());
 }
 
 void MainWindow::slotReceiveMeshFile(const QString _fileName)
@@ -126,10 +128,11 @@ void MainWindow::slotPushButtonMeshProjector()
             // TODO: Move the node handle outside and pass pointer in
             int rosArgc = 0;
             char **rosArgv;
-            ros::init(rosArgc, rosArgv, "sensoruid");
+            ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid());
 
             // Make sure to set the mesh before spinning
             meshProjector = new lidarshooter::MeshProjector(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
+            meshProjectorInitialized.store(true);
             meshProjector->setMesh(mesh);
             ros::spin();
         }
@@ -138,7 +141,6 @@ void MainWindow::slotPushButtonMeshProjector()
 
 void MainWindow::slotPushButtonSaveMesh()
 {
-    auto deviceConfig = lidarshooter::LidarDevice(configFile.toStdString(), loggerTop);
     auto cloudCopy = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
     pcl::copyPointCloud(mesh->cloud, *cloudCopy);
     lidarshooter::CloudTransformer cloudTransformer(cloudCopy, viewer->getViewerPose(), deviceConfig);

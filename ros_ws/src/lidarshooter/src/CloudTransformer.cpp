@@ -7,7 +7,7 @@
 #include <thread>
 #include <chrono>
 
-lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, const LidarDevice& __config)
+lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
     : _transform(__transform), _config(__config)
 {
     // Set the cloud pointer rather than inplace creation?
@@ -17,7 +17,7 @@ lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __clou
     componentsFromTransform(__transform);
 }
 
-lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, const LidarDevice& __config)
+lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
     : _translation(__translation), _rotation(__rotation), _config(__config)
 {
     // Set the cloud pointer rather than inplace creation?
@@ -27,14 +27,14 @@ lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __clou
     transformFromComponents(__translation, __rotation);
 }
 
-lidarshooter::CloudTransformer::CloudTransformer(const Eigen::Affine3f& __transform, const LidarDevice& __config)
+lidarshooter::CloudTransformer::CloudTransformer(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
     : _transform(__transform), _config(__config)
 {
     // Fill in the missing _translation and _rotation vectors
     componentsFromTransform(__transform);
 }
 
-lidarshooter::CloudTransformer::CloudTransformer(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, const LidarDevice& __config)
+lidarshooter::CloudTransformer::CloudTransformer(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
     : _translation(__translation), _rotation(__rotation), _config(__config)
 {
     transformFromComponents(_translation, _rotation);
@@ -88,7 +88,7 @@ void lidarshooter::CloudTransformer::applyTransform()
 
                     // Apply the affine transformation and then transf
                     ptrans = _transform * ptrans;
-                    _config.originToSensor(ptrans);
+                    _config->originToSensor(ptrans);
 
                     // Linear position update here
                     point.asPoint.xPos = ptrans.x();

@@ -10,6 +10,7 @@
 #include <memory>
 #include <filesystem>
 #include <thread>
+#include <atomic>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/qt_sinks.h>
@@ -85,7 +86,9 @@ private:
     QString configFile;
     QString meshFile;
     pcl::PolygonMesh::Ptr mesh;
+    std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
     lidarshooter::MeshProjector* meshProjector;
+    std::atomic<bool> meshProjectorInitialized;
 
     // ROS items
     std::thread* rosThread;

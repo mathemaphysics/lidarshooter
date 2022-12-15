@@ -372,15 +372,19 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
     // Device
     if (jsonData.isMember("device"))
     {
+        // Overwrite the loaded value of sensorUid if specified
+        if (_sensorUid.length() > 0)
+            _device.sensorUid = _sensorUid;
+        else
+            if (jsonData["device"].isMember("sensorUid"))
+                _device.sensorUid = jsonData["device"].get("sensorUid", "").asString();
+
+        // The sensorConfig key has highest precedence
         if (jsonData["device"].isMember("sensorConfig"))
         {
             // Full configuration was specified; this takes precedent
             _logger->info("Loading inline sensor config");
             loadTransformationFromJson(jsonData["device"]["sensorConfig"]);
-
-            // Overwrite the loaded value of sensorUid if specified
-            if (_sensorUid.length() > 0)
-                _device.sensorUid = _sensorUid;
         }
         else if (jsonData["device"].isMember("sensorConfigFile"))
         {
@@ -401,10 +405,6 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
             }
             _logger->info("Loading sensor config from file {}", fullPath.string());
             loadTransformationFromFile(jsonData["device"].get("sensorConfigFile", "").asString());
-
-            // Overwrite the loaded value of sensorUid if specified
-            if (_sensorUid.length() > 0)
-                _device.sensorUid = _sensorUid;
         }
         else
         {
@@ -635,6 +635,34 @@ int lidarshooter::LidarDevice::loadTransformationFromFile(std::string _transform
 
 int lidarshooter::LidarDevice::loadTransformationFromJson(const Json::Value& _transformJson)
 {
+    // Check UID against _device.sensorUid
+    if (_transformJson.isMember("uid"))
+    {
+        std::string uidValue = _transformJson.get("uid", "").asString();
+        if (_device.sensorUid.length() == 0)
+        {
+            if (uidValue.length() == 0)
+                _logger->error("SensorUID not set and cannot load from inline sensorConfig");
+            else
+            {
+                _device.sensorUid = uidValue;
+                _logger->warn("Setting sensor UID to {} from inline sensorConfig", _device.sensorUid);
+            }
+        }
+        else
+        {
+            // Check to make sure they match and warn if not
+            if (uidValue.length() > 0)
+            {
+                if (uidValue != _device.sensorUid)
+                {
+                    _logger->warn("Configuration sensorUid = {} but sensorConfig.uid = {}", _device.sensorUid, uidValue);
+                    _logger->warn("You might want to make sure your configuration is right");
+                }
+            }
+        }
+    }
+
     // Load the base-to-origin translation
     if (_transformJson.isMember("base_to_origin"))
     {
