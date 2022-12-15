@@ -76,7 +76,6 @@ MainWindow::~MainWindow()
     if (meshProjectorInitialized.load() && meshProjector != nullptr)
     {
         ros::shutdown();
-        delete meshProjector;
     }
 }
 
@@ -134,7 +133,7 @@ void MainWindow::slotPushButtonMeshProjector()
             ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid());
 
             // Make sure to set the mesh before spinning
-            meshProjector = new lidarshooter::MeshProjector(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
+            meshProjector = std::make_shared<lidarshooter::MeshProjector>(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
             meshProjectorInitialized.store(true);
             meshProjector->setMesh(mesh);
             ros::spin();

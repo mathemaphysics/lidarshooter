@@ -88,7 +88,7 @@ private:
     QString meshFile;
     pcl::PolygonMesh::Ptr mesh;
     std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
-    lidarshooter::MeshProjector* meshProjector;
+    std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
     std::atomic<bool> meshProjectorInitialized;
 
     // ROS items
