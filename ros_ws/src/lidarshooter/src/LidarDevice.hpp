@@ -122,7 +122,7 @@ public:
      * @param _py Y-coordinate of the origin
      * @param _pz Z-coordinate of the origin
      */
-    void setRayHitOrigin(RTCRayHit& _ray, float _px, float _py, float _pz);
+    static void setRayHitOrigin(RTCRayHit& _ray, float _px, float _py, float _pz);
 
     /**
      * @brief Sets the direction of the \c RTCRayHit object
@@ -132,7 +132,7 @@ public:
      * @param _dy Y-coordinate of the direction
      * @param _dz Z-coordinate of the direction
      */
-    void setRayHitDirection(RTCRayHit& _ray, float _dx, float _dy, float _dz);
+    static void setRayHitDirection(RTCRayHit& _ray, float _dx, float _dy, float _dz);
 
     /**
      * @brief Abstraction of the \c nextRayNN functions
