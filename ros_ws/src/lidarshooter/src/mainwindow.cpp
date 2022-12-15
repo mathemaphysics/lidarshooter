@@ -74,9 +74,7 @@ MainWindow::~MainWindow()
 
     // Clean up the mesh projector
     if (meshProjectorInitialized.load() && meshProjector != nullptr)
-    {
         ros::shutdown();
-    }
 }
 
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
