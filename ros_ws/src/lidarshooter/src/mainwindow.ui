@@ -128,7 +128,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="pushButtonSaveMesh">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -142,6 +142,12 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButtonMeshProjector">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>Start Projector</string>
        </property>
@@ -236,7 +242,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>pushButtonSaveMesh</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
    <slot>slotPushButtonSaveMesh()</slot>

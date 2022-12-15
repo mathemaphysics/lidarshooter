@@ -51,6 +51,9 @@ MainWindow::MainWindow(QWidget *parent)
     lineEditMeshConnection = connect(meshFileDialog, SIGNAL(fileSelected(const QString)), ui->lineEditMeshFile, SLOT(setText(const QString)));
     receiveMeshConnection = connect(meshFileDialog, SIGNAL(fileSelected(const QString)), this, SLOT(slotReceiveMeshFile(const QString)));
 
+    // Save mesh
+    pushButtonSaveMeshConnection = connect(ui->pushButtonSaveMesh, SIGNAL(clicked(void)), this, SLOT(slotPushButtonSaveMesh(void)));
+
     // Set up the show log button
     pushButtonShowDialogConnection = connect(ui->pushButtonDialog, SIGNAL(clicked(void)), logDialog, SLOT(show(void)));
 
@@ -80,7 +83,7 @@ MainWindow::~MainWindow()
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
     configFile = _fileName;
-    deviceConfig = std::shared_ptr<lidarshooter::LidarDevice>(new lidarshooter::LidarDevice(configFile.toStdString(), loggerTop));
+    deviceConfig = std::make_shared<lidarshooter::LidarDevice>(configFile.toStdString(), loggerTop);
     loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), configFile.toStdString());
 }
 
