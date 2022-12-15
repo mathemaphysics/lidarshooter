@@ -101,7 +101,7 @@ public:
      * @param _msg PointCloud2 message whose header needs filling in
      * @param _frameIndex Index of the frame for this message
      */
-    void initMessage(sensor_msgs::PointCloud2& _msg, int _frameIndex);
+    void initMessage(sensor_msgs::PointCloud2Ptr _msg, int _frameIndex);
 
     /**
      * @brief Set \c RTCRayHit structure to pre-hit status

@@ -98,6 +98,13 @@ public:
     void setMesh(const pcl::PolygonMesh::ConstPtr& _mesh);
 
     /**
+     * @brief Get the current traced cloud
+     * 
+     * @return sensor_msgs::PointCloud2ConstPtr Const reference to the cloud
+     */
+    sensor_msgs::PointCloud2ConstPtr getTraceCloud() const;
+
+    /**
      * @brief ROS Timer function to watch for changes in the mesh and retrace
      * 
      * This function calls \c traceMesh whenever \c _meshWasUpdated evaluates
@@ -146,7 +153,7 @@ private:
 
     // Messages in class format
     pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector
-    sensor_msgs::PointCloud2 _currentState;
+    sensor_msgs::PointCloud2::Ptr _currentState;
 
     // Raytracing items
     RTCDevice _device;

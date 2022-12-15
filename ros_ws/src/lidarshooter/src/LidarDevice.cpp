@@ -117,26 +117,26 @@ void lidarshooter::LidarDevice::initialize(const std::string& _config, const std
 }
 
 void lidarshooter::LidarDevice::initMessage(
-    sensor_msgs::PointCloud2& _msg,
+    sensor_msgs::PointCloud2Ptr _msg,
     int _frameIndex
 )
 {
     // Transfer fields into the header
-    if (_msg.fields.size() > 0)
-        _msg.fields.clear(); // We might be reusing a PointCloud2
+    if (_msg->fields.size() > 0)
+        _msg->fields.clear(); // We might be reusing a PointCloud2
     for (auto field : _message.fields)
-        _msg.fields.push_back(field);
+        _msg->fields.push_back(field);
 
     // Copy field values into the message header
-    _msg.header.frame_id = _message.frameId;
-    _msg.header.stamp = ros::Time::now();
-    _msg.header.seq = _frameIndex;
-    _msg.height = 1;
-    _msg.width = _channels.count;
-    _msg.point_step = _message.pointStep;
-    _msg.row_step = _channels.count * _message.pointStep;
-    _msg.is_bigendian = _message.isBigendian;
-    _msg.is_dense = _message.isDense;
+    _msg->header.frame_id = _message.frameId;
+    _msg->header.stamp = ros::Time::now();
+    _msg->header.seq = _frameIndex;
+    _msg->height = 1;
+    _msg->width = _channels.count;
+    _msg->point_step = _message.pointStep;
+    _msg->row_step = _channels.count * _message.pointStep;
+    _msg->is_bigendian = _message.isBigendian;
+    _msg->is_dense = _message.isDense;
 }
 
 inline void lidarshooter::LidarDevice::resetRayHit(RTCRayHit& _ray)

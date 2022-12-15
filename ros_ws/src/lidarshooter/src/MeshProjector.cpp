@@ -74,6 +74,9 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
+
+    // The current state cloud is now a shared pointer and needs alloc'ed
+    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
     
     /**
      * This is critical because without initialization of the header of the
@@ -150,6 +153,9 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     // When object is created we start at frame index 0
     _frameIndex = 0;
 
+    // The current state cloud is now a shared pointer and needs alloc'ed
+    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+
     /**
      * This is critical because without initialization of the header of the
      * current cloud state, publishing this to SENSR will cause some memory
@@ -215,6 +221,11 @@ void lidarshooter::MeshProjector::setMesh(const pcl::PolygonMesh::ConstPtr& _mes
 {
     // This may not be what we want; make sure this is efficient
     _trackObject = *_mesh;
+}
+
+sensor_msgs::PointCloud2ConstPtr lidarshooter::MeshProjector::getTraceCloud() const
+{
+    return _currentState;
 }
 
 void lidarshooter::MeshProjector::traceMeshWrapper()
@@ -361,7 +372,7 @@ void lidarshooter::MeshProjector::traceMesh()
     // Initialize ray state for batch processing
     _publishMutex.lock();
     _config.initMessage(_currentState, ++_frameIndex);
-    _currentState.data.clear();
+    _currentState->data.clear();
     _config.reset();
 
     // Count the total iterations because the limits are needed for threading

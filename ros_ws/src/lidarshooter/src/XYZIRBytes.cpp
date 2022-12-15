@@ -21,21 +21,21 @@ lidarshooter::XYZIRBytes::XYZIRBytes(std::uint8_t *xBegin, std::uint8_t *yBegin,
 {
 }
 
-void lidarshooter::XYZIRBytes::addToCloud(sensor_msgs::PointCloud2& msgIn)
+void lidarshooter::XYZIRBytes::addToCloud(sensor_msgs::PointCloud2Ptr msgIn)
 {
   for (int j = 0; j < 4; ++j)
-    msgIn.data.push_back(xPos.byteArray[j]);
+    msgIn->data.push_back(xPos.byteArray[j]);
   for (int j = 0; j < 4; ++j)
-    msgIn.data.push_back(yPos.byteArray[j]);
+    msgIn->data.push_back(yPos.byteArray[j]);
   for (int j = 0; j < 4; ++j)
-    msgIn.data.push_back(zPos.byteArray[j]);
+    msgIn->data.push_back(zPos.byteArray[j]);
   for (int j = 0; j < 4; ++j)
-    msgIn.data.push_back(0);
+    msgIn->data.push_back(0);
   for (int j = 0; j < 4; ++j)
-    msgIn.data.push_back(intensity.byteArray[j]);
+    msgIn->data.push_back(intensity.byteArray[j]);
   for (int j = 0; j < 4; ++j)
-    msgIn.data.push_back(ring.byteArray[j]);
+    msgIn->data.push_back(ring.byteArray[j]);
   for (int j = 0; j < 8; ++j)
-    msgIn.data.push_back(0);
+    msgIn->data.push_back(0);
 }
 
