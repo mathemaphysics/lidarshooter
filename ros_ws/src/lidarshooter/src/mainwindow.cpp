@@ -149,13 +149,15 @@ void MainWindow::slotPushButtonMeshProjector()
         [this](){
             // TODO: Wrap this into a function
             meshProjector->getCurrentStateCopy(traceCloud);
-            auto colorHandler = pcl::visualization::PointCloudColorHandlerCustom<pcl::PCLPointCloud2>::ConstPtr(new pcl::visualization::PointCloudColorHandlerCustom<pcl::PCLPointCloud2>(traceCloud, 0, 255, 0));
-            auto geomHandler = pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PCLPointCloud2>::ConstPtr(new pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PCLPointCloud2>(traceCloud));
-            auto translation = Eigen::Vector4f::Identity();
-            auto rotation = Eigen::Quaternionf::Identity();
-            //viewer->addPointCloud(traceCloud, geomHandler, colorHandler, translation, rotation, "cloud", 0);
+            auto convertedCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+            auto cloudConverter = lidarshooter::CloudConverter::create(traceCloud);
+            cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(convertedCloud);
+            loggerTop->info("Total number traced points: {}", convertedCloud->width);
+            viewer->addPointCloud<pcl::PointXYZ>(convertedCloud, "trace");
         }
     );
+    testThread->join();
+    delete testThread;
 }
 
 void MainWindow::slotPushButtonSaveMesh()

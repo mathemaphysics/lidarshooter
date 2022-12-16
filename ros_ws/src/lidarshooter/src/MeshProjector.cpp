@@ -232,7 +232,9 @@ void lidarshooter::MeshProjector::getCurrentStateCopy(pcl::PCLPointCloud2::Ptr& 
 {
     // Don't interrupt a write with a read
     _publishMutex.lock();
-    pcl_conversions::toPCL(*_currentState, *_output);
+    auto temp = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
+    pcl_conversions::toPCL(*_currentState, *temp);
+    pcl::copyPointCloud(*temp, *_output);
     _publishMutex.unlock();
 }
 
@@ -391,12 +393,14 @@ void lidarshooter::MeshProjector::traceMesh()
 
     std::mutex configMutex, stateMutex, meshMutex;
     std::vector<std::thread> threads;
+    std::atomic<int> totalPointCount;
+    totalPointCount.store(0);
     for (int rayChunk = 0; rayChunk < numThreads; ++rayChunk)
     {
         //unsigned int startPosition = rayChunk * numChunks;
         // TODO: Convert the contents of the thread into a "chunk" function to simplify
         threads.emplace_back(
-            [this, &configMutex, &stateMutex, &meshMutex, numChunks](){
+            [this, &configMutex, &stateMutex, &meshMutex, numChunks, &totalPointCount](){
                 for (int ix = 0; ix < numChunks; ++ix)
                 {
                     // Set up packet processing
@@ -430,6 +434,7 @@ void lidarshooter::MeshProjector::traceMesh()
                             );
                             stateMutex.lock();
                             cloudBytes.addToCloud(this->_currentState);
+                            totalPointCount.store(totalPointCount.load() + 1);
                             stateMutex.unlock();
                         }
                         validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
@@ -440,6 +445,8 @@ void lidarshooter::MeshProjector::traceMesh()
     }
     for (auto th = threads.begin(); th != threads.end(); ++th)
         th->join();
+
+    _currentState->width = totalPointCount;
 
     _publishMutex.unlock();
 }

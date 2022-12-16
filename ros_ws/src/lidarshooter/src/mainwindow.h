@@ -32,6 +32,7 @@
 #include "CloudTransformer.hpp"
 #include "LidarDevice.hpp"
 #include "MeshProjector.hpp"
+#include "CloudConverter.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
