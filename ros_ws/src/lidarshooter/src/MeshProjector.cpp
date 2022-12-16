@@ -106,6 +106,11 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Admit we updated the mesh because this is the first iteration
     _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
+
+    // False because it hasn't bee traced yet
+    _stateWasUpdated.store(false);
+    _stateWasUpdatedPublic.store(false);
 }
 
 lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
@@ -184,6 +189,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
 
     // Admit we updated the mesh because this is the first iteration
     _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
 }
 
 lidarshooter::MeshProjector::~MeshProjector()
@@ -210,10 +216,11 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     pcl_conversions::toPCL(*_mesh, _trackObject);
     _logger->info("Points in tracked object      : {}", _trackObject.cloud.width * _trackObject.cloud.height);
     _logger->info("Triangles in tracked object   : {}", _trackObject.polygons.size());
-    _meshMutex.unlock();
 
     // Admit that we changed the mesh and it needs to be retraced
     _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
+    _meshMutex.unlock();
 }
 
 // Important: This is only for initializing the mesh; you shouldn't use this
@@ -224,6 +231,8 @@ void lidarshooter::MeshProjector::setMesh(const pcl::PolygonMesh::ConstPtr& _mes
     // This may not be what we want; make sure this is efficient
     _meshMutex.lock();
     _trackObject = *_mesh;
+    _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
     _meshMutex.unlock();
 }
 
@@ -272,18 +281,42 @@ void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::C
     _joystickMutex.lock();
     _linearDisplacement += globalDisplacement;
     _angularDisplacement += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
-    _joystickMutex.unlock();
 
     // Hint to the tracer that it needs to run again
     _meshWasUpdated.store(true); // TODO: Don't update when the signal is (0, 0, 0, 0, 0, 0)
+    _meshWasUpdatedPublic.store(true);
+    _joystickMutex.unlock();
 }
 
 void lidarshooter::MeshProjector::publishCloud()
 {
     // This runs whether the cloud was updated or not; constant stream
     _cloudMutex.lock();
+    _logger->info("Published another one");
     _cloudPublisher.publish(_currentState);
     _cloudMutex.unlock();
+}
+
+bool lidarshooter::MeshProjector::meshWasUpdated()
+{
+    if (_meshWasUpdatedPublic.load() == true)
+    {
+        _meshWasUpdatedPublic.store(false);
+        return true;
+    }
+    else
+        return false;
+}
+
+bool lidarshooter::MeshProjector::cloudWasUpdated()
+{
+    if (_stateWasUpdatedPublic.load() == true)
+    {
+        _stateWasUpdatedPublic.store(false);
+        return true;
+    }
+    else
+        return false;
 }
 
 inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(Eigen::Vector3f _displacement)
@@ -377,7 +410,13 @@ void lidarshooter::MeshProjector::traceMesh()
 {
     // Update mesh with new locations and possibly structure
     updateGround();
+
+    // Block changes to _trackObject->polygons until done
+    _meshMutex.lock();
     updateMeshPolygons(_frameIndex);
+    _meshMutex.unlock();
+
+    // Commit the new geometry
     rtcCommitGeometry(_objectGeometry);
     rtcCommitGeometry(_groundGeometry);
     rtcCommitScene(_scene);
@@ -395,7 +434,7 @@ void lidarshooter::MeshProjector::traceMesh()
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
-    std::mutex configMutex, stateMutex;
+    std::mutex configMutex, sharedCloudMutex;
     std::vector<std::thread> threads;
     std::atomic<int> totalPointCount;
     totalPointCount.store(0);
@@ -404,7 +443,7 @@ void lidarshooter::MeshProjector::traceMesh()
         //unsigned int startPosition = rayChunk * numChunks;
         // TODO: Convert the contents of the thread into a "chunk" function to simplify
         threads.emplace_back(
-            [this, &configMutex, &stateMutex, numChunks, &totalPointCount](){
+            [this, &configMutex, &sharedCloudMutex, numChunks, &totalPointCount](){
                 for (int ix = 0; ix < numChunks; ++ix)
                 {
                     // Set up packet processing
@@ -436,10 +475,10 @@ void lidarshooter::MeshProjector::traceMesh()
                                 rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
                                 64.0, rayRings[ri]
                             );
-                            stateMutex.lock();
+                            sharedCloudMutex.lock();
                             cloudBytes.addToCloud(this->_currentState);
                             totalPointCount.store(totalPointCount.load() + 1);
-                            stateMutex.unlock();
+                            sharedCloudMutex.unlock();
                         }
                         validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
                     }
@@ -453,6 +492,9 @@ void lidarshooter::MeshProjector::traceMesh()
     // Set the point count to the value that made it back from tracing
     _currentState->width = totalPointCount;
 
+    // Indicate that we just retraced and you can come and get it
+    _stateWasUpdated.store(true);
+    _stateWasUpdatedPublic.store(true);
     _cloudMutex.unlock();
 }
 

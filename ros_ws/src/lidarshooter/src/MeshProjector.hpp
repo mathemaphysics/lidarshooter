@@ -137,6 +137,28 @@ public:
      */
     void publishCloud();
 
+    /**
+     * @brief Indicates whether mesh was updated
+     * 
+     * This function is nost const because it must flip the switch
+     * state from true back to false: \c _meshWasUpdatedPublic .
+     * 
+     * @return true Mesh was updated
+     * @return false Mesh was not updated
+     */
+    bool meshWasUpdated();
+
+    /**
+     * @brief Indicates whether the trace cloud was updated
+     * 
+     * This function is nost const because it must flip the switch
+     * state from true back to false: \c _cloudWasUpdatedPublic .
+     * 
+     * @return true Cloud was updated (retraced since last check)
+     * @return false Cloud was not updated
+     */
+    bool cloudWasUpdated();
+
 private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
@@ -175,6 +197,9 @@ private:
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;
+    std::atomic<bool> _stateWasUpdated;
+    std::atomic<bool> _meshWasUpdatedPublic;
+    std::atomic<bool> _stateWasUpdatedPublic;
     ros::Duration _publishPeriod;
     ros::Timer _publishTimer;
     ros::Duration _tracePeriod;
