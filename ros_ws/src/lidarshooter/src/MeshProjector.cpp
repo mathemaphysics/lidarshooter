@@ -446,6 +446,7 @@ void lidarshooter::MeshProjector::traceMesh()
     for (auto th = threads.begin(); th != threads.end(); ++th)
         th->join();
 
+    // Set the point count to the value that made it back from tracing
     _currentState->width = totalPointCount;
 
     _publishMutex.unlock();
