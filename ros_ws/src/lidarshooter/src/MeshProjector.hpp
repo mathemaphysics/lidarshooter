@@ -98,11 +98,23 @@ public:
     void setMesh(const pcl::PolygonMesh::ConstPtr& _mesh);
 
     /**
-     * @brief Get the current traced cloud
+     * @brief Get a shared pointer to the current traced cloud
+     * 
+     * Important: Remember that this shared pointer points at a cloud which is asynchronously
+     * updated inside the ROS event loop. This may not be useful unless you can operate the
+     * mutex locks on the cloud.
      * 
      * @return sensor_msgs::PointCloud2ConstPtr Const reference to the cloud
      */
-    sensor_msgs::PointCloud2ConstPtr getTraceCloud() const;
+    sensor_msgs::PointCloud2ConstPtr getCurrentStatePtr() const;
+
+    /**
+     * @brief Get the Current State Copy object
+     * 
+     * This function properly operates mutexes for accessing the
+     * \c _currentState which is copied into the destination pointer given.
+     */
+    void getCurrentStateCopy(pcl::PCLPointCloud2::Ptr& _output);
 
     /**
      * @brief ROS Timer function to watch for changes in the mesh and retrace

@@ -223,9 +223,17 @@ void lidarshooter::MeshProjector::setMesh(const pcl::PolygonMesh::ConstPtr& _mes
     _trackObject = *_mesh;
 }
 
-sensor_msgs::PointCloud2ConstPtr lidarshooter::MeshProjector::getTraceCloud() const
+sensor_msgs::PointCloud2ConstPtr lidarshooter::MeshProjector::getCurrentStatePtr() const
 {
     return _currentState;
+}
+
+void lidarshooter::MeshProjector::getCurrentStateCopy(pcl::PCLPointCloud2::Ptr& _output)
+{
+    // Don't interrupt a write with a read
+    _publishMutex.lock();
+    pcl_conversions::toPCL(*_currentState, *_output);
+    _publishMutex.unlock();
 }
 
 void lidarshooter::MeshProjector::traceMeshWrapper()

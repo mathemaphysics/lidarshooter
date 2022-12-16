@@ -21,6 +21,7 @@
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/common/transforms.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/point_cloud_color_handlers.h>
 
 #include <vtkRenderWindow.h>
 #include <vtkGenericOpenGLRenderWindow.h>
@@ -45,6 +46,7 @@ public:
     ~MainWindow();
 
 signals:
+    void signalCurrentStateUpdated();
 
 private slots:
     void slotReceiveConfigFile(QString);
@@ -87,6 +89,7 @@ private:
     QString configFile;
     QString meshFile;
     pcl::PolygonMesh::Ptr mesh;
+    pcl::PCLPointCloud2::Ptr traceCloud; // Just shared_ptr into MeshProjectorl
     std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
     std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
     std::atomic<bool> meshProjectorInitialized;

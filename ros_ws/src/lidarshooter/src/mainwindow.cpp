@@ -130,11 +130,30 @@ void MainWindow::slotPushButtonMeshProjector()
             char **rosArgv;
             ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid());
 
-            // Make sure to set the mesh before spinning
+            // Allocate space for the traced cloud
+            traceCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
             meshProjector = std::make_shared<lidarshooter::MeshProjector>(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
             meshProjectorInitialized.store(true);
+
+            // Make sure to set the mesh before spinning
             meshProjector->setMesh(mesh);
+
+            // Start ROS event loop
             ros::spin();
+        }
+    );
+
+    // Grab a reference to the traced points
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000)); // Just for now; get rid of this
+    auto testThread = new std::thread(
+        [this](){
+            // TODO: Wrap this into a function
+            meshProjector->getCurrentStateCopy(traceCloud);
+            auto colorHandler = pcl::visualization::PointCloudColorHandlerCustom<pcl::PCLPointCloud2>::ConstPtr(new pcl::visualization::PointCloudColorHandlerCustom<pcl::PCLPointCloud2>(traceCloud, 0, 255, 0));
+            auto geomHandler = pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PCLPointCloud2>::ConstPtr(new pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PCLPointCloud2>(traceCloud));
+            auto translation = Eigen::Vector4f::Identity();
+            auto rotation = Eigen::Quaternionf::Identity();
+            //viewer->addPointCloud(traceCloud, geomHandler, colorHandler, translation, rotation, "cloud", 0);
         }
     );
 }
