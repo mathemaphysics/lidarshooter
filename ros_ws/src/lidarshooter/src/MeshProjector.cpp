@@ -292,7 +292,6 @@ void lidarshooter::MeshProjector::publishCloud()
 {
     // This runs whether the cloud was updated or not; constant stream
     _cloudMutex.lock();
-    _logger->info("Published another one");
     _cloudPublisher.publish(_currentState);
     _cloudMutex.unlock();
 }
