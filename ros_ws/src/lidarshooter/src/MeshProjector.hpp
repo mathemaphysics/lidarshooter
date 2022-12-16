@@ -179,10 +179,11 @@ private:
     ros::Timer _publishTimer;
     ros::Duration _tracePeriod;
     ros::Timer _traceTimer;
-    std::mutex _publishMutex;
+    std::mutex _cloudMutex;
     ros::NodeHandle _nodeHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _meshSubscriber;
+    std::mutex _meshMutex;
     ros::Subscriber _joystickSubscriber;
     std::mutex _joystickMutex;
 

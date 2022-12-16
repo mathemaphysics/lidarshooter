@@ -206,9 +206,11 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
     _logger->info("Received a frame");
 
     // Load the objects to track
+    _meshMutex.lock();
     pcl_conversions::toPCL(*_mesh, _trackObject);
     _logger->info("Points in tracked object      : {}", _trackObject.cloud.width * _trackObject.cloud.height);
     _logger->info("Triangles in tracked object   : {}", _trackObject.polygons.size());
+    _meshMutex.unlock();
 
     // Admit that we changed the mesh and it needs to be retraced
     _meshWasUpdated.store(true);
@@ -220,7 +222,9 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 void lidarshooter::MeshProjector::setMesh(const pcl::PolygonMesh::ConstPtr& _mesh)
 {
     // This may not be what we want; make sure this is efficient
+    _meshMutex.lock();
     _trackObject = *_mesh;
+    _meshMutex.unlock();
 }
 
 sensor_msgs::PointCloud2ConstPtr lidarshooter::MeshProjector::getCurrentStatePtr() const
@@ -231,11 +235,11 @@ sensor_msgs::PointCloud2ConstPtr lidarshooter::MeshProjector::getCurrentStatePtr
 void lidarshooter::MeshProjector::getCurrentStateCopy(pcl::PCLPointCloud2::Ptr& _output)
 {
     // Don't interrupt a write with a read
-    _publishMutex.lock();
-    auto temp = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
-    pcl_conversions::toPCL(*_currentState, *temp);
-    pcl::copyPointCloud(*temp, *_output);
-    _publishMutex.unlock();
+    _cloudMutex.lock();
+    auto tempConversion = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
+    pcl_conversions::toPCL(*_currentState, *tempConversion);
+    pcl::copyPointCloud(*tempConversion, *_output);
+    _cloudMutex.unlock();
 }
 
 void lidarshooter::MeshProjector::traceMeshWrapper()
@@ -277,9 +281,9 @@ void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::C
 void lidarshooter::MeshProjector::publishCloud()
 {
     // This runs whether the cloud was updated or not; constant stream
-    _publishMutex.lock();
+    _cloudMutex.lock();
     _cloudPublisher.publish(_currentState);
-    _publishMutex.unlock();
+    _cloudMutex.unlock();
 }
 
 inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(Eigen::Vector3f _displacement)
@@ -380,7 +384,7 @@ void lidarshooter::MeshProjector::traceMesh()
 
     // Trace out the Hesai configuration for now
     // Initialize ray state for batch processing
-    _publishMutex.lock();
+    _cloudMutex.lock();
     _config.initMessage(_currentState, ++_frameIndex);
     _currentState->data.clear();
     _config.reset();
@@ -391,7 +395,7 @@ void lidarshooter::MeshProjector::traceMesh()
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
-    std::mutex configMutex, stateMutex, meshMutex;
+    std::mutex configMutex, stateMutex;
     std::vector<std::thread> threads;
     std::atomic<int> totalPointCount;
     totalPointCount.store(0);
@@ -400,7 +404,7 @@ void lidarshooter::MeshProjector::traceMesh()
         //unsigned int startPosition = rayChunk * numChunks;
         // TODO: Convert the contents of the thread into a "chunk" function to simplify
         threads.emplace_back(
-            [this, &configMutex, &stateMutex, &meshMutex, numChunks, &totalPointCount](){
+            [this, &configMutex, &stateMutex, numChunks, &totalPointCount](){
                 for (int ix = 0; ix < numChunks; ++ix)
                 {
                     // Set up packet processing
@@ -449,7 +453,7 @@ void lidarshooter::MeshProjector::traceMesh()
     // Set the point count to the value that made it back from tracing
     _currentState->width = totalPointCount;
 
-    _publishMutex.unlock();
+    _cloudMutex.unlock();
 }
 
 void lidarshooter::MeshProjector::getMeshIntersect(int *_valid, RayHitType *_rayhit)
