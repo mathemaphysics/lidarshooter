@@ -154,11 +154,15 @@ void MainWindow::slotPushButtonMeshProjector()
     auto testThread = new std::thread(
         [this](){
             // TODO: Wrap this into a function
-            auto tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Temporary storage for conversion
+            auto tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Will automatically deallocate outside this block
             meshProjector->getCurrentStateCopy(tempCloud);
+
+            // Create the converter to produce a PointXYZ cloud; can be plotted easily
             auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
             cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloud);
             viewer->addPointCloud<pcl::PointXYZ>(traceCloud, "trace");
+
+            // Logging to make sure we're getting a good trace point count
             loggerTop->info("Total number traced points: {}", traceCloud->width);
         }
     );
