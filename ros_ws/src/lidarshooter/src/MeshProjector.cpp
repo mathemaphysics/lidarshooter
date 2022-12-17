@@ -18,6 +18,7 @@
 #include <functional>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -28,7 +29,9 @@
 
 lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
-      _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device))
+      _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
+      _meshWasUpdated(false), _meshWasUpdatedPublic(true),
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -115,7 +118,9 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
 lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
-      _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device))
+      _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
+      _meshWasUpdated(false), _meshWasUpdatedPublic(false),
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
 {
     // Set up the logger
     if (__logger == nullptr)

@@ -151,6 +151,8 @@ void MainWindow::slotPushButtonMeshProjector()
     // Wait until the first trace is done inside meshProjector
     while (meshProjector->cloudWasUpdated() == false)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // Now the cloud is available and can be plotted
     auto testThread = new std::thread(
         [this](){
             // TODO: Wrap this into a function
