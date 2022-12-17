@@ -89,8 +89,10 @@ private:
     // Private variables
     QString configFile;
     QString meshFile;
+
+    // Private mesh and cloud variables
     pcl::PolygonMesh::Ptr mesh;
-    pcl::PCLPointCloud2::Ptr traceCloud; // Just shared_ptr into MeshProjectorl
+    pcl::PointCloud<pcl::PointXYZ>::Ptr traceCloud;
     std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
     std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
     std::atomic<bool> meshProjectorInitialized;

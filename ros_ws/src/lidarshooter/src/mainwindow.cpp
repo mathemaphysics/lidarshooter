@@ -60,6 +60,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Set up the mesh projector push button
     meshProjectorInitialized.store(false);
     pushButtonMeshProjectorConnection = connect(ui->pushButtonMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonMeshProjector(void)));
+    
+    // Set up cloud storage space in display-capable format
+    traceCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
 }
 
 MainWindow::~MainWindow()
@@ -121,38 +124,42 @@ void MainWindow::slotLogPoseRotation()
 
 void MainWindow::slotPushButtonMeshProjector()
 {
-    // Initializes the mesh projection process
+    // TODO: Might be better to init ROS outside here
+    // TODO: Move the node handle outside and pass pointer in
+    int rosArgc = 0;
+    char **rosArgv;
+    ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid());
+
+    // Allocate space for the traced cloud
+    meshProjector = std::make_shared<lidarshooter::MeshProjector>(
+        configFile.toStdString(),
+        ros::Duration(0.1),
+        ros::Duration(0.1),
+        loggerTop
+    );
+    meshProjector->setMesh(mesh);
+    meshProjectorInitialized.store(true);
+
+    // Start ROS event loop; nothing inside
+    // meshProjector gets done until spin runs
     rosThread = new std::thread(
-        [this]() {
-            // TODO: Might be better to init ROS outside here
-            // TODO: Move the node handle outside and pass pointer in
-            int rosArgc = 0;
-            char **rosArgv;
-            ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid());
-
-            // Allocate space for the traced cloud
-            traceCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
-            meshProjector = std::make_shared<lidarshooter::MeshProjector>(configFile.toStdString(), ros::Duration(0.1), ros::Duration(0.1), loggerTop);
-            meshProjector->setMesh(mesh);
-            meshProjectorInitialized.store(true);
-
-            // Start ROS event loop
+        []() {
             ros::spin();
         }
     );
 
-    // Grab a reference to the traced points
-    while (meshProjectorInitialized.load() != true || meshProjector->cloudWasUpdated() != true)
+    // Wait until the first trace is done inside meshProjector
+    while (meshProjector->cloudWasUpdated() == false)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     auto testThread = new std::thread(
         [this](){
             // TODO: Wrap this into a function
-            meshProjector->getCurrentStateCopy(traceCloud);
-            auto convertedCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-            auto cloudConverter = lidarshooter::CloudConverter::create(traceCloud);
-            cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(convertedCloud);
-            viewer->addPointCloud<pcl::PointXYZ>(convertedCloud, "trace");
-            loggerTop->info("Total number traced points: {}", convertedCloud->width);
+            auto tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Temporary storage for conversion
+            meshProjector->getCurrentStateCopy(tempCloud);
+            auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
+            cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloud);
+            viewer->addPointCloud<pcl::PointXYZ>(traceCloud, "trace");
+            loggerTop->info("Total number traced points: {}", traceCloud->width);
         }
     );
     testThread->join();
