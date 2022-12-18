@@ -103,11 +103,13 @@ private:
     char **rosArgv;
     int rosArgc = 0;
     std::thread* rosThread;
-    void initializeROSThread();
+    std::atomic<bool> rosThreadRunning;
+    bool initializeROSThread();
+    bool shutdownROSThread();
 
     // Private helper functions
-    void initializeMeshProjector();
-    void shutdownMeshProjector();
+    bool initializeMeshProjector();
+    bool shutdownMeshProjector();
 };
 
 #endif // MAINWINDOW_H

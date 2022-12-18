@@ -4,7 +4,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::MainWindow), rosThreadRunning(false), meshProjectorInitialized(false)
 {
     // UI/MOC setup
     ui->setupUi(this);
@@ -58,7 +58,6 @@ MainWindow::MainWindow(QWidget *parent)
     pushButtonShowDialogConnection = connect(ui->pushButtonDialog, SIGNAL(clicked(void)), logDialog, SLOT(show(void)));
 
     // Set up the mesh projector push button
-    meshProjectorInitialized.store(false);
     pushButtonStartMeshProjectorConnection = connect(ui->pushButtonStartMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonStartMeshProjector(void)));
     pushButtonStopMeshProjectorConnection = connect(ui->pushButtonStopMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonStopMeshProjector(void)));
     
@@ -129,12 +128,16 @@ void MainWindow::slotLogPoseRotation()
 
 void MainWindow::slotPushButtonStartMeshProjector()
 {
-    // TODO: Move the node handle outside and pass pointer in
+    // We can set parameters here too
     ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid());
-
+    
     // Creates the nodes so has to have ros::init called first
-    initializeMeshProjector();
-    initializeROSThread();
+    if (!initializeMeshProjector())
+        return;
+
+    // Does extra checking to make sure thread isn't already running
+    if (!initializeROSThread())
+        return;
 
     // Wait until the first trace is done inside meshProjector
     while (meshProjector->cloudWasUpdated() == false)
@@ -162,6 +165,7 @@ void MainWindow::slotPushButtonStartMeshProjector()
 
 void MainWindow::slotPushButtonStopMeshProjector()
 {
+    shutdownROSThread();
     shutdownMeshProjector();
 }
 
@@ -175,37 +179,103 @@ void MainWindow::slotPushButtonSaveMesh()
     pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }
 
-void MainWindow::initializeROSThread()
-{
-    // Nothing inside meshProjector gets done until spin runs
-    rosThread = new std::thread(
-        []() {
-            ros::spin();
-        }
-    );
-}
-
-void MainWindow::initializeMeshProjector()
+bool MainWindow::initializeMeshProjector()
 {
     // Allocate space for the traced cloud
+    if (meshProjectorInitialized.load() == true)
+    {
+        loggerTop->warn("Mesh projector already running for {}", deviceConfig->getSensorUid());
+        return false;
+    }
+
+    // Automatic deallocation when out of scope
     meshProjector = std::make_shared<lidarshooter::MeshProjector>(
         configFile.toStdString(),
         ros::Duration(0.1),
         ros::Duration(0.1),
         loggerTop
     );
+
+    // Point the meshProjector at the shared pointer to the PolygonMesh
     meshProjector->setMesh(mesh);
+
+    // Indicates the meshProjector is allocated
     meshProjectorInitialized.store(true);
+
+    return true;
 }
 
-void MainWindow::shutdownMeshProjector()
+bool MainWindow::shutdownMeshProjector()
 {
-    ros::shutdown();
-    if (meshProjectorInitialized.load() == true)
+    if (meshProjectorInitialized.load() == false)
+        return false;
+
+    // If already allocated then delete it
+    meshProjector.reset();
+    meshProjectorInitialized.store(false);
+    loggerTop->info("Mesh projector {} stopped", deviceConfig->getSensorUid());
+
+    return true;
+}
+
+bool MainWindow::initializeROSThread()
+{
+    // Make sure the thread isn't left over
+    if (rosThreadRunning.load() == true)
     {
-        meshProjector.reset();
-        meshProjectorInitialized.store(false);
-        loggerTop->info("Mesh projector {} stopped", deviceConfig->getSensorUid());
+        loggerTop->warn("ROS thread is running");
+        return false;
     }
-    loggerTop->info("ROS event handler stopped");
+
+    // Nothing inside meshProjector gets done until spin runs
+    rosThread = new std::thread(
+        []() {
+            ros::spin();
+        }
+    );
+    rosThreadRunning.store(true);
+
+    // Signals successful startup
+    return true;
+}
+
+bool MainWindow::shutdownROSThread()
+{
+    // TODO: Move the node handle outside and pass pointer in
+    if (!ros::isStarted())
+    {
+        loggerTop->warn("ROS not running");
+
+        if (rosThreadRunning.load() == true)
+            loggerTop->warn("ROS not started but thread state true");
+
+        return false;
+    }
+
+    // Make sure the thread isn't left over
+    if (rosThreadRunning.load() == false)
+    {
+        loggerTop->warn("ROS thread is not running");
+        return false;
+    }
+
+    // Kills the event handler
+    ros::shutdown();
+
+    // Not sure if this needs tested
+    if (rosThread->joinable())
+    {
+        rosThread->join();
+        loggerTop->info("Joined ROS thread");
+    }
+    else
+        loggerTop->info("ROS thread not joinable?");
+
+    // Make sure this gets done; would be memory leak otherwise
+    delete rosThread;
+
+    // Mark it so we don't deallocate unallocated space
+    rosThreadRunning.store(false);
+
+    return true;
 }
