@@ -141,7 +141,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButtonMeshProjector">
+      <widget class="QPushButton" name="pushButtonStartMeshProjector">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -166,6 +166,19 @@
     </property>
     <property name="text">
      <string>Open Logs</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonStopMeshProjector">
+    <property name="geometry">
+     <rect>
+      <x>630</x>
+      <y>590</y>
+      <width>131</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop Projector</string>
     </property>
    </widget>
   </widget>

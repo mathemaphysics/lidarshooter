@@ -55,7 +55,8 @@ private slots:
     void slotLogPoseTranslation();
     void slotLogPoseRotation();
     void slotPushButtonSaveMesh();
-    void slotPushButtonMeshProjector();
+    void slotPushButtonStartMeshProjector();
+    void slotPushButtonStopMeshProjector();
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
@@ -79,7 +80,8 @@ private:
     QMetaObject::Connection receiveMeshConnection;
     QMetaObject::Connection pushButtonShowDialogConnection;
     QMetaObject::Connection pushButtonSaveMeshConnection;
-    QMetaObject::Connection pushButtonMeshProjectorConnection;
+    QMetaObject::Connection pushButtonStartMeshProjectorConnection;
+    QMetaObject::Connection pushButtonStopMeshProjectorConnection;
 
     // Other QObjects not in UI; why can't QFileDialog be in UI?
     QFileDialog* configFileDialog;
@@ -98,7 +100,14 @@ private:
     std::atomic<bool> meshProjectorInitialized;
 
     // ROS items
+    char **rosArgv;
+    int rosArgc = 0;
     std::thread* rosThread;
+    void initializeROSThread();
+
+    // Private helper functions
+    void initializeMeshProjector();
+    void shutdownMeshProjector();
 };
 
 #endif // MAINWINDOW_H
