@@ -6,6 +6,7 @@
 #include <QFileDialog>
 
 #include "logdialog.h"
+#include "sensorsdialog.h"
 
 #include <memory>
 #include <filesystem>
@@ -87,6 +88,7 @@ private:
     QFileDialog* configFileDialog;
     QFileDialog* meshFileDialog;
     LogDialog* logDialog;
+    SensorsDialog* sensorsDialog;
 
     // Private variables
     QString configFile;

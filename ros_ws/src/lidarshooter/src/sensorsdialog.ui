@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>SensorsDialog</class>
  <widget class="QDialog" name="SensorsDialog">
@@ -5,13 +6,45 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>314</width>
+    <height>435</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <widget class="QWidget" name="verticalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>291</width>
+     <height>411</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="labelSensors">
+      <property name="text">
+       <string>Sensors</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTableView" name="tableViewSensors"/>
+    </item>
+    <item>
+     <widget class="QLabel" name="labelMeshes">
+      <property name="text">
+       <string>Meshes</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTableView" name="tableViewMeshes"/>
+    </item>
+   </layout>
+  </widget>
  </widget>
  <resources/>
  <connections/>

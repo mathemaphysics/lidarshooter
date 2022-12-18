@@ -13,7 +13,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Create popup logging window
     logDialog = new LogDialog(ui->centralwidget);
+    logDialog->setWindowTitle("Log View");
     logDialog->show();
+
+    // Create the sensors/meshes list window
+    sensorsDialog = new SensorsDialog(ui->centralwidget);
+    sensorsDialog->setWindowTitle("Sensors and Meshes");
+    sensorsDialog->show();
 
     // Set up the loggerTop
     loggerTop = spdlog::get("LiDARShooterTop"); // If it isn't already there then make it
@@ -80,6 +86,8 @@ MainWindow::~MainWindow()
 
     // Clean up the mesh projector
     shutdownMeshProjector();
+
+    delete sensorsDialog;
 
     // Don't delete the log dialog until you're done logging
     delete logDialog;
