@@ -124,7 +124,7 @@ void MainWindow::slotLogPoseRotation()
     loggerBottom->info("Rotation matrix:");
     loggerBottom->info("{}, {}, {}", rotation(0, 0), rotation(0, 1), rotation(0, 2));
     loggerBottom->info("{}, {}, {}", rotation(1, 0), rotation(1, 1), rotation(1, 2));
-    loggerBottom->info("{}, {}, {}", rotation(2, 0), rotation(2, 0), rotation(2, 2));
+    loggerBottom->info("{}, {}, {}", rotation(2, 0), rotation(2, 1), rotation(2, 2));
 }
 
 void MainWindow::slotPushButtonStartMeshProjector()
