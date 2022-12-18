@@ -142,25 +142,19 @@ void MainWindow::slotPushButtonStartMeshProjector()
     // Wait until the first trace is done inside meshProjector
     while (meshProjector->cloudWasUpdated() == false)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    
+
     // Now the cloud is available and can be plotted
-    auto testThread = new std::thread(
-        [this](){
-            // TODO: Wrap this into a function
-            auto tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Will automatically deallocate outside this block
-            meshProjector->getCurrentStateCopy(tempCloud);
+    // TODO: Wrap this into a function
+    auto tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Will automatically deallocate outside this block
+    meshProjector->getCurrentStateCopy(tempCloud);
 
-            // Create the converter to produce a PointXYZ cloud; can be plotted easily
-            auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
-            cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloud);
-            viewer->addPointCloud<pcl::PointXYZ>(traceCloud, "trace");
+    // Create the converter to produce a PointXYZ cloud; can be plotted easily
+    auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
+    cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloud);
+    viewer->addPointCloud<pcl::PointXYZ>(traceCloud, "trace");
 
-            // Logging to make sure we're getting a good trace point count
-            loggerTop->info("Total number traced points: {}", traceCloud->width);
-        }
-    );
-    testThread->join();
-    delete testThread;
+    // Logging to make sure we're getting a good trace point count
+    loggerTop->info("Total number traced points: {}", traceCloud->width);
 }
 
 void MainWindow::slotPushButtonStopMeshProjector()
