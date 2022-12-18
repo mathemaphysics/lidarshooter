@@ -3,8 +3,9 @@
 #include "./ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow), rosThreadRunning(false), meshProjectorInitialized(false)
+    : QMainWindow(parent), ui(new Ui::MainWindow),
+      rosThreadRunning(false),
+      meshProjectorInitialized(false)
 {
     // UI/MOC setup
     ui->setupUi(this);
