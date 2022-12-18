@@ -262,6 +262,9 @@ set(PROJECT_SOURCES
         src/logdialog.cpp
         src/logdialog.h
         src/logdialog.ui
+        src/sensorsdialog.h
+        src/sensorsdialog.cpp
+        src/sensorsdialog.ui
         src/${TS_FILES}
 )
 
