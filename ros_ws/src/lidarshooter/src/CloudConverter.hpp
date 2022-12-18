@@ -24,6 +24,9 @@ public:
     std::shared_ptr<CloudConverter> getPtr();
     void setCloud(pcl::PCLPointCloud2::ConstPtr __cloud);
 
+    // TODO: Get rid of this template and rewrite this class to take in the
+    // config.json file which also has the "fields" section denoting each cloud
+    // field in sensor_msgs::PointCloud2
     template <class C = lidarshooter::XYZIRPoint, class P = pcl::PointXYZ>
     void to(std::shared_ptr<pcl::PointCloud<P>> _output)
     {
