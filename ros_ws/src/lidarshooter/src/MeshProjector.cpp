@@ -31,7 +31,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(true),
-      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false),
+      _config(__logger)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -120,7 +121,8 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
-      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false),
+      _config(__logger)
 {
     // Set up the logger
     if (__logger == nullptr)
