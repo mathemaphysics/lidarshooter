@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QMetaObject>
 #include <QFileDialog>
+#include <QModelIndex>
 
 #include "logdialog.h"
 #include "sensorsdialog.h"
@@ -58,6 +59,7 @@ private slots:
     void slotPushButtonSaveMesh();
     void slotPushButtonStartMeshProjector();
     void slotPushButtonStopMeshProjector();
+    void slotTableClickedStopMeshProjector(QModelIndex);
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
@@ -79,7 +81,8 @@ private:
     QMetaObject::Connection pushButtonMeshConnection;
     QMetaObject::Connection lineEditMeshConnection;
     QMetaObject::Connection receiveMeshConnection;
-    QMetaObject::Connection pushButtonShowDialogConnection;
+    QMetaObject::Connection pushButtonLogDialogConnection;
+    QMetaObject::Connection pushButtonSensorsDialogConnection;
     QMetaObject::Connection pushButtonSaveMeshConnection;
     QMetaObject::Connection pushButtonStartMeshProjectorConnection;
     QMetaObject::Connection pushButtonStopMeshProjectorConnection;

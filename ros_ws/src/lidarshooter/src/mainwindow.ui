@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>786</width>
-    <height>694</height>
+    <height>701</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,7 +30,7 @@
       <x>30</x>
       <y>450</y>
       <width>361</width>
-      <height>131</height>
+      <height>171</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -89,6 +89,24 @@
        </property>
       </widget>
      </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QPushButton" name="pushButtonLogDialog">
+         <property name="text">
+          <string>Open Logs</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButtonSensorsDialog">
+         <property name="text">
+          <string>Open Sensors</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget_2">
@@ -97,7 +115,7 @@
       <x>410</x>
       <y>450</y>
       <width>351</width>
-      <height>131</height>
+      <height>171</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -153,33 +171,20 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="pushButtonStopMeshProjector">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Stop Projector</string>
+       </property>
+      </widget>
+     </item>
     </layout>
-   </widget>
-   <widget class="QPushButton" name="pushButtonDialog">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>590</y>
-      <width>101</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Open Logs</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButtonStopMeshProjector">
-    <property name="geometry">
-     <rect>
-      <x>630</x>
-      <y>590</y>
-      <width>131</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Stop Projector</string>
-    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -197,12 +202,42 @@
     </property>
     <addaction name="actionQuit"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionSensors"/>
+    <addaction name="actionLog"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuView"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionSensors">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Sensors</string>
+   </property>
+  </action>
+  <action name="actionLog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Log</string>
    </property>
   </action>
  </widget>

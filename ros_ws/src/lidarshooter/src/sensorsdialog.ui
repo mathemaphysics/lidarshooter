@@ -31,7 +31,11 @@
      </widget>
     </item>
     <item>
-     <widget class="QTableView" name="tableViewSensors"/>
+     <widget class="QTableView" name="tableViewSensors">
+      <attribute name="horizontalHeaderStretchLastSection">
+       <bool>true</bool>
+      </attribute>
+     </widget>
     </item>
     <item>
      <widget class="QLabel" name="labelMeshes">
@@ -41,7 +45,11 @@
      </widget>
     </item>
     <item>
-     <widget class="QTableView" name="tableViewMeshes"/>
+     <widget class="QTableView" name="tableViewMeshes">
+      <attribute name="horizontalHeaderStretchLastSection">
+       <bool>true</bool>
+      </attribute>
+     </widget>
     </item>
    </layout>
   </widget>

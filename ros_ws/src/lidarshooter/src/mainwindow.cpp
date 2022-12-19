@@ -12,12 +12,12 @@ MainWindow::MainWindow(QWidget *parent)
     this->setWindowTitle("LiDARShooterGUI");
 
     // Create popup logging window
-    logDialog = new LogDialog(ui->centralwidget);
+    logDialog = new LogDialog(this);
     logDialog->setWindowTitle("Log View");
     logDialog->show();
 
     // Create the sensors/meshes list window
-    sensorsDialog = new SensorsDialog(ui->centralwidget);
+    sensorsDialog = new SensorsDialog(this);
     sensorsDialog->setWindowTitle("Sensors and Meshes");
     sensorsDialog->show();
 
@@ -61,8 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Save mesh
     pushButtonSaveMeshConnection = connect(ui->pushButtonSaveMesh, SIGNAL(clicked(void)), this, SLOT(slotPushButtonSaveMesh(void)));
 
-    // Set up the show log button
-    pushButtonShowDialogConnection = connect(ui->pushButtonDialog, SIGNAL(clicked(void)), logDialog, SLOT(show(void)));
+    // Set up the show log and sensor buttons
+    pushButtonLogDialogConnection = connect(ui->pushButtonLogDialog, SIGNAL(clicked(void)), logDialog, SLOT(show(void)));
+    pushButtonSensorsDialogConnection = connect(ui->pushButtonSensorsDialog, SIGNAL(clicked(void)), sensorsDialog, SLOT(show(void)));
 
     // Set up the mesh projector push button
     pushButtonStartMeshProjectorConnection = connect(ui->pushButtonStartMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonStartMeshProjector(void)));
@@ -97,6 +98,7 @@ void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
     configFile = _fileName;
     deviceConfig = std::make_shared<lidarshooter::LidarDevice>(configFile.toStdString(), loggerTop);
+    sensorsDialog->setRow(0, deviceConfig->getSensorUid(), configFile.toStdString().c_str());
     loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), configFile.toStdString());
 }
 
@@ -108,9 +110,7 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
     // Check file exists
     auto meshPath = std::filesystem::path(meshFile.toStdString());
     if (!std::filesystem::exists(meshPath))
-    {
         loggerTop->error("File {} does not exist", meshPath.string());
-    }
     else
     {
         pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *mesh);
@@ -133,6 +133,16 @@ void MainWindow::slotLogPoseRotation()
     loggerBottom->info("{}, {}, {}", rotation(0, 0), rotation(0, 1), rotation(0, 2));
     loggerBottom->info("{}, {}, {}", rotation(1, 0), rotation(1, 1), rotation(1, 2));
     loggerBottom->info("{}, {}, {}", rotation(2, 0), rotation(2, 1), rotation(2, 2));
+}
+
+void MainWindow::slotPushButtonSaveMesh()
+{
+    auto cloudCopy = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
+    pcl::copyPointCloud(mesh->cloud, *cloudCopy);
+    lidarshooter::CloudTransformer cloudTransformer(cloudCopy, viewer->getViewerPose(), deviceConfig);
+    cloudTransformer.applyTransform();
+    pcl::copyPointCloud(*cloudCopy, mesh->cloud);
+    pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }
 
 void MainWindow::slotPushButtonStartMeshProjector()
@@ -172,14 +182,11 @@ void MainWindow::slotPushButtonStopMeshProjector()
     shutdownMeshProjector();
 }
 
-void MainWindow::slotPushButtonSaveMesh()
+void MainWindow::slotTableClickedStopMeshProjector(QModelIndex index)
 {
-    auto cloudCopy = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
-    pcl::copyPointCloud(mesh->cloud, *cloudCopy);
-    lidarshooter::CloudTransformer cloudTransformer(cloudCopy, viewer->getViewerPose(), deviceConfig);
-    cloudTransformer.applyTransform();
-    pcl::copyPointCloud(*cloudCopy, mesh->cloud);
-    pcl::io::savePolygonFileSTL("temp.stl", *mesh);
+    slotPushButtonStopMeshProjector();
+    deviceConfig.reset(new lidarshooter::LidarDevice(loggerTop));
+    sensorsDialog->deleteRow(0);
 }
 
 bool MainWindow::initializeMeshProjector()
