@@ -187,6 +187,7 @@ void MainWindow::slotTableClickedStopMeshProjector(QModelIndex index)
 {
     slotPushButtonStopMeshProjector();
     deviceConfig.reset(new lidarshooter::LidarDevice(loggerTop));
+    loggerTop->info("Removing device {} from sensors", sensorsDialog->getSensorName(0));
     sensorsDialog->deleteSensorRow(0);
 }
 
