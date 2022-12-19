@@ -15,6 +15,8 @@ SensorsDialog::SensorsDialog(QWidget *parent) :
     sensorItemsModel->setColumnCount(2);
     sensorItemsModel->setHeaderData(0, Qt::Orientation::Horizontal, QVariant(QString("Device")));
     sensorItemsModel->setHeaderData(1, Qt::Orientation::Horizontal, QVariant(QString("Path")));
+    sensorItemsModel->setHeaderData(2, Qt::Orientation::Horizontal, QVariant(QString("")));
+    sensorItemsModel->setHeaderData(2, Qt::Orientation::Horizontal, QVariant(QString("")));
 
     // Set up the meshes rows
     meshItemsModel->setColumnCount(2);
@@ -52,4 +54,14 @@ void SensorsDialog::setMeshRow(int _row, std::string _device, std::string _path)
 void SensorsDialog::deleteMeshRow(int _row)
 {
     meshItemsModel->removeRow(_row);
+}
+
+std::string SensorsDialog::getSensorName(int _index)
+{
+    return sensorItemsModel->data(sensorItemsModel->index(_index, 0)).toString().toStdString();
+}
+
+std::string SensorsDialog::getMeshName(int _index)
+{
+    return meshItemsModel->data(meshItemsModel->index(_index, 0)).toString().toStdString();
 }

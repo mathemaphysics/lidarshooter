@@ -23,6 +23,8 @@ public:
     void setMeshRow(int _row, std::string _name, std::string _path);
     void deleteMeshRow(int _row);
 
+    std::string getSensorName(int _index);
+    std::string getMeshName(int _index);
 private:
     Ui::SensorsDialog *ui;
     QStandardItemModel* sensorItemsModel;
