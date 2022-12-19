@@ -59,7 +59,7 @@ private slots:
     void slotPushButtonSaveMesh();
     void slotPushButtonStartMeshProjector();
     void slotPushButtonStopMeshProjector();
-    void slotTableClickedStopMeshProjector(QModelIndex);
+    void slotTableClickedDeleteSensor(int);
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
@@ -102,17 +102,23 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr traceCloud;
     std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
     std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
-    std::atomic<bool> meshProjectorInitialized;
 
-    // ROS items
+    // Indicators: Is ROS thread running/mesh projector initialized?
+    std::atomic<bool> meshProjectorInitialized;
+    std::atomic<bool> rosThreadRunning;
+
+    // ROS parameters
     char **rosArgv;
     int rosArgc = 0;
     std::thread* rosThread;
-    std::atomic<bool> rosThreadRunning;
+
+    // Adding and removing sensors and meshes
+    bool addSensor(std::string _config);
+    bool deleteSensor(int _index);
+    
+    // Starting and stopping projector and ROS
     bool initializeROSThread();
     bool shutdownROSThread();
-
-    // Private helper functions
     bool initializeMeshProjector();
     bool shutdownMeshProjector();
 };

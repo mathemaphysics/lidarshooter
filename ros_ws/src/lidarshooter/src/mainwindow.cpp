@@ -183,12 +183,26 @@ void MainWindow::slotPushButtonStopMeshProjector()
     shutdownMeshProjector();
 }
 
-void MainWindow::slotTableClickedStopMeshProjector(QModelIndex index)
+void MainWindow::slotTableClickedDeleteSensor(int _index)
 {
     slotPushButtonStopMeshProjector();
     deviceConfig.reset(new lidarshooter::LidarDevice(loggerTop));
-    loggerTop->info("Removing device {} from sensors", sensorsDialog->getSensorName(0));
-    sensorsDialog->deleteSensorRow(0);
+
+    // TODO: Make this debug when in working order
+    loggerTop->info("Removing device {} from sensors", sensorsDialog->getSensorName(_index));
+
+    // Delete here will break call the getSensorName above ;-)
+    sensorsDialog->deleteSensorRow(_index);
+}
+
+bool MainWindow::addSensor(std::string _config)
+{
+    return true;
+}
+
+bool MainWindow::deleteSensor(int _index)
+{
+    return true;
 }
 
 bool MainWindow::initializeMeshProjector()
