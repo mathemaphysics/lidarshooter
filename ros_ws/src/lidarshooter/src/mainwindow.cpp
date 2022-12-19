@@ -98,7 +98,7 @@ void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
     configFile = _fileName;
     deviceConfig = std::make_shared<lidarshooter::LidarDevice>(configFile.toStdString(), loggerTop);
-    sensorsDialog->setRow(0, deviceConfig->getSensorUid(), configFile.toStdString().c_str());
+    sensorsDialog->setSensorRow(0, deviceConfig->getSensorUid(), configFile.toStdString().c_str());
     loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), configFile.toStdString());
 }
 
@@ -113,6 +113,7 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
         loggerTop->error("File {} does not exist", meshPath.string());
     else
     {
+        sensorsDialog->setMeshRow(0, "mesh", meshFile.toStdString());
         pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *mesh);
         viewer->addPolygonMesh(*mesh, meshFile.toStdString());
         viewer->resetCamera();
@@ -186,7 +187,7 @@ void MainWindow::slotTableClickedStopMeshProjector(QModelIndex index)
 {
     slotPushButtonStopMeshProjector();
     deviceConfig.reset(new lidarshooter::LidarDevice(loggerTop));
-    sensorsDialog->deleteRow(0);
+    sensorsDialog->deleteSensorRow(0);
 }
 
 bool MainWindow::initializeMeshProjector()

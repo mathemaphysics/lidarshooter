@@ -17,12 +17,16 @@ public:
     explicit SensorsDialog(QWidget *parent = nullptr);
     ~SensorsDialog();
     
-    void setRow(int row, std::string device, std::string path);
-    void deleteRow(int row);
+    void setSensorRow(int _row, std::string _device, std::string _path);
+    void deleteSensorRow(int _row);
+
+    void setMeshRow(int _row, std::string _name, std::string _path);
+    void deleteMeshRow(int _row);
 
 private:
     Ui::SensorsDialog *ui;
     QStandardItemModel* sensorItemsModel;
+    QStandardItemModel* meshItemsModel;
 };
 
 #endif // SENSORSDIALOG_H
