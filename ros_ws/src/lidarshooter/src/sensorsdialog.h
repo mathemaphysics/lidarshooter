@@ -23,7 +23,7 @@ class TaggedPushButton : public QPushButton
     Q_OBJECT
 
 public:
-    TaggedPushButton(QString __tag, QString __label, std::shared_ptr<spdlog::logger> __logger = nullptr);
+    TaggedPushButton(QString __tag, QString __label);
     ~TaggedPushButton() = default;
 
 signals:
@@ -34,9 +34,6 @@ private slots:
 
 private:
     QString _tag;
-    std::shared_ptr<spdlog::logger> _logger;
-
-    const std::string _className = "TaggedPushButton";
 };
 
 class SensorsDialog : public QDialog
@@ -44,7 +41,7 @@ class SensorsDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit SensorsDialog(QWidget *parent = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
+    explicit SensorsDialog(QWidget *parent = nullptr);
     ~SensorsDialog();
     
     std::string getSensorName(int _index);
@@ -62,9 +59,6 @@ private:
     Ui::SensorsDialog *ui;
     QStandardItemModel* _sensorItemsModel;
     QStandardItemModel* _meshItemsModel;
-    std::shared_ptr<spdlog::logger> _logger;
-
-    const std::string _className = "SensorsDialog";
 };
 
 #endif // SENSORSDIALOG_H

@@ -5,19 +5,9 @@
 
 #include <iostream>
 
-TaggedPushButton::TaggedPushButton(QString __tag, QString __label, std::shared_ptr<spdlog::logger> __logger)
+TaggedPushButton::TaggedPushButton(QString __tag, QString __label)
     : QPushButton(__label)
 {
-    // Set up the logger
-    if (__logger == nullptr)
-    {
-        _logger = spdlog::get(_className);
-        if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_className);
-    }
-    else
-        _logger = __logger;
-
     // Store your location in the table
     _tag = __tag;
 
@@ -31,20 +21,10 @@ void TaggedPushButton::rowButtonClicked()
     emit clickedRow(_tag);
 }
 
-SensorsDialog::SensorsDialog(QWidget *parent, std::shared_ptr<spdlog::logger> __logger) :
+SensorsDialog::SensorsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SensorsDialog)
 {
-    // Set up the logger
-    if (__logger == nullptr)
-    {
-        _logger = spdlog::get(_className);
-        if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_className);
-    }
-    else
-        _logger = __logger;
-
     ui->setupUi(this);
 
     _sensorItemsModel = new QStandardItemModel(this);
@@ -79,6 +59,13 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
     QList<QStandardItem*> thisRow;
     thisRow.append(new QStandardItem(QString(_device.c_str())));
     thisRow.append(new QStandardItem(QString(_path.c_str())));
+
+    // Make sure the item isn't adding a duplicate
+    auto itemsList = _sensorItemsModel->findItems(_device.c_str(), Qt::MatchExactly, 0); // Match sensorUid column
+    if (itemsList.length() > 0)
+        return;
+
+    // Otherwise it isn't present so add it
     _sensorItemsModel->appendRow(thisRow);
     auto itemIndex = _sensorItemsModel->indexFromItem(thisRow.at(0)); // Device string should be unique
     
@@ -97,10 +84,7 @@ void SensorsDialog::deleteSensorRow(QString _tag)
 {
     auto itemList = _sensorItemsModel->findItems(_tag);
     if (itemList.length() == 0)
-    {
-        _logger->warn("Failed to find ", _tag.toStdString());
         return; // Because we can't get itemIndex from itemList.at(0); it doesn't exist
-    }
 
     // Get the QModelIndex and free the individual buttons
     auto itemIndex = _sensorItemsModel->indexFromItem(itemList.at(0));

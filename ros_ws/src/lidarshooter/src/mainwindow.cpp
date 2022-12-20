@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     logDialog->show();
 
     // Create the sensors/meshes list window
-    sensorsDialog = new SensorsDialog(this, loggerTop);
+    sensorsDialog = new SensorsDialog(this);
     sensorsDialog->setWindowTitle("Sensors and Meshes");
     sensorsDialog->show();
 
