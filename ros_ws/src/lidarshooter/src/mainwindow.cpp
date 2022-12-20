@@ -204,7 +204,7 @@ bool MainWindow::initializeMeshProjector()
 
     // Automatic deallocation when out of scope
     meshProjector = std::make_shared<lidarshooter::MeshProjector>(
-        configFile.toStdString(),
+        deviceConfig,
         ros::Duration(0.1),
         ros::Duration(0.1),
         loggerTop

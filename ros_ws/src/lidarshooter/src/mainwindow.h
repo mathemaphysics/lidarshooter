@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <thread>
 #include <atomic>
+#include <map>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/qt_sinks.h>
@@ -101,6 +102,12 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr traceCloud;
     std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
     std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
+
+    // Device to object maps
+    std::map<std::string, pcl::PolygonMesh::Ptr> meshMap;
+    std::map<std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap;
+    std::map<std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap;
+    std::map<std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap;
 
     // Indicators: Is ROS thread running/mesh projector initialized?
     std::atomic<bool> meshProjectorInitialized;
