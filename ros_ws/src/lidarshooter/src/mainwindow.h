@@ -59,7 +59,6 @@ private slots:
     void slotPushButtonSaveMesh();
     void slotPushButtonStartMeshProjector();
     void slotPushButtonStopMeshProjector();
-    void slotTableClickedDeleteSensor(int);
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;

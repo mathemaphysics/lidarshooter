@@ -5,28 +5,38 @@
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QPushButton>
+#include <QString>
+
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/qt_sinks.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
+#include <memory>
 
 namespace Ui {
 class SensorsDialog;
-class RowPushButton;
+class TaggedPushButton;
 }
 
-class RowPushButton : public QPushButton
+class TaggedPushButton : public QPushButton
 {
     Q_OBJECT
 
 public:
-    RowPushButton(int _row, QString _label);
-    ~RowPushButton() = default;
+    TaggedPushButton(QString __tag, QString __label, std::shared_ptr<spdlog::logger> __logger = nullptr);
+    ~TaggedPushButton() = default;
 
 signals:
-    void clickedRow(int);
+    void clickedRow(QString);
 
 private slots:
     void rowButtonClicked();
 
 private:
-    int _row;
+    QString _tag;
+    std::shared_ptr<spdlog::logger> _logger;
+
+    const std::string _className = "TaggedPushButton";
 };
 
 class SensorsDialog : public QDialog
@@ -34,7 +44,7 @@ class SensorsDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit SensorsDialog(QWidget *parent = nullptr);
+    explicit SensorsDialog(QWidget *parent = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
     ~SensorsDialog();
     
     std::string getSensorName(int _index);
@@ -43,15 +53,18 @@ public:
 signals:
 
 public slots:
-    void setSensorRow(int _row, std::string _device, std::string _path);
-    void deleteSensorRow(int _row);
+    void addSensorRow(std::string _device, std::string _path);
+    void deleteSensorRow(QString _tag);
     void setMeshRow(int _row, std::string _name, std::string _path);
     void deleteMeshRow(int _row);
 
 private:
     Ui::SensorsDialog *ui;
-    QStandardItemModel* sensorItemsModel;
-    QStandardItemModel* meshItemsModel;
+    QStandardItemModel* _sensorItemsModel;
+    QStandardItemModel* _meshItemsModel;
+    std::shared_ptr<spdlog::logger> _logger;
+
+    const std::string _className = "SensorsDialog";
 };
 
 #endif // SENSORSDIALOG_H

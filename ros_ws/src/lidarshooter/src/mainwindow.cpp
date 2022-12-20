@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     logDialog->show();
 
     // Create the sensors/meshes list window
-    sensorsDialog = new SensorsDialog(this);
+    sensorsDialog = new SensorsDialog(this, loggerTop);
     sensorsDialog->setWindowTitle("Sensors and Meshes");
     sensorsDialog->show();
 
@@ -98,7 +98,7 @@ void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
     configFile = _fileName;
     deviceConfig = std::make_shared<lidarshooter::LidarDevice>(configFile.toStdString(), loggerTop);
-    sensorsDialog->setSensorRow(0, deviceConfig->getSensorUid(), configFile.toStdString().c_str());
+    sensorsDialog->addSensorRow(deviceConfig->getSensorUid(), configFile.toStdString().c_str());
     loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), configFile.toStdString());
 }
 
@@ -181,18 +181,6 @@ void MainWindow::slotPushButtonStopMeshProjector()
 {
     shutdownROSThread();
     shutdownMeshProjector();
-}
-
-void MainWindow::slotTableClickedDeleteSensor(int _index)
-{
-    slotPushButtonStopMeshProjector();
-    deviceConfig.reset(new lidarshooter::LidarDevice(loggerTop));
-
-    // TODO: Make this debug when in working order
-    loggerTop->info("Removing device {} from sensors", sensorsDialog->getSensorName(_index));
-
-    // Delete here will break call the getSensorName above ;-)
-    sensorsDialog->deleteSensorRow(_index);
 }
 
 bool MainWindow::addSensor(std::string _config)
