@@ -66,6 +66,19 @@ public:
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      */
     MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+
+    /**
+     * @brief Construct a new \c MeshProjector to run in the node
+     * 
+     * @param _configDevice Already loaded \c LidarDevice representing the LiDAR device
+     * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
+     * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
+     */
+    MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+
+    /**
+     * @brief Destroy the mesh projector object
+     */
     ~MeshProjector();
 
     /**
@@ -167,7 +180,7 @@ private:
     std::shared_ptr<spdlog::logger> _logger;
 
     // Device with everyone you need to know about your scanner
-    LidarDevice _config;
+    std::shared_ptr<LidarDevice> _config;
 
     // Storage of actual geometries for Embree
     float *_objectVertices;

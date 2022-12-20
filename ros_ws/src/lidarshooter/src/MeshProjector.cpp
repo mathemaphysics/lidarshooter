@@ -31,8 +31,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(true),
-      _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _config(__logger)
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -73,8 +72,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _nodeHandle.param("configfile", configFile, configFile);
 
     // Initializing the LiDAR device
-    _logger->info("Loading config file {}", configFile);
-    _config.initialize(configFile, _sensorUid);
+    _logger->info("Loading config file {} specified via configfile ROS parameter", configFile);
+    _config.reset(new LidarDevice(configFile, _sensorUid, __logger));
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -91,11 +90,11 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
      * it contains zero points; it's rendering some garbage that doesn't go
      * away still, if only a couple points.
      */
-    _config.initMessage(_currentState, _frameIndex);
+    _config->initMessage(_currentState, _frameIndex);
 
     // Check that they match
-    if (_sensorUid != _config.getSensorUid())
-        _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
+    if (_sensorUid != _config->getSensorUid())
+        _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Set velocities to zero
     _linearDisplacement.setZero();
@@ -121,8 +120,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
-      _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _config(__logger)
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -160,7 +158,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
 
     // Initializing the LiDAR device
     _logger->info("Loading device configuration from {}", _configFile);
-    _config.initialize(_configFile);
+    _config.reset(new LidarDevice(_configFile, _sensorUid, __logger));
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -177,11 +175,92 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
      * it contains zero points; it's rendering some garbage that doesn't go
      * away still, if only a couple points.
      */
-    _config.initMessage(_currentState, _frameIndex);
+    _config->initMessage(_currentState, _frameIndex);
 
     // Check that they match
-    if (_sensorUid != _config.getSensorUid())
-        _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config.getSensorUid(), _sensorUid);
+    if (_sensorUid != _config->getSensorUid())
+        _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
+
+    // Set velocities to zero
+    _linearDisplacement.setZero();
+    _angularDisplacement.setZero();
+
+    // Create the pubsub situation
+    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
+    _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
+    _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
+
+    // Admit we updated the mesh because this is the first iteration
+    _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
+}
+
+lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+      _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
+      _meshWasUpdated(false), _meshWasUpdatedPublic(false),
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
+{
+    // Set up the logger
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get(_applicationName);
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt(_applicationName);
+    }
+    else
+        _logger = __logger;
+
+    // Load file given on the command line
+    _logger->info("Starting up MeshProjector");
+    
+    // Initialize to zero buffer size; dynamic allocation is okay
+    _objectVerticesBufferSize = 0;
+    _objectElementsBufferSize = 0;
+    _groundVerticesBufferSize = 0;
+    _groundElementsBufferSize = 0;
+
+    // Set up geometry
+    setupObjectGeometryBuffers(3000, 6000);
+    setupGroundGeometryBuffers(8, 2);
+
+    // Get the sensorUid we want to run
+    std::string nodeNamespace = _nodeHandle.getNamespace();
+    std::regex slashRegex("/");
+    auto strippedSensorUid = std::ostringstream();
+    std::regex_replace(
+        std::ostreambuf_iterator<char>(strippedSensorUid),
+        nodeNamespace.begin(), nodeNamespace.end(), slashRegex, ""
+    );
+    _sensorUid = strippedSensorUid.str();
+    _logger->info("SensorUID from namespace is {}", _sensorUid);
+
+    // Initializing the LiDAR device
+    _logger->info("Loaded device {} from preloaded device object", _configDevice->getSensorUid());
+    _config = _configDevice;
+
+    // When object is created we start at frame index 0
+    _frameIndex = 0;
+
+    // The current state cloud is now a shared pointer and needs alloc'ed
+    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+
+    /**
+     * This is critical because without initialization of the header of the
+     * current cloud state, publishing this to SENSR will cause some memory
+     * strangeness and permanently mangles plotting.
+     * 
+     * TODO: Need to have an empty initializer that sets the container claim
+     * it contains zero points; it's rendering some garbage that doesn't go
+     * away still, if only a couple points.
+     */
+    _config->initMessage(_currentState, _frameIndex);
+
+    // Check that they match
+    if (_sensorUid != _config->getSensorUid())
+        _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Set velocities to zero
     _linearDisplacement.setZero();
@@ -340,10 +419,10 @@ inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(Eigen::Vec
 void lidarshooter::MeshProjector::updateGround()
 {
     // Set the ground; eventually make this its own function
-    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config.originToSensor(corner1); // TODO: Allow configuration of the ground in JSON format
-    Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config.originToSensor(corner2);
-    Eigen::Vector3f corner3( 50.0,  50.0, 0.0); _config.originToSensor(corner3);
-    Eigen::Vector3f corner4( 50.0, -50.0, 0.0); _config.originToSensor(corner4);
+    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config->originToSensor(corner1); // TODO: Allow configuration of the ground in JSON format
+    Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config->originToSensor(corner2);
+    Eigen::Vector3f corner3( 50.0,  50.0, 0.0); _config->originToSensor(corner3);
+    Eigen::Vector3f corner4( 50.0, -50.0, 0.0); _config->originToSensor(corner4);
 
     _groundVertices[0] = corner1.x(); _groundVertices[1]  = corner1.y(); _groundVertices[2]  = corner1.z();
     _groundVertices[3] = corner2.x(); _groundVertices[4]  = corner2.y(); _groundVertices[5]  = corner2.z();
@@ -402,7 +481,7 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
         
         // Apply the affine transformation and then transf
         ptrans = transform * ptrans;
-        _config.originToSensor(ptrans);
+        _config->originToSensor(ptrans);
 
         // Linear position update here
         _joystickMutex.lock();
@@ -431,12 +510,12 @@ void lidarshooter::MeshProjector::traceMesh()
     // Trace out the Hesai configuration for now
     // Initialize ray state for batch processing
     _cloudMutex.lock();
-    _config.initMessage(_currentState, ++_frameIndex);
+    _config->initMessage(_currentState, ++_frameIndex);
     _currentState->data.clear();
-    _config.reset();
+    _config->reset();
 
     // Count the total iterations because the limits are needed for threading
-    unsigned int numTotalRays = _config.getTotalRays();
+    unsigned int numTotalRays = _config->getTotalRays();
     unsigned int numIterations = numTotalRays / RAY_PACKET_SIZE + (numTotalRays % RAY_PACKET_SIZE > 0 ? 1 : 0);
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
@@ -465,7 +544,7 @@ void lidarshooter::MeshProjector::traceMesh()
 
                     // Fill up the next ray in the buffer
                     configMutex.lock();
-                    rayState = this->_config.nextRay(rayhitn, validRays);
+                    rayState = this->_config->nextRay(rayhitn, validRays);
                     configMutex.unlock();
                     for (int idx = 0; idx < RAY_PACKET_SIZE; ++idx)
                         rayRings[idx] = 0;
