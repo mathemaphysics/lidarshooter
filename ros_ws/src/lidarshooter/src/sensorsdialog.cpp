@@ -76,7 +76,7 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
     ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 3), deleteSensorButton);
 
     // Link them to their actions
-    connect(startSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString))); // FIXME: Do this when you have it all figured out
+    connect(startSensorButton, SIGNAL(clickedRow(QString)), _parent, SLOT(startMeshProjector(QString))); // FIXME: Do this when you have it all figured out
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString)));
 }
 

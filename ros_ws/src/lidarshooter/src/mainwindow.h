@@ -61,6 +61,10 @@ private slots:
     void slotPushButtonStartMeshProjector();
     void slotPushButtonStopMeshProjector();
 
+    // Let's use a new naming scheme without the "slot" prefix; update them gradually
+    void startMeshProjector(QString);
+    void stopMeshProjector(QString);
+
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
     vtkSmartPointer<vtkGenericOpenGLRenderWindow> window;
@@ -102,15 +106,16 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr traceCloud;
     std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
     std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
+    std::atomic<bool> meshProjectorInitialized;
 
     // Device to object maps
-    std::map<std::string, pcl::PolygonMesh::Ptr> meshMap;
-    std::map<std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap;
-    std::map<std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap;
-    std::map<std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap;
+    std::map<const std::string, pcl::PolygonMesh::Ptr> meshMap;
+    std::map<const std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap;
+    std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap;
+    std::map<const std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap;
+    std::map<const std::string, std::atomic<bool>> meshProjectorInitMap;
 
     // Indicators: Is ROS thread running/mesh projector initialized?
-    std::atomic<bool> meshProjectorInitialized;
     std::atomic<bool> rosThreadRunning;
 
     // ROS parameters
@@ -119,14 +124,14 @@ private:
     std::thread* rosThread;
 
     // Adding and removing sensors and meshes
-    bool addSensor(std::string _config);
-    bool deleteSensor(int _index);
+    bool addSensor(const std::string& _sensorUid);
+    bool deleteSensor(const std::string& _sensorUid);
     
     // Starting and stopping projector and ROS
     bool initializeROSThread();
     bool shutdownROSThread();
-    bool initializeMeshProjector();
-    bool shutdownMeshProjector();
+    bool initializeMeshProjector(const std::string& _sensorUid = "lidar_0000");
+    bool shutdownMeshProjector(const std::string& _sensorUid = "lidar_0000");
 };
 
 #endif // MAINWINDOW_H

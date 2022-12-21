@@ -59,6 +59,7 @@ private:
     Ui::SensorsDialog *ui;
     QStandardItemModel* _sensorItemsModel;
     QStandardItemModel* _meshItemsModel;
+    QObject* _parent;
 };
 
 #endif // SENSORSDIALOG_H

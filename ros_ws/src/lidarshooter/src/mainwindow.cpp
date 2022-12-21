@@ -96,10 +96,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
-    configFile = _fileName;
-    deviceConfig = std::make_shared<lidarshooter::LidarDevice>(configFile.toStdString(), loggerTop);
-    sensorsDialog->addSensorRow(deviceConfig->getSensorUid(), configFile.toStdString().c_str());
-    loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), configFile.toStdString());
+    auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName.toStdString(), loggerTop);
+    deviceConfigMap[devicePointer->getSensorUid()] = devicePointer;
+    sensorsDialog->addSensorRow(deviceConfig->getSensorUid(), _fileName.toStdString().c_str());
+    loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), _fileName.toStdString());
 }
 
 void MainWindow::slotReceiveMeshFile(const QString _fileName)
@@ -113,9 +113,16 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
         loggerTop->error("File {} does not exist", meshPath.string());
     else
     {
-        sensorsDialog->setMeshRow(0, "mesh", meshFile.toStdString());
-        pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *mesh);
-        viewer->addPolygonMesh(*mesh, meshFile.toStdString());
+        auto meshName = fmt::format("mesh{}", meshMap.size() + 1);
+        meshMap.insert(
+            {
+                meshName,
+                pcl::PolygonMesh::Ptr(new pcl::PolygonMesh())
+            }
+        );
+        sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
+        pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
+        viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
         viewer->resetCamera();
     }
 }
@@ -149,7 +156,7 @@ void MainWindow::slotPushButtonSaveMesh()
 void MainWindow::slotPushButtonStartMeshProjector()
 {
     // We can set parameters here too
-    ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid());
+    ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid()); // TODO: Change name to something else
     
     // Creates the nodes so has to have ros::init called first
     if (!initializeMeshProjector())
@@ -183,51 +190,65 @@ void MainWindow::slotPushButtonStopMeshProjector()
     shutdownMeshProjector();
 }
 
-bool MainWindow::addSensor(std::string _config)
+void MainWindow::startMeshProjector(QString _sensorUid)
+{
+    // We can set parameters here too
+    ros::init(rosArgc, rosArgv, _sensorUid.toStdString()); // TODO: Change name to something else
+    
+    // Creates the nodes so has to have ros::init called first
+    initializeMeshProjector(_sensorUid.toStdString());
+}
+
+void MainWindow::stopMeshProjector(QString _sensorUid)
+{
+    shutdownMeshProjector(_sensorUid.toStdString());
+}
+
+bool MainWindow::addSensor(const std::string& _sensorUid)
 {
     return true;
 }
 
-bool MainWindow::deleteSensor(int _index)
+bool MainWindow::deleteSensor(const std::string& _sensorUid)
 {
     return true;
 }
 
-bool MainWindow::initializeMeshProjector()
+bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
 {
     // Allocate space for the traced cloud
-    if (meshProjectorInitialized.load() == true)
+    if (meshProjectorInitMap[_sensorUid].load() == true)
     {
-        loggerTop->warn("Mesh projector already running for {}", deviceConfig->getSensorUid());
+        loggerTop->warn("Mesh projector already running for {}", _sensorUid);
         return false;
     }
 
     // Automatic deallocation when out of scope
-    meshProjector = std::make_shared<lidarshooter::MeshProjector>(
-        deviceConfig,
+    meshProjectorMap[_sensorUid] = std::make_shared<lidarshooter::MeshProjector>(
+        deviceConfigMap[_sensorUid], // TODO: Error handling needed here badly; key may not exist
         ros::Duration(0.1),
         ros::Duration(0.1),
         loggerTop
     );
 
     // Point the meshProjector at the shared pointer to the PolygonMesh
-    meshProjector->setMesh(mesh);
+    meshProjectorMap[_sensorUid]->setMesh(mesh);
 
     // Indicates the meshProjector is allocated
-    meshProjectorInitialized.store(true);
+    meshProjectorInitMap[_sensorUid].store(true);
 
     return true;
 }
 
-bool MainWindow::shutdownMeshProjector()
+bool MainWindow::shutdownMeshProjector(const std::string& _sensorUid)
 {
-    if (meshProjectorInitialized.load() == false)
+    if (meshProjectorInitMap[_sensorUid].load() == false)
         return false;
 
     // If already allocated then delete it
-    meshProjector.reset();
-    meshProjectorInitialized.store(false);
-    loggerTop->info("Mesh projector {} stopped", deviceConfig->getSensorUid());
+    meshProjectorMap[_sensorUid].reset();
+    meshProjectorInitMap[_sensorUid].store(false);
+    loggerTop->info("Mesh projector {} stopped", _sensorUid);
 
     return true;
 }
