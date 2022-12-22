@@ -49,15 +49,23 @@ SensorsDialog::SensorsDialog(QWidget *parent) :
 
 SensorsDialog::~SensorsDialog()
 {
-    delete ui;
-
     // Clean up leftover button we new'ed in the addSensorRow calls
     auto parentWindow = dynamic_cast<MainWindow*>(parentWidget());
     for (auto [key, val] : parentWindow->deviceConfigMap)
         deleteSensorRow(QString(key.c_str())); // Only deletes anything if it exists
 
+    delete ui;
     delete _sensorItemsModel;
     delete _meshItemsModel;
+}
+
+int SensorsDialog::getSensorRow(QString _tag)
+{
+    auto itemList = _sensorItemsModel->findItems(_tag);
+    if (itemList.length() > 0)
+        return _sensorItemsModel->indexFromItem(itemList.at(0)).row(); // Just take the first one; unique
+    else
+        return -1; // No item found by that name b/c length <= 0
 }
 
 void SensorsDialog::addSensorRow(std::string _device, std::string _path)
@@ -85,18 +93,11 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
     ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 4), deleteSensorButton);
 
     // Link them to their actions
-    connect(startSensorButton, SIGNAL(clickedRow(QString)), dynamic_cast<MainWindow*>(parentWidget()), SLOT(startMeshProjector(QString))); // FIXME: Do this when you have it all figured out
-    connect(stopSensorButton, SIGNAL(clickedRow(QString)), dynamic_cast<MainWindow*>(parentWidget()), SLOT(stopMeshProjector(QString))); // FIXME: Do this when you have it all figured out
-    connect(deleteSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString)));
-}
-
-int SensorsDialog::getSensorRow(QString _tag)
-{
-    auto itemList = _sensorItemsModel->findItems(_tag);
-    if (itemList.length() > 0)
-        return _sensorItemsModel->indexFromItem(itemList.at(0)).row(); // Just take the first one; unique
-    else
-        return -1; // No item found by that name b/c length <= 0
+    auto mainWindow = dynamic_cast<MainWindow*>(parentWidget());
+    connect(startSensorButton, SIGNAL(clickedRow(QString)), mainWindow, SLOT(startMeshProjector(QString)));
+    connect(stopSensorButton, SIGNAL(clickedRow(QString)), mainWindow, SLOT(stopMeshProjector(QString)));
+    connect(deleteSensorButton, SIGNAL(clickedRow(QString)), mainWindow, SLOT(deleteSensor(QString))); // Have to do this first because
+    connect(deleteSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString))); // This one knows the device key and needs to be here
 }
 
 void SensorsDialog::deleteSensorRow(QString _tag)

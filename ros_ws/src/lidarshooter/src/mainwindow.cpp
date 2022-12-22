@@ -94,12 +94,14 @@ MainWindow::~MainWindow()
     delete logDialog;
 }
 
+/**
+ * Begin private slots
+ */
+
 void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
-    auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName.toStdString(), loggerTop);
-    deviceConfigMap[devicePointer->getSensorUid()] = devicePointer;
-    sensorsDialog->addSensorRow(devicePointer->getSensorUid(), _fileName.toStdString());
-    loggerTop->info("Loaded device configuration for {} from {}", devicePointer->getSensorUid(), _fileName.toStdString());
+    auto sensorUid = addSensor(_fileName.toStdString());
+    loggerTop->info("Loaded device configuration for {} from {}", sensorUid, _fileName.toStdString());
 }
 
 void MainWindow::slotReceiveMeshFile(const QString _fileName)
@@ -195,6 +197,10 @@ void MainWindow::slotPushButtonStopMeshProjector()
     shutdownMeshProjector();
 }
 
+/**
+ * Begin public slots
+ */
+
 void MainWindow::startMeshProjector(QString _sensorUid)
 {
     // We can set parameters here too
@@ -209,14 +215,43 @@ void MainWindow::stopMeshProjector(QString _sensorUid)
     shutdownMeshProjector(_sensorUid.toStdString());
 }
 
-bool MainWindow::addSensor(const std::string& _sensorUid)
+void MainWindow::startROSThread()
 {
-    return true;
+    initializeROSThread();
 }
 
-bool MainWindow::deleteSensor(const std::string& _sensorUid)
+void MainWindow::stopROSThread()
 {
-    return true;
+    shutdownROSThread();
+}
+
+void MainWindow::deleteSensor(QString _sensorUid)
+{
+    // Silently check to see if it's already running
+    shutdownMeshProjector(_sensorUid.toStdString());
+    deleteSensor(_sensorUid.toStdString());
+
+    // TODO: Change this to debug
+    loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
+}
+
+/**
+ * Start private functions
+ */
+
+const std::string MainWindow::addSensor(const std::string& _fileName)
+{
+    auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName, loggerTop);
+    deviceConfigMap[devicePointer->getSensorUid()] = devicePointer;
+    sensorsDialog->addSensorRow(devicePointer->getSensorUid(), _fileName);
+    return devicePointer->getSensorUid();
+}
+
+void MainWindow::deleteSensor(const std::string& _sensorUid)
+{
+    // Deallocate because we're done
+    deviceConfigMap[_sensorUid].reset(); // This probably isn't necessary
+    deviceConfigMap.erase(_sensorUid);
 }
 
 bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
@@ -228,6 +263,10 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
         return false;
     }
 
+    // Make sure at least one mesh is loaded now
+    if (meshMap.size() == 0)
+        return false;
+
     // Automatic deallocation when out of scope
     meshProjectorMap[_sensorUid] = std::make_shared<lidarshooter::MeshProjector>(
         deviceConfigMap[_sensorUid], // TODO: Error handling needed here badly; key may not exist
@@ -237,7 +276,12 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
     );
 
     // Point the meshProjector at the shared pointer to the PolygonMesh
-    meshProjectorMap[_sensorUid]->setMesh(mesh);
+    for (auto [key, value] : meshMap)
+    {
+        // Set the mesh for now; until mesh projector handles multiple meshes
+        meshProjectorMap[_sensorUid]->setMesh(value);
+        loggerTop->info("Set the mesh for {} to {}", _sensorUid, key);
+    }
 
     // Indicates the meshProjector is allocated
     meshProjectorInitMap[_sensorUid].store(true);

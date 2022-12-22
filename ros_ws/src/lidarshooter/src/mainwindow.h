@@ -65,6 +65,9 @@ public slots:
     // Let's use a new naming scheme without the "slot" prefix; update them gradually
     void startMeshProjector(QString);
     void stopMeshProjector(QString);
+    void startROSThread();
+    void stopROSThread();
+    void deleteSensor(QString);
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
@@ -124,11 +127,9 @@ private:
     int rosArgc = 0;
     std::thread* rosThread;
 
-    // Adding and removing sensors and meshes
-    bool addSensor(const std::string& _sensorUid);
-    bool deleteSensor(const std::string& _sensorUid);
-    
     // Starting and stopping projector and ROS
+    const std::string addSensor(const std::string& _fileName);
+    void deleteSensor(const std::string& _sensorUid);
     bool initializeROSThread();
     bool shutdownROSThread();
     bool initializeMeshProjector(const std::string& _sensorUid = "lidar_0000");
