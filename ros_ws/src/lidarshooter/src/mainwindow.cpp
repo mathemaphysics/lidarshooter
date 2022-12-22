@@ -110,21 +110,18 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
     // Check file exists
     auto meshPath = std::filesystem::path(meshFile.toStdString());
     if (!std::filesystem::exists(meshPath))
-        loggerTop->error("File {} does not exist", meshPath.string());
-    else
     {
-        auto meshName = fmt::format("mesh{}", meshMap.size() + 1);
-        meshMap.insert(
-            {
-                meshName,
-                pcl::PolygonMesh::Ptr(new pcl::PolygonMesh())
-            }
-        );
-        sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
-        pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
-        viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
-        viewer->resetCamera();
+        loggerTop->error("File {} does not exist", meshPath.string());
+        return;
     }
+
+    // If file exists then go forward
+    auto meshName = fmt::format("mesh{}", meshMap.size() + 1);
+    meshMap[meshName] = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
+    sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
+    pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
+    viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
+    viewer->resetCamera();
 }
 
 void MainWindow::slotLogPoseTranslation()
@@ -166,6 +163,10 @@ void MainWindow::slotPushButtonStartMeshProjector()
     if (!initializeROSThread())
         return;
 
+    /**
+     * CUT THIS PART OUT TO BECOME ITS OWN LOOP
+     */
+
     // Wait until the first trace is done inside meshProjector
     while (meshProjector->cloudWasUpdated() == false)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -182,6 +183,10 @@ void MainWindow::slotPushButtonStartMeshProjector()
 
     // Logging to make sure we're getting a good trace point count
     loggerTop->info("Total number traced points: {}", traceCloud->width);
+
+    /*
+     * END CUTOUT LOOP SECTION 
+     **/
 }
 
 void MainWindow::slotPushButtonStopMeshProjector()
