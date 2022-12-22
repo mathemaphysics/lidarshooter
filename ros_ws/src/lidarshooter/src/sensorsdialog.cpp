@@ -33,11 +33,12 @@ SensorsDialog::SensorsDialog(QWidget *parent) :
     ui->tableViewMeshes->setModel(_meshItemsModel);
 
     // Set up the sensors rows
-    _sensorItemsModel->setColumnCount(4);
+    _sensorItemsModel->setColumnCount(5);
     _sensorItemsModel->setHeaderData(0, Qt::Orientation::Horizontal, QVariant(QString("Device")));
     _sensorItemsModel->setHeaderData(1, Qt::Orientation::Horizontal, QVariant(QString("Path")));
     _sensorItemsModel->setHeaderData(2, Qt::Orientation::Horizontal, QVariant(QString("Start")));
-    _sensorItemsModel->setHeaderData(3, Qt::Orientation::Horizontal, QVariant(QString("Delete")));
+    _sensorItemsModel->setHeaderData(3, Qt::Orientation::Horizontal, QVariant(QString("Stop")));
+    _sensorItemsModel->setHeaderData(4, Qt::Orientation::Horizontal, QVariant(QString("Delete")));
 
     // Set up the meshes rows
     _meshItemsModel->setColumnCount(3);
@@ -49,6 +50,12 @@ SensorsDialog::SensorsDialog(QWidget *parent) :
 SensorsDialog::~SensorsDialog()
 {
     delete ui;
+
+    // Clean up leftover button we new'ed in the addSensorRow calls
+    auto parentWindow = dynamic_cast<MainWindow*>(parentWidget());
+    for (auto [key, val] : parentWindow->deviceConfigMap)
+        deleteSensorRow(QString(key.c_str())); // Only deletes anything if it exists
+
     delete _sensorItemsModel;
     delete _meshItemsModel;
 }
@@ -71,13 +78,25 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
     
     // Add the start/stop button
     auto startSensorButton = new TaggedPushButton(_device.c_str(), "Start");
+    auto stopSensorButton = new TaggedPushButton(_device.c_str(), "Stop");
     auto deleteSensorButton = new TaggedPushButton(_device.c_str(), "Delete");
     ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 2), startSensorButton);
-    ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 3), deleteSensorButton);
+    ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 3), stopSensorButton);
+    ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 4), deleteSensorButton);
 
     // Link them to their actions
-    connect(startSensorButton, SIGNAL(clickedRow(QString)), _parent, SLOT(startMeshProjector(QString))); // FIXME: Do this when you have it all figured out
+    connect(startSensorButton, SIGNAL(clickedRow(QString)), dynamic_cast<MainWindow*>(parentWidget()), SLOT(startMeshProjector(QString))); // FIXME: Do this when you have it all figured out
+    connect(stopSensorButton, SIGNAL(clickedRow(QString)), dynamic_cast<MainWindow*>(parentWidget()), SLOT(stopMeshProjector(QString))); // FIXME: Do this when you have it all figured out
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString)));
+}
+
+int SensorsDialog::getSensorRow(QString _tag)
+{
+    auto itemList = _sensorItemsModel->findItems(_tag);
+    if (itemList.length() > 0)
+        return _sensorItemsModel->indexFromItem(itemList.at(0)).row(); // Just take the first one; unique
+    else
+        return -1; // No item found by that name b/c length <= 0
 }
 
 void SensorsDialog::deleteSensorRow(QString _tag)
@@ -90,6 +109,7 @@ void SensorsDialog::deleteSensorRow(QString _tag)
     auto itemIndex = _sensorItemsModel->indexFromItem(itemList.at(0));
     delete ui->tableViewSensors->indexWidget(_sensorItemsModel->index(itemIndex.row(), 2));
     delete ui->tableViewSensors->indexWidget(_sensorItemsModel->index(itemIndex.row(), 3));
+    delete ui->tableViewSensors->indexWidget(_sensorItemsModel->index(itemIndex.row(), 4));
     
     // Drop the row now that things memory is freed
     _sensorItemsModel->removeRow(itemIndex.row());

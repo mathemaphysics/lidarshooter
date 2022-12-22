@@ -98,8 +98,8 @@ void MainWindow::slotReceiveConfigFile(const QString _fileName)
 {
     auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName.toStdString(), loggerTop);
     deviceConfigMap[devicePointer->getSensorUid()] = devicePointer;
-    sensorsDialog->addSensorRow(deviceConfig->getSensorUid(), _fileName.toStdString().c_str());
-    loggerTop->info("Loaded device configuration for {} from {}", deviceConfig->getSensorUid(), _fileName.toStdString());
+    sensorsDialog->addSensorRow(devicePointer->getSensorUid(), _fileName.toStdString());
+    loggerTop->info("Loaded device configuration for {} from {}", devicePointer->getSensorUid(), _fileName.toStdString());
 }
 
 void MainWindow::slotReceiveMeshFile(const QString _fileName)

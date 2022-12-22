@@ -13,6 +13,9 @@
 
 #include <memory>
 
+// Forward declaration of parent class
+class MainWindow;
+
 namespace Ui {
 class SensorsDialog;
 class TaggedPushButton;
@@ -50,6 +53,7 @@ public:
 signals:
 
 public slots:
+    int getSensorRow(QString _tag);
     void addSensorRow(std::string _device, std::string _path);
     void deleteSensorRow(QString _tag);
     void setMeshRow(int _row, std::string _name, std::string _path);
@@ -59,7 +63,6 @@ private:
     Ui::SensorsDialog *ui;
     QStandardItemModel* _sensorItemsModel;
     QStandardItemModel* _meshItemsModel;
-    QObject* _parent;
 };
 
 #endif // SENSORSDIALOG_H

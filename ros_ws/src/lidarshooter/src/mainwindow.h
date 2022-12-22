@@ -61,6 +61,7 @@ private slots:
     void slotPushButtonStartMeshProjector();
     void slotPushButtonStopMeshProjector();
 
+public slots:
     // Let's use a new naming scheme without the "slot" prefix; update them gradually
     void startMeshProjector(QString);
     void stopMeshProjector(QString);
@@ -132,6 +133,9 @@ private:
     bool shutdownROSThread();
     bool initializeMeshProjector(const std::string& _sensorUid = "lidar_0000");
     bool shutdownMeshProjector(const std::string& _sensorUid = "lidar_0000");
+
+    // Friends
+    friend class SensorsDialog;
 };
 
 #endif // MAINWINDOW_H
