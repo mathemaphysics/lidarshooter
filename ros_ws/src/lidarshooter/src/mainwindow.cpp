@@ -68,9 +68,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Set up the mesh projector push button
     pushButtonStartMeshProjectorConnection = connect(ui->pushButtonStartMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonStartMeshProjector(void)));
     pushButtonStopMeshProjectorConnection = connect(ui->pushButtonStopMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonStopMeshProjector(void)));
-    
-    // Set up cloud storage space in display-capable format
-    traceCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+
+    // Temproary cloud storage allocation
+    tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Will automatically deallocate outside this block
 
     // Initialize log level here first
     spdlog::set_level(spdlog::level::info);
@@ -86,7 +86,8 @@ MainWindow::~MainWindow()
     delete meshFileDialog;
 
     // Clean up the mesh projector
-    shutdownMeshProjector();
+    for (auto [key, val] : meshProjectorMap)
+        shutdownMeshProjector(key);
 
     delete sensorsDialog;
 
@@ -154,47 +155,21 @@ void MainWindow::slotPushButtonSaveMesh()
 
 void MainWindow::slotPushButtonStartMeshProjector()
 {
-    // We can set parameters here too
-    ros::init(rosArgc, rosArgv, deviceConfig->getSensorUid()); // TODO: Change name to something else
-    
-    // Creates the nodes so has to have ros::init called first
-    if (!initializeMeshProjector())
-        return;
-
     // Does extra checking to make sure thread isn't already running
     if (!initializeROSThread())
         return;
 
-    /**
-     * CUT THIS PART OUT TO BECOME ITS OWN LOOP
-     */
-
-    // Wait until the first trace is done inside meshProjector
-    while (meshProjector->cloudWasUpdated() == false)
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    // Now the cloud is available and can be plotted
-    // TODO: Wrap this into a function
-    auto tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Will automatically deallocate outside this block
-    meshProjector->getCurrentStateCopy(tempCloud);
-
-    // Create the converter to produce a PointXYZ cloud; can be plotted easily
-    auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
-    cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloud);
-    viewer->addPointCloud<pcl::PointXYZ>(traceCloud, "trace");
-
-    // Logging to make sure we're getting a good trace point count
-    loggerTop->info("Total number traced points: {}", traceCloud->width);
-
-    /*
-     * END CUTOUT LOOP SECTION 
-     **/
+    // Initialize trace plotting loop
+    for (auto [uid, config] : deviceConfigMap)
+        initializeTracePlot(uid);
 }
 
 void MainWindow::slotPushButtonStopMeshProjector()
 {
     shutdownROSThread();
-    shutdownMeshProjector();
+    
+    for (auto [key, val] : meshProjectorMap)
+        shutdownMeshProjector(key);
 }
 
 /**
@@ -242,7 +217,27 @@ void MainWindow::deleteSensor(QString _sensorUid)
 const std::string MainWindow::addSensor(const std::string& _fileName)
 {
     auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName, loggerTop);
-    deviceConfigMap[devicePointer->getSensorUid()] = devicePointer;
+    deviceConfigMap.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(devicePointer->getSensorUid()),
+        std::forward_as_tuple(devicePointer)
+    );
+
+    // This references an initially non-existent element, creating default
+    meshProjectorInitMap.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(devicePointer->getSensorUid()),
+        std::forward_as_tuple(false)
+    );
+
+    // This references an initially non-existent element, creating default
+    tracePlotInitMap.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(devicePointer->getSensorUid()),
+        std::forward_as_tuple(false)
+    );
+    
+    // Add the actual line in the sensors list
     sensorsDialog->addSensorRow(devicePointer->getSensorUid(), _fileName);
     return devicePointer->getSensorUid();
 }
@@ -250,13 +245,102 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
 void MainWindow::deleteSensor(const std::string& _sensorUid)
 {
     // Deallocate because we're done
+    shutdownMeshProjector(_sensorUid);
     deviceConfigMap[_sensorUid].reset(); // This probably isn't necessary
     deviceConfigMap.erase(_sensorUid);
+
+    shutdownMeshProjector(_sensorUid);
+    meshProjectorInitMap.erase(_sensorUid);
+
+    deleteTraceFromViewer(_sensorUid);
+    tracePlotInitMap.erase(_sensorUid);
+}
+
+bool MainWindow::addTraceToViewer(const std::string& _sensorUid)
+{
+    // All trace clouds are named e.g. lidar_0000_trace
+    auto cloudName = fmt::format("{}_trace", _sensorUid);
+
+    // Make sure the key is there
+    auto projectorIterator = meshProjectorMap.find(_sensorUid);
+
+    if (projectorIterator == meshProjectorMap.end())
+    {
+        loggerTop->warn("No mesh projector found for sensor UID {}", _sensorUid);
+        return false;
+    }
+
+    if (meshProjectorInitMap[_sensorUid].load() == false)
+    {
+        loggerTop->warn("Mesh projector for sensor UID {} not started");
+        return false;
+    }
+
+    // Create the converter to produce a PointXYZ cloud; can be plotted easily
+    projectorIterator->second->getCurrentStateCopy(tempCloud);
+    auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
+
+    // Allocate inplace and then fill it in below
+    traceCloudMap.emplace(
+        _sensorUid,
+        pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>)
+    );
+
+    // Convert the traced cloud in PointCloud2 format to local PointXYZ copy
+    cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloudMap[_sensorUid]);
+
+    // Add it to the viewer as e.g. lidar_0000_trace
+    if (viewer->addPointCloud<pcl::PointXYZ>(traceCloudMap[_sensorUid], cloudName) == false)
+    {
+        loggerTop->warn("Cloud {}_trace already exists in the viewer", _sensorUid);
+        return false;
+    }
+
+    return true;
+}
+
+bool MainWindow::updateTraceInViewer(const std::string& _sensorUid)
+{
+    return true;
+}
+
+bool MainWindow::deleteTraceFromViewer(const std::string& _sensorUid)
+{
+    // All trace clouds are named e.g. lidar_0000_trace
+    auto cloudName = fmt::format("{}_trace", _sensorUid);
+
+    // Remove it from the viewer first
+    if (viewer->removePointCloud(cloudName) == false)
+    {
+        loggerTop->warn("No cloud in the viewer named {}; nothing removed", cloudName);
+        return false;
+    }
+
+    // Still need to deallocate and remove the map key
+    auto cloudIterator = traceCloudMap.find(_sensorUid);
+    if (cloudIterator == traceCloudMap.end())
+    {
+        loggerTop->warn("No local trace cloud for sensor UID {} exists", _sensorUid);
+        return false;
+    }
+
+    // Delete manually; no need to let it sit if it isn't needed
+    cloudIterator->second.reset();
+
+    return true;
 }
 
 bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
 {
     // Allocate space for the traced cloud
+    auto sensorPointer = meshProjectorInitMap.find(_sensorUid);
+    if (sensorPointer == meshProjectorInitMap.end())
+    {
+        loggerTop->debug("Sensor UID key {} does not exist in projector initialized map; error", _sensorUid);
+        return false; // The key isn't there
+    }
+
+    // Otherwise key is there and you can check
     if (meshProjectorInitMap[_sensorUid].load() == true)
     {
         loggerTop->warn("Mesh projector already running for {}", _sensorUid);
@@ -296,6 +380,7 @@ bool MainWindow::shutdownMeshProjector(const std::string& _sensorUid)
 
     // If already allocated then delete it
     meshProjectorMap[_sensorUid].reset();
+    //meshProjectorMap.erase(_sensorUid);
     meshProjectorInitMap[_sensorUid].store(false);
     loggerTop->info("Mesh projector {} stopped", _sensorUid);
 
@@ -361,5 +446,36 @@ bool MainWindow::shutdownROSThread()
     // Mark it so we don't deallocate unallocated space
     rosThreadRunning.store(false);
 
+    return true;
+}
+
+bool MainWindow::initializeTracePlot(const std::string& _sensorUid)
+{
+    // Wait until the first trace is done inside meshProjector
+    auto projectorIterator = meshProjectorMap.find(_sensorUid);
+    if (projectorIterator == meshProjectorMap.end())
+    {
+        loggerTop->warn("No sensor UID {} found in sensors list", _sensorUid);
+        return false;
+    }
+
+    while (projectorIterator->second->cloudWasUpdated() == false)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Might be a flaw to wait until first trace to init
+
+    // Gets the cloud from _sensorUid, copies it locally, then adds to viewer
+    if (addTraceToViewer(_sensorUid) == false)
+    {
+        loggerTop->warn("Unable to add trace for sensor UI {} to viewer", _sensorUid);
+        return false;
+    }
+
+    // Logging to make sure we're getting a good trace point count
+    loggerTop->info("Total number traced points: {}", traceCloudMap[_sensorUid]->width * traceCloudMap[_sensorUid]->height);
+
+    return true;
+}
+
+bool shutdownTracePlot(const std::string& _sensorUid)
+{
     return true;
 }

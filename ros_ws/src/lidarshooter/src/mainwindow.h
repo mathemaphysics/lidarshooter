@@ -15,6 +15,7 @@
 #include <atomic>
 #include <map>
 
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/qt_sinks.h>
 
@@ -107,17 +108,20 @@ private:
 
     // Private mesh and cloud variables
     pcl::PolygonMesh::Ptr mesh;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr traceCloud;
     std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
     std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
     std::atomic<bool> meshProjectorInitialized;
 
+    // Temporary storage for conversion
+    pcl::PCLPointCloud2::Ptr tempCloud;
+
     // Device to object maps
     std::map<const std::string, pcl::PolygonMesh::Ptr> meshMap;
-    std::map<const std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap;
-    std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap;
-    std::map<const std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap;
-    std::map<const std::string, std::atomic<bool>> meshProjectorInitMap;
+    std::map<const std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap; ///< Takes sensorUid as index
+    std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap; ///< Takes sensorUid as index
+    std::map<const std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap; ///< Takes sensorUid as index
+    std::map<const std::string, std::atomic<bool>> meshProjectorInitMap; ///< Takes sensorUid as index
+    std::map<const std::string, std::atomic<bool>> tracePlotInitMap; ///< Takes sensorUid as index
 
     // Indicators: Is ROS thread running/mesh projector initialized?
     std::atomic<bool> rosThreadRunning;
@@ -127,13 +131,20 @@ private:
     int rosArgc = 0;
     std::thread* rosThread;
 
+    // Indicators: Is the trace plotting loop initialized?
+
     // Starting and stopping projector and ROS
     const std::string addSensor(const std::string& _fileName);
     void deleteSensor(const std::string& _sensorUid);
+    bool addTraceToViewer(const std::string& _sensorUid = "lidar_0000");
+    bool updateTraceInViewer(const std::string& _sensorUid = "lidar_0000");
+    bool deleteTraceFromViewer(const std::string& _sensorUid = "lidar_0000");
     bool initializeROSThread();
     bool shutdownROSThread();
     bool initializeMeshProjector(const std::string& _sensorUid = "lidar_0000");
     bool shutdownMeshProjector(const std::string& _sensorUid = "lidar_0000");
+    bool initializeTracePlot(const std::string& _sensorUid = "lidar_0000");
+    bool shutdownTracePlot(const std::string& _sensorUid = "lidar_0000");
 
     // Friends
     friend class SensorsDialog;

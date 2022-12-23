@@ -167,7 +167,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Start Projector</string>
+        <string>Start ROS Loop</string>
        </property>
       </widget>
      </item>
@@ -180,7 +180,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Stop Projector</string>
+        <string>Stop ROS Loop</string>
        </property>
       </widget>
      </item>
