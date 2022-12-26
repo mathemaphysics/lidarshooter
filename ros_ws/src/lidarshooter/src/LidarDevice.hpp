@@ -203,6 +203,13 @@ public:
     void originToSensor(Eigen::Vector3f& _sensor) const;
 
     /**
+     * @brief Transforms an origin-basis coordinate to sensor coordinates
+     * 
+     * @param _sensor Vector to transform; in global basis
+     */
+    void originToSensorInverse(Eigen::Vector3f& _sensor) const;
+
+    /**
      * @brief Reset ray batch variables \c _verticalIndex and \c _horizontalIndex to start over
      */
     void reset();

@@ -123,7 +123,7 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
     meshMap[meshName] = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
     sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
     pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
-    viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
+    //viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
     viewer->resetCamera();
 }
 
@@ -147,8 +147,8 @@ void MainWindow::slotPushButtonSaveMesh()
 {
     auto cloudCopy = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
     pcl::copyPointCloud(mesh->cloud, *cloudCopy);
-    lidarshooter::CloudTransformer cloudTransformer(cloudCopy, viewer->getViewerPose(), deviceConfig);
-    cloudTransformer.applyTransform();
+    lidarshooter::CloudTransformer::Ptr cloudTransformer = lidarshooter::CloudTransformer::create(cloudCopy, viewer->getViewerPose(), deviceConfig);
+    cloudTransformer->applyTransform();
     pcl::copyPointCloud(*cloudCopy, mesh->cloud);
     pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }
@@ -278,6 +278,12 @@ bool MainWindow::addTraceToViewer(const std::string& _sensorUid)
 
     // Create the converter to produce a PointXYZ cloud; can be plotted easily
     projectorIterator->second->getCurrentStateCopy(tempCloud);
+
+    // Transform to global coordinate system for this device
+    auto cloudTransformer = lidarshooter::CloudTransformer::create(tempCloud, Eigen::Affine3f::Identity(), deviceConfigMap[_sensorUid]);
+    cloudTransformer->applyInverseTransform();
+
+    // Convert cloud to something PCL viewer can work with, PointCloud<PointXYZ>
     auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
 
     // Allocate inplace and then fill it in below

@@ -7,6 +7,33 @@
 #include <thread>
 #include <chrono>
 
+std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::getPtr()
+{
+    return shared_from_this();
+}
+
+std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+{
+    // Set the cloud pointer rather than inplace creation?
+    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__cloud, __transform, __config));
+}
+
+std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+{
+    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__cloud,  __translation,  __rotation, __config));
+}
+
+std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+{
+    // Fill in the missing _translation and _rotation vectors
+    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__transform, __config));
+}
+
+std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+{
+    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__translation, __rotation, __config));
+}
+
 lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
     : _transform(__transform), _config(__config)
 {
@@ -89,6 +116,71 @@ void lidarshooter::CloudTransformer::applyTransform()
                     // Apply the affine transformation and then transf
                     ptrans = _transform * ptrans;
                     _config->originToSensor(ptrans);
+
+                    // Linear position update here
+                    point.asPoint.xPos = ptrans.x();
+                    point.asPoint.yPos = ptrans.y();
+                    point.asPoint.zPos = ptrans.z();
+
+                    // Write it to memory; no mutex required
+                    point.writePoint(rawData);
+                }
+            }
+        );
+
+        // Each block might be different size
+        startPointIndex += numIterations;
+    }
+
+    // For the sake of sanity block here
+    for (auto threadItr = threads.begin(); threadItr != threads.end(); ++threadItr)
+        threadItr->join();
+}
+
+void lidarshooter::CloudTransformer::applyInverseTransform()
+{
+    if (_cloud == nullptr)
+    {
+        throw(CloudNotSetException(
+            __FILE__,
+            "No cloud data to operate on",
+            2
+        ));
+    }
+
+    // TODO: This should be threaded
+    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int startPointIndex = 0;
+
+    // Overall: for (std::size_t jdx = 0; jdx < numTotalPoint; ++jdx)
+    std::vector<std::thread> threads;
+    for (int threadIdx = 0; threadIdx < numThreads; ++threadIdx)
+    {
+        // Number of iterations for the current threadIdx
+        unsigned int numIterations =
+            numTotalPoints / numThreads
+                + (threadIdx < numTotalPoints % numThreads ? 1 : 0);
+
+        // Start thread index threadIdx
+        threads.emplace_back(
+            [this, numIterations, threadIdx, startPointIndex]() {
+                for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
+                {
+                    // No mutex required since we're accessing different locations
+                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
+
+                    // TODO: Generalize this to what will likely be different point types
+                    float px, py, pz;
+                    auto point = lidarshooter::XYZIRPoint(rawData);
+                    point.getPoint(&px, &py, &pz, nullptr, nullptr);
+
+                    // Rotate into the local coordinate frame for this device
+                    Eigen::Vector3f ptrans(px, py, pz);
+
+                    // Apply the affine transformation and then transf
+                    ptrans = _transform * ptrans;
+                    _config->originToSensorInverse(ptrans);
 
                     // Linear position update here
                     point.asPoint.xPos = ptrans.x();

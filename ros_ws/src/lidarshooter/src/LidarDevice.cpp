@@ -333,6 +333,16 @@ void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor) const
     _sensor = _device.transform.sensorToBase.Rinv * translated;
 }
 
+void lidarshooter::LidarDevice::originToSensorInverse(Eigen::Vector3f& _sensor) const
+{
+    Eigen::Vector3f rotated = _device.transform.sensorToBase.R *_sensor;
+    _sensor = rotated + Eigen::Vector3f(
+        _device.transform.baseToOrigin.tx,
+        _device.transform.baseToOrigin.ty,
+        _device.transform.sensorToBase.tz
+    );
+}
+
 void lidarshooter::LidarDevice::reset()
 {
     // Index will indicate the position in the set of rays to iterate So when

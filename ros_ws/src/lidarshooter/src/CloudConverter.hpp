@@ -88,6 +88,10 @@ public:
             // Convert to PointCloud<PointXYZRGB>
         }
     }
+
+    // Make it faster to specify a shared_ptr
+    using Ptr = std::shared_ptr< ::lidarshooter::CloudConverter>;
+    using ConstPtr = std::shared_ptr<const ::lidarshooter::CloudConverter>;
 private:
     CloudConverter(pcl::PCLPointCloud2::ConstPtr __cloud);
     pcl::PCLPointCloud2::ConstPtr _cloud;
