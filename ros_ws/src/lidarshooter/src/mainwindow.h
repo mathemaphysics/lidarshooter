@@ -5,9 +5,12 @@
 #include <QMetaObject>
 #include <QFileDialog>
 #include <QModelIndex>
+#include <QOpenGLContext>
+#include <QThread>
 
 #include "logdialog.h"
 #include "sensorsdialog.h"
+#include "cloudupdater.h"
 
 #include <memory>
 #include <filesystem>
@@ -123,13 +126,15 @@ private:
     std::map<const std::string, std::atomic<bool>> meshProjectorInitMap; ///< Takes sensorUid as index
     std::map<const std::string, std::atomic<bool>> tracePlotInitMap; ///< Takes sensorUid as index
 
-    // Indicators: Is ROS thread running/mesh projector initialized?
-    std::atomic<bool> rosThreadRunning;
+    // Trace thread initialization and storage
+    std::map<const std::string, std::thread> traceThreadMap;
+    std::map<const std::string, std::atomic<bool>> traceThreadInitMap;
 
-    // ROS parameters
+    // ROS thread initialization and storage
     char **rosArgv;
     int rosArgc = 0;
     std::thread* rosThread;
+    std::atomic<bool> rosThreadRunning;
 
     // Indicators: Is the trace plotting loop initialized?
 
@@ -145,9 +150,12 @@ private:
     bool shutdownMeshProjector(const std::string& _sensorUid = "lidar_0000");
     bool initializeTracePlot(const std::string& _sensorUid = "lidar_0000");
     bool shutdownTracePlot(const std::string& _sensorUid = "lidar_0000");
+    bool initializeTraceThread(const std::string& _sensorUid = "lidar_0000");
+    bool shutdownTraceThread(const std::string& _sensorUid = "lidar_0000");
 
     // Friends
     friend class SensorsDialog;
+    friend class CloudUpdater;
 };
 
 #endif // MAINWINDOW_H
