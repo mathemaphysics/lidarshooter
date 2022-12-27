@@ -252,6 +252,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools REQUIRED)
 
+add_compile_options(-g3)
+
 set(TS_FILES LiDARShooterGUI_en_US.ts)
 
 set(PROJECT_SOURCES
@@ -265,6 +267,8 @@ set(PROJECT_SOURCES
         src/sensorsdialog.h
         src/sensorsdialog.cpp
         src/sensorsdialog.ui
+        src/cloudupdater.h
+        src/cloudupdater.cpp
         src/${TS_FILES}
 )
 
