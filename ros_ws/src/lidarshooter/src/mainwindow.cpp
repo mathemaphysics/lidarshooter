@@ -402,9 +402,9 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
     if (meshMap.size() == 0)
         return false;
 
-    // Automatic deallocation when out of scope
+    // TODO: Use meshProjectorMap.emplace() instead of this
     meshProjectorMap[_sensorUid] = std::make_shared<lidarshooter::MeshProjector>(
-        deviceConfigMap[_sensorUid], // TODO: Error handling needed here badly; key may not exist
+        deviceConfigMap[_sensorUid],
         ros::Duration(0.1),
         ros::Duration(0.1),
         loggerTop
