@@ -55,6 +55,7 @@ public:
      * 
      * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
+     * @param __logger 
      */
     MeshProjector(ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
@@ -64,6 +65,7 @@ public:
      * @param _configFile Path to device configuration file to load for this node
      * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
+     * @param __logger 
      */
     MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
@@ -73,6 +75,7 @@ public:
      * @param _configDevice Already loaded \c LidarDevice representing the LiDAR device
      * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
+     * @param __logger 
      */
     MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
@@ -126,6 +129,8 @@ public:
      * 
      * This function properly operates mutexes for accessing the
      * \c _currentState which is copied into the destination pointer given.
+     * 
+     * @param _output Where to put the copied cloud
      */
     void getCurrentStateCopy(pcl::PCLPointCloud2::Ptr& _output);
 
