@@ -1,13 +1,12 @@
 #include "qmeshprojector.h"
 
+#include "mainwindow.h"
+
 #include <ros/ros.h>
 
 #include <memory>
 
 #include <spdlog/spdlog.h>
-
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
 
 QMeshProjector::QMeshProjector(ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger, QObject* _parent)
     : meshProjector(new MeshProjector(__publishPeriod, __tracePeriod, __logger)),

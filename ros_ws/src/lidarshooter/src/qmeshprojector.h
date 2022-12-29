@@ -114,9 +114,16 @@ public:
      */
     bool cloudWasUpdated();
 
+public slots:
+
+private slots:
+
+signals:
+    void readyToRender();
+
 private:
     std::shared_ptr<MeshProjector> meshProjector;
 
-}
+};
 
 #endif // QMESHPROJECTOR_H
