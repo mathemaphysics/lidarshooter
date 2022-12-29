@@ -269,8 +269,6 @@ set(PROJECT_SOURCES
         src/sensorsdialog.ui
         src/cloudupdater.h
         src/cloudupdater.cpp
-        src/qmeshprojector.h
-        src/qmeshprojector.cpp
         src/${TS_FILES}
 )
 

@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-#include "logdialog.h"
 #include "./ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -68,6 +67,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Set up the mesh projector push button
     pushButtonStartMeshProjectorConnection = connect(ui->pushButtonStartMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonStartMeshProjector(void)));
     pushButtonStopMeshProjectorConnection = connect(ui->pushButtonStopMeshProjector, SIGNAL(clicked(void)), this, SLOT(slotPushButtonStopMeshProjector(void)));
+
+    // Set up visualization loop
+    connect(this, SIGNAL(traceCloudUpdated(void)), this, SLOT(slotRenderWindow(void)));
 
     // Temproary cloud storage allocation
     tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Will automatically deallocate outside this block
@@ -213,6 +215,12 @@ void MainWindow::deleteSensor(QString _sensorUid)
 
     // TODO: Change this to debug
     loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
+}
+
+void MainWindow::slotRenderWindow()
+{
+    loggerTop->info("Rendering again");
+    ui->openGLWidget->renderWindow()->Render();
 }
 
 /**
@@ -606,6 +614,7 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
 
                 // Update the cloud in the viewer
                 updateTraceInViewer(_sensorUid);
+                emit traceCloudUpdated();
 
                 // Add some padding to guarantee no CPU pinning
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));

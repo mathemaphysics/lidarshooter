@@ -54,7 +54,7 @@ public:
     ~MainWindow();
 
 signals:
-    void signalCurrentStateUpdated();
+    void traceCloudUpdated();
 
 private slots:
     void slotReceiveConfigFile(QString);
@@ -72,6 +72,7 @@ public slots:
     void startROSThread();
     void stopROSThread();
     void deleteSensor(QString);
+    void slotRenderWindow();
 
 protected:
     pcl::visualization::PCLVisualizer::Ptr viewer;
