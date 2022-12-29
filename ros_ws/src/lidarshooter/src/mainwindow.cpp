@@ -219,7 +219,6 @@ void MainWindow::deleteSensor(QString _sensorUid)
 
 void MainWindow::slotRenderWindow()
 {
-    loggerTop->info("Rendering again");
     ui->openGLWidget->renderWindow()->Render();
 }
 
