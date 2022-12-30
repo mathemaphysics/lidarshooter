@@ -61,7 +61,6 @@ private slots:
     void slotReceiveMeshFile(QString);
     void slotLogPoseTranslation();
     void slotLogPoseRotation();
-    void slotPushButtonSaveMesh();
     void slotPushButtonStartMeshProjector();
     void slotPushButtonStopMeshProjector();
 
@@ -96,7 +95,6 @@ private:
     QMetaObject::Connection receiveMeshConnection;
     QMetaObject::Connection pushButtonLogDialogConnection;
     QMetaObject::Connection pushButtonSensorsDialogConnection;
-    QMetaObject::Connection pushButtonSaveMeshConnection;
     QMetaObject::Connection pushButtonStartMeshProjectorConnection;
     QMetaObject::Connection pushButtonStopMeshProjectorConnection;
 
@@ -110,19 +108,14 @@ private:
     QString configFile;
     QString meshFile;
 
-    // Private mesh and cloud variables
-    pcl::PolygonMesh::Ptr mesh;
-    std::shared_ptr<lidarshooter::LidarDevice> deviceConfig;
-    std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
-    std::atomic<bool> meshProjectorInitialized;
-
     // Device to object maps
     std::map<const std::string, pcl::PolygonMesh::Ptr> meshMap;
     std::map<const std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap; ///< Takes sensorUid as index
+    std::map<const std::string, pcl::PCLPointCloud2::Ptr> tempTraceCloudMap; ///< Takes sensorUid as index
     std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap; ///< Takes sensorUid as index
     std::map<const std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap; ///< Takes sensorUid as index
     std::map<const std::string, std::atomic<bool>> meshProjectorInitMap; ///< Takes sensorUid as index
-    std::map<const std::string, pcl::PCLPointCloud2::Ptr> tempTraceCloudMap; ///< Takes sensorUid as index
+    std::map<const std::string, std::atomic<bool>> traceCloudInitMap; ///< Takes sensorUid as index
 
     // Trace thread initialization and storage
     std::map<const std::string, std::thread> traceThreadMap;

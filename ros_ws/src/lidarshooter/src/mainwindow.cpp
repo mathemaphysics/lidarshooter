@@ -3,8 +3,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow),
-      rosThreadRunning(false),
-      meshProjectorInitialized(false)
+      rosThreadRunning(false)
 {
     // UI/MOC setup
     ui->setupUi(this);
@@ -39,9 +38,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->openGLWidget->setRenderWindow(viewer->getRenderWindow());
     ui->openGLWidget->update();
 
-    // Set up the mesh
-    mesh = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
-
     // Set up the quit action
     quitConnection = connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
     
@@ -56,9 +52,6 @@ MainWindow::MainWindow(QWidget *parent)
     pushButtonMeshConnection = connect(ui->pushButtonMeshFile, SIGNAL(clicked(void)), meshFileDialog, SLOT(show(void)));
     lineEditMeshConnection = connect(meshFileDialog, SIGNAL(fileSelected(const QString)), ui->lineEditMeshFile, SLOT(setText(const QString)));
     receiveMeshConnection = connect(meshFileDialog, SIGNAL(fileSelected(const QString)), this, SLOT(slotReceiveMeshFile(const QString)));
-
-    // Save mesh
-    pushButtonSaveMeshConnection = connect(ui->pushButtonSaveMesh, SIGNAL(clicked(void)), this, SLOT(slotPushButtonSaveMesh(void)));
 
     // Set up the show log and sensor buttons
     pushButtonLogDialogConnection = connect(ui->pushButtonLogDialog, SIGNAL(clicked(void)), logDialog, SLOT(show(void)));
@@ -146,16 +139,6 @@ void MainWindow::slotLogPoseRotation()
     loggerBottom->info("{}, {}, {}", rotation(0, 0), rotation(0, 1), rotation(0, 2));
     loggerBottom->info("{}, {}, {}", rotation(1, 0), rotation(1, 1), rotation(1, 2));
     loggerBottom->info("{}, {}, {}", rotation(2, 0), rotation(2, 1), rotation(2, 2));
-}
-
-void MainWindow::slotPushButtonSaveMesh()
-{
-    auto cloudCopy = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
-    pcl::copyPointCloud(mesh->cloud, *cloudCopy);
-    lidarshooter::CloudTransformer::Ptr cloudTransformer = lidarshooter::CloudTransformer::create(cloudCopy, viewer->getViewerPose(), deviceConfig);
-    cloudTransformer->applyTransform();
-    pcl::copyPointCloud(*cloudCopy, mesh->cloud);
-    pcl::io::savePolygonFileSTL("temp.stl", *mesh);
 }
 
 void MainWindow::slotPushButtonStartMeshProjector()
@@ -259,6 +242,12 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
         false
     );
 
+    // Has the trace cloud space been allocated
+    traceCloudInitMap.emplace(
+        devicePointer->getSensorUid(),
+        false
+    );
+
     // Add the actual line in the sensors list
     sensorsDialog->addSensorRow(devicePointer->getSensorUid(), _fileName);
     return devicePointer->getSensorUid();
@@ -282,7 +271,6 @@ bool MainWindow::addTraceToViewer(const std::string& _sensorUid)
 
     // Make sure the key is there
     auto projectorIterator = meshProjectorMap.find(_sensorUid);
-
     if (projectorIterator == meshProjectorMap.end())
     {
         loggerTop->warn("No mesh projector found for sensor UID {}", _sensorUid);
@@ -295,16 +283,27 @@ bool MainWindow::addTraceToViewer(const std::string& _sensorUid)
         return false;
     }
 
-    // Allocate inplace and then fill it in below
-    traceCloudMap.emplace(
-        _sensorUid,
-        new pcl::PointCloud<pcl::PointXYZ>()
-    );
+    // Careful checking for the key
+    auto traceCloudInitPointer = traceCloudInitMap.find(_sensorUid);
+    if (traceCloudInitPointer == traceCloudInitMap.end())
+    {
+        loggerTop->error("Sensor UID key {} does not exist in trace cloud initialized map; error");
+        return false;
+    }
 
-    tempTraceCloudMap.emplace(
-        _sensorUid,
-        new pcl::PCLPointCloud2()
-    );
+    // Initialize it if it hasn't been
+    if (traceCloudInitPointer->second.load() == false)
+    {
+        // Allocate inplace and then fill it in below
+        traceCloudMap.emplace(
+            _sensorUid,
+            new pcl::PointCloud<pcl::PointXYZ>()
+        );
+        tempTraceCloudMap.emplace(
+            _sensorUid,
+            new pcl::PCLPointCloud2()
+        );
+    }
 
     // Add it to the viewer as e.g. lidar_0000_trace
     if (viewer->addPointCloud<pcl::PointXYZ>(traceCloudMap[_sensorUid], cloudName) == false)
@@ -386,28 +385,6 @@ bool MainWindow::deleteTraceFromViewer(const std::string& _sensorUid)
         return false;
     }
 
-    // Remove the map key from temp space
-    auto tempCloudIterator = tempTraceCloudMap.find(_sensorUid);
-    if (tempCloudIterator == tempTraceCloudMap.end())
-    {
-        loggerTop->warn("No temp cloud allocated for sensor UID {} exists", _sensorUid);
-        return false;
-    }
-
-    // Delete it
-    tempCloudIterator->second.reset();
-
-    // Still need to deallocate and remove the map key
-    auto cloudIterator = traceCloudMap.find(_sensorUid);
-    if (cloudIterator == traceCloudMap.end())
-    {
-        loggerTop->warn("No local trace cloud for sensor UID {} exists", _sensorUid);
-        return false;
-    }
-
-    // Delete manually; no need to let it sit if it isn't needed
-    cloudIterator->second.reset();
-
     return true;
 }
 
@@ -421,12 +398,12 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
     auto sensorPointer = meshProjectorInitMap.find(_sensorUid);
     if (sensorPointer == meshProjectorInitMap.end())
     {
-        loggerTop->debug("Sensor UID key {} does not exist in projector initialized map; error", _sensorUid);
+        loggerTop->error("Sensor UID key {} does not exist in projector initialized map; error", _sensorUid);
         return false; // The key isn't there
     }
 
     // Otherwise key is there and you can check
-    if (meshProjectorInitMap[_sensorUid].load() == true)
+    if (sensorPointer->second.load() == true)
     {
         loggerTop->warn("Mesh projector already loaded for {}", _sensorUid);
         return false;
@@ -625,7 +602,7 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
                     // Check to see if we're being shut down
                     if (traceThreadInitMap[_sensorUid].load() == false)
                         break;
-                
+                    loggerTop->info("TRACING HERE"); 
                     // Otherwise wait to avoid CPU pinning
                     std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Might be a flaw to wait until first trace to init
                 }
@@ -670,7 +647,6 @@ bool MainWindow::shutdownTraceThread(const std::string& _sensorUid)
     if (traceThreadIterator == traceThreadMap.end())
     {
         loggerTop->warn("Could not find thread for UID {}", _sensorUid);
-        traceThreadInitMap[_sensorUid].store(false); // Thread didn't exist but traceThreadInitMap[_sensorUid] did
         return false;
     }
 
