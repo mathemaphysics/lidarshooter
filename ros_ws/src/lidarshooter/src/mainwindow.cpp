@@ -71,9 +71,6 @@ MainWindow::MainWindow(QWidget *parent)
     // Set up visualization loop
     connect(this, SIGNAL(traceCloudUpdated(void)), this, SLOT(slotRenderWindow(void)));
 
-    // Temproary cloud storage allocation
-    tempCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2()); // Will automatically deallocate outside this block
-
     // Initialize log level here first
     spdlog::set_level(spdlog::level::info);
 }
@@ -89,7 +86,13 @@ MainWindow::~MainWindow()
 
     // Clean up the mesh projector
     for (auto [key, val] : meshProjectorMap)
+    {
+        shutdownTraceThread(key);
         shutdownMeshProjector(key);
+    }
+
+    // Stop ROS spin
+    stopROSThread();
 
     delete sensorsDialog;
 
@@ -157,21 +160,33 @@ void MainWindow::slotPushButtonSaveMesh()
 
 void MainWindow::slotPushButtonStartMeshProjector()
 {
+    // We can set parameters here too
+    ros::init(rosArgc, rosArgv, "lidar_0000"); // TODO: Change name to something else
+    
+    // Initialize trace plotting loop
+    for (auto [uid, config] : deviceConfigMap)
+    {
+        initializeMeshProjector(uid);   
+        initializeTracePlot(uid);
+        initializeTraceThread(uid);
+    }
+
     // Does extra checking to make sure thread isn't already running
     if (!initializeROSThread())
         return;
-
-    // Initialize trace plotting loop
-    for (auto [uid, config] : deviceConfigMap)
-        initializeTracePlot(uid);
 }
 
 void MainWindow::slotPushButtonStopMeshProjector()
 {
     shutdownROSThread();
-    
-    for (auto [key, val] : meshProjectorMap)
-        shutdownMeshProjector(key);
+
+    for (auto [uid, config] : deviceConfigMap)
+    {
+        shutdownTraceThread(uid);
+        deleteTraceFromViewer(uid);
+        //shutdownMeshProjector(uid);
+    }
+    traceThreadMap.clear();
 }
 
 /**
@@ -193,7 +208,7 @@ void MainWindow::startMeshProjector(QString _sensorUid)
 
 void MainWindow::stopMeshProjector(QString _sensorUid)
 {
-    shutdownTracePlot();
+    shutdownTracePlot(_sensorUid.toStdString());
     shutdownMeshProjector(_sensorUid.toStdString());
 }
 
@@ -204,13 +219,11 @@ void MainWindow::startROSThread()
 
 void MainWindow::stopROSThread()
 {
-    shutdownROSThread();
 }
 
 void MainWindow::deleteSensor(QString _sensorUid)
 {
     // Silently check to see if it's already running
-    shutdownMeshProjector(_sensorUid.toStdString());
     deleteSensor(_sensorUid.toStdString());
 
     // TODO: Change this to debug
@@ -230,30 +243,20 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
 {
     auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName, loggerTop);
     deviceConfigMap.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(devicePointer->getSensorUid()),
-        std::forward_as_tuple(devicePointer)
+        devicePointer->getSensorUid(),
+        devicePointer
     );
 
     // This references an initially non-existent element, creating default
     meshProjectorInitMap.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(devicePointer->getSensorUid()),
-        std::forward_as_tuple(false)
-    );
-
-    // This references an initially non-existent element, creating default
-    tracePlotInitMap.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(devicePointer->getSensorUid()),
-        std::forward_as_tuple(false)
+        devicePointer->getSensorUid(),
+        false
     );
 
     // Add sensor to the thread initialization map
     traceThreadInitMap.emplace(
-        std::piecewise_construct, 
-        std::forward_as_tuple(devicePointer->getSensorUid()),
-        std::forward_as_tuple(false)
+        devicePointer->getSensorUid(),
+        false
     );
 
     // Add the actual line in the sensors list
@@ -269,7 +272,6 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
     deviceConfigMap.erase(_sensorUid);
     meshProjectorInitMap.erase(_sensorUid);
     deleteTraceFromViewer(_sensorUid);
-    tracePlotInitMap.erase(_sensorUid);
     traceThreadInitMap.erase(_sensorUid);
 }
 
@@ -296,7 +298,12 @@ bool MainWindow::addTraceToViewer(const std::string& _sensorUid)
     // Allocate inplace and then fill it in below
     traceCloudMap.emplace(
         _sensorUid,
-        pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>)
+        new pcl::PointCloud<pcl::PointXYZ>()
+    );
+
+    tempTraceCloudMap.emplace(
+        _sensorUid,
+        new pcl::PCLPointCloud2()
     );
 
     // Add it to the viewer as e.g. lidar_0000_trace
@@ -305,9 +312,6 @@ bool MainWindow::addTraceToViewer(const std::string& _sensorUid)
         loggerTop->warn("Cloud {} already exists in the viewer", cloudName);
         return false;
     }
-
-    // Mark this _sensorUid as initialized
-    tracePlotInitMap[_sensorUid].store(true);
 
     return true;
 }
@@ -339,15 +343,23 @@ bool MainWindow::updateTraceInViewer(const std::string& _sensorUid)
         return false;
     }
 
+    // Get the temporary space
+    auto tempCloudIterator = tempTraceCloudMap.find(_sensorUid);
+    if (tempCloudIterator == tempTraceCloudMap.end())
+    {
+        loggerTop->warn("No temp trace cloud space for {} exists", _sensorUid);
+        return false;
+    }
+
     // Create the converter to produce a PointXYZ cloud; can be plotted easily
-    projectorIterator->second->getCurrentStateCopy(tempCloud);
+    projectorIterator->second->getCurrentStateCopy(tempCloudIterator->second);
 
     // Transform to global coordinate system for this device
-    auto cloudTransformer = lidarshooter::CloudTransformer::create(tempCloud, Eigen::Affine3f::Identity(), deviceConfigMap[_sensorUid]);
+    auto cloudTransformer = lidarshooter::CloudTransformer::create(tempCloudIterator->second, Eigen::Affine3f::Identity(), deviceConfigMap[_sensorUid]);
     cloudTransformer->applyInverseTransform();
 
     // Convert cloud to something PCL viewer can work with, PointCloud<PointXYZ>
-    auto cloudConverter = lidarshooter::CloudConverter::create(tempCloud);
+    auto cloudConverter = lidarshooter::CloudConverter::create(tempCloudIterator->second);
 
     // Convert the traced cloud in PointCloud2 format to local PointXYZ copy
     cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloudMap[_sensorUid]);
@@ -374,6 +386,17 @@ bool MainWindow::deleteTraceFromViewer(const std::string& _sensorUid)
         return false;
     }
 
+    // Remove the map key from temp space
+    auto tempCloudIterator = tempTraceCloudMap.find(_sensorUid);
+    if (tempCloudIterator == tempTraceCloudMap.end())
+    {
+        loggerTop->warn("No temp cloud allocated for sensor UID {} exists", _sensorUid);
+        return false;
+    }
+
+    // Delete it
+    tempCloudIterator->second.reset();
+
     // Still need to deallocate and remove the map key
     auto cloudIterator = traceCloudMap.find(_sensorUid);
     if (cloudIterator == traceCloudMap.end())
@@ -390,6 +413,10 @@ bool MainWindow::deleteTraceFromViewer(const std::string& _sensorUid)
 
 bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
 {
+    // Make sure at least one mesh is loaded now
+    if (meshMap.size() == 0)
+        return false;
+
     // Allocate space for the traced cloud
     auto sensorPointer = meshProjectorInitMap.find(_sensorUid);
     if (sensorPointer == meshProjectorInitMap.end())
@@ -401,13 +428,9 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
     // Otherwise key is there and you can check
     if (meshProjectorInitMap[_sensorUid].load() == true)
     {
-        loggerTop->warn("Mesh projector already running for {}", _sensorUid);
+        loggerTop->warn("Mesh projector already loaded for {}", _sensorUid);
         return false;
     }
-
-    // Make sure at least one mesh is loaded now
-    if (meshMap.size() == 0)
-        return false;
 
     // TODO: Use meshProjectorMap.emplace() instead of this
     meshProjectorMap[_sensorUid] = std::make_shared<lidarshooter::MeshProjector>(
@@ -602,9 +625,9 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
                     // Check to see if we're being shut down
                     if (traceThreadInitMap[_sensorUid].load() == false)
                         break;
-
+                
                     // Otherwise wait to avoid CPU pinning
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Might be a flaw to wait until first trace to init
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Might be a flaw to wait until first trace to init
                 }
                 
                 // Need the break here too to guarantee no waiting time at shutdown
@@ -635,26 +658,25 @@ bool MainWindow::shutdownTraceThread(const std::string& _sensorUid)
         return false;
     }
 
-    // If it's already running then complain and run away
-    if (threadInitIterator->second.load() == true)
+    // If it's not running then exit
+    if (threadInitIterator->second.load() == false)
     {
-        loggerTop->warn("Trace thread is already running");
+        loggerTop->warn("Trace thread for UID {} is not running", _sensorUid);
         return false;
     }
 
-    // If it's already running do nothing
+    // Find the thread and shut it down
     auto traceThreadIterator = traceThreadMap.find(_sensorUid);
-    if (traceThreadIterator != traceThreadMap.end())
+    if (traceThreadIterator == traceThreadMap.end())
     {
-        loggerTop->warn("Oops! A thread already exists for {}; shut it down (I flipped the init map back on)", _sensorUid);
-        threadInitIterator->second.store(true); // Try to reconcile; now shut it down
+        loggerTop->warn("Could not find thread for UID {}", _sensorUid);
+        traceThreadInitMap[_sensorUid].store(false); // Thread didn't exist but traceThreadInitMap[_sensorUid] did
         return false;
     }
 
     // Join the thread
     threadInitIterator->second.store(false);
     traceThreadIterator->second.join();
-    traceThreadMap.erase(traceThreadIterator); // Delete the actual thread from the map
-
+    
     return true;
 }

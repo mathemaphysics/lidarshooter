@@ -116,16 +116,13 @@ private:
     std::shared_ptr<lidarshooter::MeshProjector> meshProjector;
     std::atomic<bool> meshProjectorInitialized;
 
-    // Temporary storage for conversion
-    pcl::PCLPointCloud2::Ptr tempCloud;
-
     // Device to object maps
     std::map<const std::string, pcl::PolygonMesh::Ptr> meshMap;
     std::map<const std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap; ///< Takes sensorUid as index
     std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap; ///< Takes sensorUid as index
     std::map<const std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap; ///< Takes sensorUid as index
     std::map<const std::string, std::atomic<bool>> meshProjectorInitMap; ///< Takes sensorUid as index
-    std::map<const std::string, std::atomic<bool>> tracePlotInitMap; ///< Takes sensorUid as index
+    std::map<const std::string, pcl::PCLPointCloud2::Ptr> tempTraceCloudMap; ///< Takes sensorUid as index
 
     // Trace thread initialization and storage
     std::map<const std::string, std::thread> traceThreadMap;
