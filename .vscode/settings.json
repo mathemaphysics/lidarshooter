@@ -72,7 +72,8 @@
         "cfenv": "cpp",
         "cinttypes": "cpp",
         "typeindex": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "geometry": "cpp"
     },
     "cmake.sourceDirectory": "${workspaceFolder}/ros_ws/src"
 }

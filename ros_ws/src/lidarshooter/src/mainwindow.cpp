@@ -65,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, SIGNAL(traceCloudUpdated(void)), this, SLOT(slotRenderWindow(void)));
 
     // Initialize log level here first
-    spdlog::set_level(spdlog::level::info);
+    spdlog::set_level(spdlog::level::debug);
 }
 
 MainWindow::~MainWindow()
@@ -161,7 +161,7 @@ void MainWindow::slotPushButtonStartMeshProjector()
 
 void MainWindow::slotPushButtonStopMeshProjector()
 {
-    shutdownROSThread();
+    //shutdownROSThread();
 
     for (auto [uid, config] : deviceConfigMap)
     {
@@ -602,7 +602,7 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
                     // Check to see if we're being shut down
                     if (traceThreadInitMap[_sensorUid].load() == false)
                         break;
-                    loggerTop->info("TRACING HERE"); 
+
                     // Otherwise wait to avoid CPU pinning
                     std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Might be a flaw to wait until first trace to init
                 }
