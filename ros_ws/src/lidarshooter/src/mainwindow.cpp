@@ -342,7 +342,7 @@ bool MainWindow::updateTraceInViewer(const std::string& _sensorUid)
     cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(traceCloudMap[_sensorUid]);
 
     // Add it to the viewer as e.g. lidar_0000_trace
-    if (viewer->updatePointCloud<pcl::PointXYZ>(traceCloudMap[_sensorUid], cloudName) == false)
+    if (viewer->updatePointCloud<pcl::PointXYZ>(traceCloudIterator->second, cloudName) == false)
     {
         loggerTop->warn("Failed to update cloud {}; does it not exist?", cloudName);
         return false;
