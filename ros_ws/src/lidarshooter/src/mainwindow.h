@@ -68,8 +68,6 @@ public slots:
     // Let's use a new naming scheme without the "slot" prefix; update them gradually
     void startMeshProjector(QString);
     void stopMeshProjector(QString);
-    void startROSThread();
-    void stopROSThread();
     void deleteSensor(QString);
     void slotRenderWindow();
 

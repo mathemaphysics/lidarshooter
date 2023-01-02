@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/workspaces/lidarshooter2/ros_ws/devel/lib/lidarshooter/LiDARShooterGUI",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/LiDARShooterGUI",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

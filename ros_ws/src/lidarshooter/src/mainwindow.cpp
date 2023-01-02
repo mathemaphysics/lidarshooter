@@ -66,17 +66,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Initialize log level here first
     spdlog::set_level(spdlog::level::debug);
+
+    // Initialize ROS
+    ros::init(rosArgc, rosArgv, "lidar_0000"); // TODO: Change name to something else
+    if (initializeROSThread() == false)
+        throw(std::runtime_error("Could not initialize ROS thread"));
 }
 
 MainWindow::~MainWindow()
 {
-    // UI elements
-    delete ui;
-
-    // Clean up the dialogs
-    delete configFileDialog;
-    delete meshFileDialog;
-
     // Clean up the mesh projector
     for (auto [key, val] : meshProjectorMap)
     {
@@ -84,10 +82,16 @@ MainWindow::~MainWindow()
         shutdownMeshProjector(key);
     }
 
-    // Stop ROS spin
-    stopROSThread();
+    // UI elements
+    delete ui;
 
+    // Clean up the dialogs
+    delete configFileDialog;
+    delete meshFileDialog;
     delete sensorsDialog;
+
+    // Shut down ROS
+    shutdownROSThread();
 
     // Don't delete the log dialog until you're done logging
     delete logDialog;
@@ -143,26 +147,20 @@ void MainWindow::slotLogPoseRotation()
 
 void MainWindow::slotPushButtonStartMeshProjector()
 {
-    // We can set parameters here too
-    ros::init(rosArgc, rosArgv, "lidar_0000"); // TODO: Change name to something else
-    
     // Initialize trace plotting loop
     for (auto [uid, config] : deviceConfigMap)
     {
-        initializeMeshProjector(uid);   
-        initializeTracePlot(uid);
-        initializeTraceThread(uid);
+        if (initializeMeshProjector(uid) == false)
+            return;
+        if (initializeTracePlot(uid) == false)
+            return;
+        if (initializeTraceThread(uid) == false)
+            return;
     }
-
-    // Does extra checking to make sure thread isn't already running
-    if (!initializeROSThread())
-        return;
 }
 
 void MainWindow::slotPushButtonStopMeshProjector()
 {
-    //shutdownROSThread();
-
     for (auto [uid, config] : deviceConfigMap)
     {
         shutdownTraceThread(uid);
@@ -178,11 +176,8 @@ void MainWindow::slotPushButtonStopMeshProjector()
 
 void MainWindow::startMeshProjector(QString _sensorUid)
 {
-    // We can set parameters here too
-    ros::init(rosArgc, rosArgv, _sensorUid.toStdString()); // TODO: Change name to something else
-    
-    // Creates the nodes so has to have ros::init called first
-    initializeMeshProjector(_sensorUid.toStdString());
+    if (initializeMeshProjector(_sensorUid.toStdString()) == false)
+        return;
 
     // Start the trace viewer thread
     initializeTracePlot(_sensorUid.toStdString());
@@ -193,15 +188,6 @@ void MainWindow::stopMeshProjector(QString _sensorUid)
 {
     shutdownTracePlot(_sensorUid.toStdString());
     shutdownMeshProjector(_sensorUid.toStdString());
-}
-
-void MainWindow::startROSThread()
-{
-    initializeROSThread();
-}
-
-void MainWindow::stopROSThread()
-{
 }
 
 void MainWindow::deleteSensor(QString _sensorUid)
@@ -392,7 +378,10 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
 {
     // Make sure at least one mesh is loaded now
     if (meshMap.size() == 0)
+    {
+        loggerTop->warn("No meshes loaded; load a mesh first");
         return false;
+    }
 
     // Allocate space for the traced cloud
     auto sensorPointer = meshProjectorInitMap.find(_sensorUid);
@@ -410,11 +399,14 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
     }
 
     // TODO: Use meshProjectorMap.emplace() instead of this
-    meshProjectorMap[_sensorUid] = std::make_shared<lidarshooter::MeshProjector>(
-        deviceConfigMap[_sensorUid],
-        ros::Duration(0.1),
-        ros::Duration(0.1),
-        loggerTop
+    meshProjectorMap.insert_or_assign(
+        _sensorUid,
+        std::make_shared<lidarshooter::MeshProjector>(
+            deviceConfigMap[_sensorUid],
+            ros::Duration(0.1),
+            ros::Duration(0.1),
+            loggerTop
+        )
     );
 
     // Point the meshProjector at the shared pointer to the PolygonMesh
@@ -426,7 +418,7 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
     }
 
     // Indicates the meshProjector is allocated
-    meshProjectorInitMap[_sensorUid].store(true);
+    sensorPointer->second.store(true);
 
     return true;
 }
@@ -543,7 +535,7 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
     auto threadInitIterator = traceThreadInitMap.find(_sensorUid);
     if (threadInitIterator == traceThreadInitMap.end())
     {
-        loggerTop->warn("Thread for {} was not found; this is an error, so report it", _sensorUid);
+        loggerTop->warn("Thread init for {} was not found; this is an error, so report it", _sensorUid);
         return false;
     }
 
@@ -558,8 +550,7 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
     auto traceThreadIterator = traceThreadMap.find(_sensorUid);
     if (traceThreadIterator != traceThreadMap.end())
     {
-        loggerTop->warn("Oops! A thread already exists for {}; shut it down (I flipped the init map back on)", _sensorUid);
-        threadInitIterator->second.store(true); // Try to reconcile; now shut it down
+        loggerTop->warn("Oops! A thread already exists for {}; shut it down", _sensorUid);
         return false;
     }
 
@@ -582,12 +573,12 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
     // Mesh projector should already be running
     if (projInitIterator->second.load() == false)
     {
-        loggerTop->warn("Mesh projector for {} exists but is not started; start it", _sensorUid);
+        loggerTop->warn("Mesh projector for {} exists but is not initialized; start it", _sensorUid);
         return false;
     }
 
     // Mark the thread as running
-    traceThreadInitMap[_sensorUid].store(true); // IMPOTANT: This must be done *before* starting the thread
+    threadInitIterator->second.store(true); // IMPOTANT: This must be done *before* starting the thread
 
     // Shutdown: traceThreadInitMap[_sensorUid].store(false) && traceThreadMap[_sensorUid].join()
     traceThreadMap.emplace(
@@ -613,7 +604,7 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
 
                 // Update the cloud in the viewer
                 updateTraceInViewer(_sensorUid);
-                emit traceCloudUpdated();
+                emit traceCloudUpdated(); // Signal that rendering must be done again
 
                 // Add some padding to guarantee no CPU pinning
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
