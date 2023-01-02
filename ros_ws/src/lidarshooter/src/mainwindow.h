@@ -155,7 +155,20 @@ private:
             const std::string,
             std::atomic<bool>
         >::iterator
-    > getMeshProjectorElements(const std::string& _sensorUid, bool _shouldBe);
+    > getMeshProjectorElements(const std::string& _sensorUid, bool _shouldExist, bool _shouldBeRunning);
+
+    inline
+    std::tuple<
+        bool,
+        std::map<
+            const std::string,
+            std::thread
+        >::iterator,
+        std::map<
+            const std::string,
+            std::atomic<bool>
+        >::iterator
+    > getTraceThreadElements(const std::string& _sensorUid, bool _shouldExist, bool _shouldBeRunning);
 
     // Friends
     friend class SensorsDialog;

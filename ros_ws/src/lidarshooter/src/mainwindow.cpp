@@ -306,19 +306,11 @@ bool MainWindow::updateTraceInViewer(const std::string& _sensorUid)
     // All trace clouds are named e.g. lidar_0000_trace
     auto cloudName = fmt::format("{}_trace", _sensorUid);
 
-    // Make sure the key is there
-    auto projectorIterator = meshProjectorMap.find(_sensorUid);
-    if (projectorIterator == meshProjectorMap.end())
-    {
-        loggerTop->warn("No mesh projector found for sensor UID {}", _sensorUid);
+    // Make sure mesh projector exists and is started
+    // TODO: Optimize this out; don't check; too many iterations; slow
+    auto [projSuccess, projectorIterator, projInitIterator] = getMeshProjectorElements(_sensorUid, true, true);
+    if (!projSuccess)
         return false;
-    }
-
-    if (meshProjectorInitMap[_sensorUid].load() == false)
-    {
-        loggerTop->warn("Mesh projector for sensor UID {} not started");
-        return false;
-    }
 
     // This is an updater; make sure the cloud is already there
     auto traceCloudIterator = traceCloudMap.find(_sensorUid);
@@ -532,30 +524,12 @@ bool MainWindow::shutdownTracePlot(const std::string& _sensorUid)
 bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
 {
     // Check whether it's currently running
-    auto threadInitIterator = traceThreadInitMap.find(_sensorUid);
-    if (threadInitIterator == traceThreadInitMap.end())
-    {
-        loggerTop->warn("Thread init for {} was not found; this is an error, so report it", _sensorUid);
+    auto [traceSuccess, traceThreadIterator, threadInitIterator] = getTraceThreadElements(_sensorUid, false, false);
+    if (!traceSuccess)
         return false;
-    }
-
-    // If it's already running then complain and run away
-    if (threadInitIterator->second.load() == true)
-    {
-        loggerTop->warn("Trace thread is already running");
-        return false;
-    }
-
-    // It shouldn't already be running if you got here
-    auto traceThreadIterator = traceThreadMap.find(_sensorUid);
-    if (traceThreadIterator != traceThreadMap.end())
-    {
-        loggerTop->warn("Oops! A thread already exists for {}; shut it down", _sensorUid);
-        return false;
-    }
 
     // Make sure mesh projector exists for this sensor
-    auto [projSuccess, projectorIterator, projInitIterator] = getMeshProjectorElements(_sensorUid, true); // Should be running
+    auto [projSuccess, projectorIterator, projInitIterator] = getMeshProjectorElements(_sensorUid, true, true); // Should be running
     if (!projSuccess)
         return false;
 
@@ -641,16 +615,16 @@ std::tuple<
         const std::string,
         std::atomic<bool>
     >::iterator
-> MainWindow::getMeshProjectorElements(const std::string& _sensorUid, bool _shouldBe)
+> MainWindow::getMeshProjectorElements(const std::string& _sensorUid, bool _shouldExist, bool _shouldBeRunning)
 {
     // This is the result
     bool projResult = true;
 
     // Get the mesh projector itself
     auto projIterator = meshProjectorMap.find(_sensorUid);
-    if (projIterator == meshProjectorMap.end())
+    if ((projIterator != meshProjectorMap.end()) != _shouldExist)
     {
-        loggerTop->warn("Mesh projector for {} does not exist", _sensorUid);
+        loggerTop->warn("Mesh projector for {} {}", _sensorUid, _shouldExist ? "does not exist" : "exists already");
         projResult = false;
     }
 
@@ -663,11 +637,53 @@ std::tuple<
     }
 
     // Check whether running state is what it should be
-    if (projInitIterator->second.load() != _shouldBe)
+    if (projInitIterator->second.load() != _shouldBeRunning)
     {
-        loggerTop->warn("Mesh projector is {} initialized for {}", _shouldBe ? "not" : "\b", _sensorUid);
+        loggerTop->warn("Mesh projector is {} initialized for {}", _shouldBeRunning ? "not" : "already", _sensorUid);
         projResult = false;
     }
 
     return std::make_tuple(projResult, projIterator, projInitIterator);
+}
+
+inline
+std::tuple<
+    bool,
+    std::map<
+        const std::string,
+        std::thread
+    >::iterator,
+    std::map<
+        const std::string,
+        std::atomic<bool>
+    >::iterator
+> MainWindow::getTraceThreadElements(const std::string& _sensorUid, bool _shouldExist, bool _shouldBeRunning)
+{
+    // This is the result
+    bool traceResult = true;
+
+    // It shouldn't already be running if you got here
+    auto traceIterator = traceThreadMap.find(_sensorUid);
+    if ((traceIterator != traceThreadMap.end()) != _shouldExist)
+    {
+        loggerTop->warn("Trace thread for {} {}", _sensorUid, _shouldExist ? "does not exist" : "exists already");
+        traceResult = false;
+    }
+
+    // Check whether it's currently running; init maps should always exist
+    auto traceInitIterator = traceThreadInitMap.find(_sensorUid);
+    if (traceInitIterator == traceThreadInitMap.end())
+    {
+        loggerTop->warn("Trace thread initialization for {} does not exist", _sensorUid);
+        traceResult = false;
+    }
+
+    // If it's already running then complain and run away
+    if (traceInitIterator->second.load() != _shouldBeRunning)
+    {
+        loggerTop->warn("Trace thread is {} initialized for {}", _shouldBeRunning ? "not" : "already", _sensorUid);
+        traceResult = false;
+    }
+
+    return std::make_tuple(traceResult, traceIterator, traceInitIterator);
 }
