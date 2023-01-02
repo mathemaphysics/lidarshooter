@@ -555,27 +555,9 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
     }
 
     // Make sure mesh projector exists for this sensor
-    auto projectorIterator = meshProjectorMap.find(_sensorUid);
-    if (projectorIterator == meshProjectorMap.end())
-    {
-        loggerTop->warn("No mesh projector created for {}", _sensorUid);
+    auto [projSuccess, projectorIterator, projInitIterator] = getMeshProjectorElements(_sensorUid, true); // Should be running
+    if (!projSuccess)
         return false;
-    }
-
-    // Make sure the key exists in the mesh projector initialization map
-    auto projInitIterator = meshProjectorInitMap.find(_sensorUid);
-    if (projInitIterator == meshProjectorInitMap.end())
-    {
-        loggerTop->warn("Mesh projector for {} does not exist", _sensorUid);
-        return false;
-    }
-
-    // Mesh projector should already be running
-    if (projInitIterator->second.load() == false)
-    {
-        loggerTop->warn("Mesh projector for {} exists but is not initialized; start it", _sensorUid);
-        return false;
-    }
 
     // Mark the thread as running
     threadInitIterator->second.store(true); // IMPOTANT: This must be done *before* starting the thread
@@ -646,4 +628,46 @@ bool MainWindow::shutdownTraceThread(const std::string& _sensorUid)
     traceThreadIterator->second.join();
     
     return true;
+}
+
+inline
+std::tuple<
+    bool,
+    std::map<
+        const std::string,
+        std::shared_ptr<lidarshooter::MeshProjector>
+    >::iterator,
+    std::map<
+        const std::string,
+        std::atomic<bool>
+    >::iterator
+> MainWindow::getMeshProjectorElements(const std::string& _sensorUid, bool _shouldBe)
+{
+    // This is the result
+    bool projResult = true;
+
+    // Get the mesh projector itself
+    auto projIterator = meshProjectorMap.find(_sensorUid);
+    if (projIterator == meshProjectorMap.end())
+    {
+        loggerTop->warn("Mesh projector for {} does not exist", _sensorUid);
+        projResult = false;
+    }
+
+    // Get the mesh projector initialization atomic
+    auto projInitIterator = meshProjectorInitMap.find(_sensorUid);
+    if (projInitIterator == meshProjectorInitMap.end())
+    {
+        loggerTop->warn("Mesh projector initialization for {} does not exist", _sensorUid);
+        projResult = false;
+    }
+
+    // Check whether running state is what it should be
+    if (projInitIterator->second.load() != _shouldBe)
+    {
+        loggerTop->warn("Mesh projector is {} initialized for {}", _shouldBe ? "not" : "\b", _sensorUid);
+        projResult = false;
+    }
+
+    return std::make_tuple(projResult, projIterator, projInitIterator);
 }

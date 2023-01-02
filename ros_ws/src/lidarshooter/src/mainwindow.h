@@ -17,6 +17,7 @@
 #include <thread>
 #include <atomic>
 #include <map>
+#include <tuple>
 
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -141,6 +142,20 @@ private:
     bool shutdownTracePlot(const std::string& _sensorUid = "lidar_0000");
     bool initializeTraceThread(const std::string& _sensorUid = "lidar_0000");
     bool shutdownTraceThread(const std::string& _sensorUid = "lidar_0000");
+
+    // Helper getter/checker functions
+    inline
+    std::tuple<
+        bool,
+        std::map<
+            const std::string,
+            std::shared_ptr<lidarshooter::MeshProjector>
+        >::iterator,
+        std::map<
+            const std::string,
+            std::atomic<bool>
+        >::iterator
+    > getMeshProjectorElements(const std::string& _sensorUid, bool _shouldBe);
 
     // Friends
     friend class SensorsDialog;
