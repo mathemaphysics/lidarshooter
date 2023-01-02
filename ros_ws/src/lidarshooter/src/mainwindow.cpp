@@ -574,28 +574,9 @@ bool MainWindow::initializeTraceThread(const std::string& _sensorUid)
 
 bool MainWindow::shutdownTraceThread(const std::string& _sensorUid)
 {
-    // Check whether it's currently running
-    auto threadInitIterator = traceThreadInitMap.find(_sensorUid);
-    if (threadInitIterator == traceThreadInitMap.end())
-    {
-        loggerTop->warn("Thread for {} was not found; this is an error, so report it", _sensorUid);
+    auto [traceSuccess, traceThreadIterator, threadInitIterator] = getTraceThreadElements(_sensorUid, true, true);
+    if (!traceSuccess)
         return false;
-    }
-
-    // If it's not running then exit
-    if (threadInitIterator->second.load() == false)
-    {
-        loggerTop->warn("Trace thread for UID {} is not running", _sensorUid);
-        return false;
-    }
-
-    // Find the thread and shut it down
-    auto traceThreadIterator = traceThreadMap.find(_sensorUid);
-    if (traceThreadIterator == traceThreadMap.end())
-    {
-        loggerTop->warn("Could not find thread for UID {}", _sensorUid);
-        return false;
-    }
 
     // Join the thread
     threadInitIterator->second.store(false);
