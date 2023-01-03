@@ -338,7 +338,8 @@ add_library(lidarshooter
     src/LidarDevice.cpp
     src/MeshProjector.cpp
     src/CloudTransformer.cpp
-    src/CloudConverter.cpp)
+    src/CloudConverter.cpp
+    src/DeviceRuntime.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
     target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)

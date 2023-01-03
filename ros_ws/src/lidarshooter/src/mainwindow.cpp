@@ -216,6 +216,14 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
         devicePointer
     );
 
+    // Make sure it doesn't already exist
+    auto [projSuccess, projIterator, projInitIterator] = getMeshProjectorElements(devicePointer->getSensorUid(), false, false);
+    if (!projSuccess)
+    {
+        loggerTop->warn("Device already exists; remove it then add it again");
+        return devicePointer->getSensorUid();
+    }
+
     // This references an initially non-existent element, creating default
     meshProjectorInitMap.emplace(
         devicePointer->getSensorUid(),
@@ -233,6 +241,9 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
         devicePointer->getSensorUid(),
         false
     );
+
+    // Create the mesh projector here because it can be
+
 
     // Add the actual line in the sensors list
     sensorsDialog->addSensorRow(devicePointer->getSensorUid(), _fileName);
@@ -368,27 +379,9 @@ bool MainWindow::deleteTraceFromViewer(const std::string& _sensorUid)
 
 bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
 {
-    // Make sure at least one mesh is loaded now
-    if (meshMap.size() == 0)
-    {
-        loggerTop->warn("No meshes loaded; load a mesh first");
+    auto [projSuccess, projectorIterator, projInitIterator] = getMeshProjectorElements(_sensorUid, false, false);
+    if (!projSuccess)
         return false;
-    }
-
-    // Allocate space for the traced cloud
-    auto sensorPointer = meshProjectorInitMap.find(_sensorUid);
-    if (sensorPointer == meshProjectorInitMap.end())
-    {
-        loggerTop->error("Sensor UID key {} does not exist in projector initialized map; error", _sensorUid);
-        return false; // The key isn't there
-    }
-
-    // Otherwise key is there and you can check
-    if (sensorPointer->second.load() == true)
-    {
-        loggerTop->warn("Mesh projector already loaded for {}", _sensorUid);
-        return false;
-    }
 
     // TODO: Use meshProjectorMap.emplace() instead of this
     meshProjectorMap.insert_or_assign(
@@ -410,7 +403,7 @@ bool MainWindow::initializeMeshProjector(const std::string& _sensorUid)
     }
 
     // Indicates the meshProjector is allocated
-    sensorPointer->second.store(true);
+    projInitIterator->second.store(true);
 
     return true;
 }
