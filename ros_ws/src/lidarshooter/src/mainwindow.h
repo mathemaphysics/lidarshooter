@@ -104,7 +104,6 @@ private:
     SensorsDialog* sensorsDialog;
 
     // Private variables
-    QString configFile;
     QString meshFile;
 
     // Device to object maps
