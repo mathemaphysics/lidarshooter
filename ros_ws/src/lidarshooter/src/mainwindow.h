@@ -41,6 +41,7 @@
 #include "LidarDevice.hpp"
 #include "MeshProjector.hpp"
 #include "CloudConverter.hpp"
+#include "DeviceRuntime.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -108,6 +109,8 @@ private:
 
     // Device to object maps
     std::map<const std::string, pcl::PolygonMesh::Ptr> meshMap;
+    std::map<const std::string, lidarshooter::DeviceRuntime> runtimeMap;
+
     std::map<const std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap; ///< Takes sensorUid as index
     std::map<const std::string, pcl::PCLPointCloud2::Ptr> tempTraceCloudMap; ///< Takes sensorUid as index
     std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap; ///< Takes sensorUid as index

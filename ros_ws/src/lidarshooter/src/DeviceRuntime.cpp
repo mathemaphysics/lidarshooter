@@ -46,6 +46,42 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     _tempTraceCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
 }
 
+lidarshooter::DeviceRuntime::DeviceRuntime(
+    std::shared_ptr<lidarshooter::LidarDevice> __deviceConfig,
+    pcl::visualization::PCLVisualizer::Ptr __viewer,
+    std::shared_ptr<spdlog::logger> __logger
+)
+    : _traceThreadRunning(false),
+      _viewer(__viewer)
+{
+    // Set up the logger
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get("DeviceRuntime");
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt("DeviceRuntime");
+    }
+    else
+        _logger = __logger;
+
+    // Allocate space for the device
+    _deviceConfig = __deviceConfig;
+    
+    // Allocate space for mesh projector
+    _meshProjector = std::make_shared<lidarshooter::MeshProjector>(
+        _deviceConfig,
+        ros::Duration(0.1),
+        ros::Duration(0.1),
+        _logger
+    );
+
+    // Allocate trace cloud space
+    _traceCloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>());
+
+    // Allocate space for cloud conversion
+    _tempTraceCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2());
+}
+
 lidarshooter::DeviceRuntime::~DeviceRuntime()
 {
     

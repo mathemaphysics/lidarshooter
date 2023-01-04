@@ -210,11 +210,34 @@ void MainWindow::slotRenderWindow()
 
 const std::string MainWindow::addSensor(const std::string& _fileName)
 {
+    // Must load device first because we need the sensor UID for the maps
     auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName, loggerTop);
     deviceConfigMap.emplace(
         devicePointer->getSensorUid(),
         devicePointer
     );
+
+    /**
+     * Begin new method 
+     */
+    auto runtimePointer = runtimeMap.find(devicePointer->getSensorUid());
+    if (runtimePointer != runtimeMap.end())
+        loggerTop->warn("Runtime space for {} already exists and should not");
+    else
+    {
+        runtimeMap.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(devicePointer->getSensorUid()),
+            std::forward_as_tuple(
+                devicePointer,
+                viewer,
+                loggerTop
+            )
+        );
+    }
+    /*
+     * End new method
+     **/
 
     // Make sure it doesn't already exist
     auto [projSuccess, projIterator, projInitIterator] = getMeshProjectorElements(devicePointer->getSensorUid(), false, false);

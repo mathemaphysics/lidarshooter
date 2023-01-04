@@ -36,6 +36,11 @@ public:
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         std::shared_ptr<spdlog::logger> __logger = nullptr
     );
+    DeviceRuntime(
+        std::shared_ptr<lidarshooter::LidarDevice> _deviceConfig,
+        pcl::visualization::PCLVisualizer::Ptr __viewer,
+        std::shared_ptr<spdlog::logger> __logger = nullptr
+    );
     ~DeviceRuntime();
 
     // Getters
