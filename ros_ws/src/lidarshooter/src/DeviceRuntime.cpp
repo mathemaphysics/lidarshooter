@@ -206,7 +206,6 @@ int lidarshooter::DeviceRuntime::startTraceThread()
                         break;
 
                     // Otherwise wait to avoid CPU pinning
-                    _logger->warn("What the HELL ARE YOU DOING");
                     std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Might be a flaw to wait until first trace to init
                 }
                 
