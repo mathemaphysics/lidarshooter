@@ -312,7 +312,7 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 // Important: This is only for initializing the mesh; you shouldn't use this
 // function to make updates to the pointcloud geometry when rigid body rotations
 // and translations are all you've done.
-void lidarshooter::MeshProjector::setMesh(const pcl::PolygonMesh::ConstPtr& _mesh)
+void lidarshooter::MeshProjector::addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh)
 {
     // This may not be what we want; make sure this is efficient
     _meshMutex.lock();

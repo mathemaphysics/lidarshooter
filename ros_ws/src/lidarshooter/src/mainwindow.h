@@ -3,14 +3,13 @@
 
 #include <QMainWindow>
 #include <QMetaObject>
+#include <QString>
 #include <QFileDialog>
 #include <QModelIndex>
 #include <QOpenGLContext>
-#include <QThread>
 
 #include "logdialog.h"
 #include "sensorsdialog.h"
-#include "cloudupdater.h"
 
 #include <memory>
 #include <filesystem>
@@ -56,7 +55,6 @@ public:
     ~MainWindow();
 
 signals:
-    void traceCloudUpdated();
 
 private slots:
     void slotReceiveConfigFile(QString);
@@ -68,8 +66,6 @@ private slots:
 
 public slots:
     // Let's use a new naming scheme without the "slot" prefix; update them gradually
-    void startMeshProjector(QString);
-    void stopMeshProjector(QString);
     void deleteSensor(QString);
     void slotRenderWindow();
 
@@ -133,44 +129,8 @@ private:
     // Starting and stopping projector and ROS
     const std::string addSensor(const std::string& _fileName);
     void deleteSensor(const std::string& _sensorUid);
-    bool addTraceToViewer(const std::string& _sensorUid = "lidar_0000");
-    bool updateTraceInViewer(const std::string& _sensorUid = "lidar_0000");
-    bool deleteTraceFromViewer(const std::string& _sensorUid = "lidar_0000");
     bool initializeROSThread();
     bool shutdownROSThread();
-    bool initializeMeshProjector(const std::string& _sensorUid = "lidar_0000");
-    bool shutdownMeshProjector(const std::string& _sensorUid = "lidar_0000");
-    bool initializeTracePlot(const std::string& _sensorUid = "lidar_0000");
-    bool shutdownTracePlot(const std::string& _sensorUid = "lidar_0000");
-    bool initializeTraceThread(const std::string& _sensorUid = "lidar_0000");
-    bool shutdownTraceThread(const std::string& _sensorUid = "lidar_0000");
-
-    // Helper getter/checker functions
-    inline
-    std::tuple<
-        bool,
-        std::map<
-            const std::string,
-            std::shared_ptr<lidarshooter::MeshProjector>
-        >::iterator,
-        std::map<
-            const std::string,
-            std::atomic<bool>
-        >::iterator
-    > getMeshProjectorElements(const std::string& _sensorUid, bool _shouldExist, bool _shouldBeRunning);
-
-    inline
-    std::tuple<
-        bool,
-        std::map<
-            const std::string,
-            std::thread
-        >::iterator,
-        std::map<
-            const std::string,
-            std::atomic<bool>
-        >::iterator
-    > getTraceThreadElements(const std::string& _sensorUid, bool _shouldExist, bool _shouldBeRunning);
 
     // Friends
     friend class SensorsDialog;

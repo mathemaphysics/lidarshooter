@@ -1,5 +1,8 @@
 #pragma once
 
+#include <QObject>
+#include <QMetaObject>
+
 #include "LidarDevice.hpp"
 #include "MeshProjector.hpp"
 
@@ -22,8 +25,9 @@ namespace lidarshooter
  * \c LidarDevice, including all the state information; is the mesh projector
  * for this device running, is the trace viewer thread running, etc.
  */
-class DeviceRuntime
+class DeviceRuntime : public QObject
 {
+    Q_OBJECT
 
 public:
     /**
@@ -34,12 +38,14 @@ public:
     DeviceRuntime(
         const std::string& _fileName,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
-        std::shared_ptr<spdlog::logger> __logger = nullptr
+        std::shared_ptr<spdlog::logger> __logger = nullptr,
+        QObject* _parent = nullptr
     );
     DeviceRuntime(
-        std::shared_ptr<lidarshooter::LidarDevice> _deviceConfig,
+        std::shared_ptr<LidarDevice> _deviceConfig,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
-        std::shared_ptr<spdlog::logger> __logger = nullptr
+        std::shared_ptr<spdlog::logger> __logger = nullptr,
+        QObject* _parent = nullptr
     );
     ~DeviceRuntime();
 
@@ -54,6 +60,14 @@ public:
     int startTraceThread();
     int stopTraceThread();
     bool isTraceThreadRunning();
+    int addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
+
+signals:
+    void traceCloudUpdated();
+
+public slots:
+
+private slots:
 
 private:
     // Data required for runtime
@@ -69,6 +83,9 @@ private:
 
     // Logger just in case we'll need it here
     std::shared_ptr<spdlog::logger> _logger;
+
+    // Connections to other QObjects
+    QMetaObject::Connection _renderConnection;
 };
 
 }

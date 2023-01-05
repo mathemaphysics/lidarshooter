@@ -267,8 +267,6 @@ set(PROJECT_SOURCES
         src/sensorsdialog.h
         src/sensorsdialog.cpp
         src/sensorsdialog.ui
-        src/cloudupdater.h
-        src/cloudupdater.cpp
         src/${TS_FILES}
 )
 

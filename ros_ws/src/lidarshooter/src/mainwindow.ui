@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>786</width>
-    <height>701</height>
+    <height>842</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,8 +29,8 @@
      <rect>
       <x>30</x>
       <y>450</y>
-      <width>361</width>
-      <height>171</height>
+      <width>367</width>
+      <height>280</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -115,7 +115,7 @@
       <x>410</x>
       <y>450</y>
       <width>351</width>
-      <height>171</height>
+      <height>281</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -142,19 +142,6 @@
        </property>
        <property name="text">
         <string>Get Rotation</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="pushButtonSaveMesh">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>Save Mesh</string>
        </property>
       </widget>
      </item>
@@ -193,7 +180,7 @@
      <x>0</x>
      <y>0</y>
      <width>786</width>
-     <height>22</height>
+     <height>39</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -286,22 +273,6 @@
     <hint type="destinationlabel">
      <x>649</x>
      <y>626</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>pushButtonSaveMesh</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>slotPushButtonSaveMesh()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>583</x>
-     <y>571</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>575</x>
-     <y>634</y>
     </hint>
    </hints>
   </connection>

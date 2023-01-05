@@ -111,7 +111,7 @@ public:
      * 
      * @param _mesh Mesh to be copied into the internal mesh state
      */
-    void setMesh(const pcl::PolygonMesh::ConstPtr& _mesh);
+    void addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
 
     /**
      * @brief Get a shared pointer to the current traced cloud
