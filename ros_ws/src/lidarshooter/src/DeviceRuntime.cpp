@@ -192,6 +192,13 @@ int lidarshooter::DeviceRuntime::startTraceThread()
     // Cast the main window correctly from parent object
     auto mainWindow = dynamic_cast<MainWindow*>(parent());
 
+    // Make sure it isn't already running
+    if (_traceThreadRunning.load() == true)
+    {
+        _logger->warn("Trace thread already running for sensor UID {}", _deviceConfig->getSensorUid());
+        return -1;
+    }
+
     // Mark the thread as running
     _traceThreadRunning.store(true); // IMPOTANT: This must be done *before* starting the thread
 

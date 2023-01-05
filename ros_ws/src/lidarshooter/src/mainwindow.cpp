@@ -237,7 +237,7 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
         emit runtimePointer->second.traceCloudUpdated();
 
         // Explicitly call the destructor
-        runtimeMap.erase(runtimePointer);
+        runtimeMap.erase(runtimePointer); // This is important; clean up so meshProjector doesn't stick around
     }
 
     // Only removes the row in the sensorsDialog
