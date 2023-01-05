@@ -73,8 +73,14 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     // Stop everything if it's running
-    for (auto& [uid, runtime] : runtimeMap)
+    for (auto& [uid, config] : deviceConfigMap)
         deleteSensor(uid);
+
+    // Device config maps will still be there
+    deviceConfigMap.clear();
+
+    // These should already be destroyed
+    runtimeMap.clear();
 
     // UI elements
     delete ui;
@@ -188,6 +194,13 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
 {
     // Must load device first because we need the sensor UID for the maps
     auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName, loggerTop);
+    if (devicePointer->getSensorUid().length() == 0)
+    {
+        // There was definitely some error loading the file and it failed
+        loggerTop->error("Failed to load device config {}", _fileName);
+        return std::string("");
+    }
+
     deviceConfigMap.emplace(
         devicePointer->getSensorUid(),
         devicePointer
@@ -236,7 +249,7 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
         // Update the GL window to show the change
         emit runtimePointer->second.traceCloudUpdated();
 
-        // Explicitly call the destructor
+        // You can't do this if you're iterating over runtimeMap; be careful
         runtimeMap.erase(runtimePointer); // This is important; clean up so meshProjector doesn't stick around
     }
 
