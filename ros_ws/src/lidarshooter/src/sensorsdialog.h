@@ -1,6 +1,7 @@
 #ifndef SENSORSDIALOG_H
 #define SENSORSDIALOG_H
 
+#include <QWidget>
 #include <QDialog>
 #include <QStandardItem>
 #include <QStandardItemModel>

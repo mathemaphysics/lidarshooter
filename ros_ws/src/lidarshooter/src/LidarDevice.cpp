@@ -345,7 +345,7 @@ void lidarshooter::LidarDevice::originToSensorInverse(Eigen::Vector3f& _sensor) 
 
 void lidarshooter::LidarDevice::reset()
 {
-    // Index will indicate the position in the set of rays to iterate So when
+    // Index will indicate the position in the set of rays to iterate; so when
     // \c nextRayXX is called this will be referenced
     _verticalIndex = 0;
     _horizontalIndex = 0;

@@ -198,7 +198,8 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
         loggerTop->warn("Runtime space for {} already exists and should not");
     else
     {
-        runtimeMap.emplace(
+        // Create the sensor
+        auto result = runtimeMap.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(devicePointer->getSensorUid()),
             std::forward_as_tuple(
@@ -208,6 +209,11 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
                 this
             )
         );
+        if (result.second == false)
+            loggerTop->warn("Could not insert runtime for sensor UID {}", devicePointer->getSensorUid());
+        else
+            for (auto& [name, mesh] : meshMap)
+                result.first->second.addMeshToScene(mesh);
     }
 
     // Add the actual line in the sensors list
@@ -226,8 +232,15 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
         runtimePointer->second.stopTraceThread();
         if (runtimePointer->second.deleteTraceFromViewer() == 0)
             loggerTop->info("Removed trace of mesh from sensor UID {}", _sensorUid);
+        
+        // Update the GL window to show the change
+        emit runtimePointer->second.traceCloudUpdated();
+
+        // Explicitly call the destructor
+        runtimeMap.erase(runtimePointer);
     }
 
+    // Only removes the row in the sensorsDialog
     sensorsDialog->deleteSensorRow(QString(_sensorUid.c_str()));
 }
 

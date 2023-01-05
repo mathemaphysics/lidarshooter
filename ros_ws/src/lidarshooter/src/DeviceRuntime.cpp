@@ -102,6 +102,9 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
 
 lidarshooter::DeviceRuntime::~DeviceRuntime()
 {
+    // Make sure trace thread is stopped and deallocated
+    stopTraceThread();
+
     // Remove the connection to the MainWindow renderer
     disconnect(_renderConnection);
 }

@@ -106,25 +106,13 @@ private:
     // Device to object maps
     std::map<const std::string, pcl::PolygonMesh::Ptr> meshMap;
     std::map<const std::string, lidarshooter::DeviceRuntime> runtimeMap;
-
-    std::map<const std::string, pcl::PointCloud<pcl::PointXYZ>::Ptr> traceCloudMap; ///< Takes sensorUid as index
-    std::map<const std::string, pcl::PCLPointCloud2::Ptr> tempTraceCloudMap; ///< Takes sensorUid as index
     std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap; ///< Takes sensorUid as index
-    std::map<const std::string, std::shared_ptr<lidarshooter::MeshProjector>> meshProjectorMap; ///< Takes sensorUid as index
-    std::map<const std::string, std::atomic<bool>> meshProjectorInitMap; ///< Takes sensorUid as index
-    std::map<const std::string, std::atomic<bool>> traceCloudInitMap; ///< Takes sensorUid as index
-
-    // Trace thread initialization and storage
-    std::map<const std::string, std::thread> traceThreadMap;
-    std::map<const std::string, std::atomic<bool>> traceThreadInitMap;
 
     // ROS thread initialization and storage
     char **rosArgv;
     int rosArgc = 0;
     std::thread* rosThread;
     std::atomic<bool> rosThreadRunning;
-
-    // Indicators: Is the trace plotting loop initialized?
 
     // Starting and stopping projector and ROS
     const std::string addSensor(const std::string& _fileName);
