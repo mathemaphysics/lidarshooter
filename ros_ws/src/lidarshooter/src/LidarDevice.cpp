@@ -512,7 +512,7 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
         _outputFolder = jsonData.get("outputFolder", ".").asString();
     }
     else
-        _logger->warn("Configuration file {} lacks an explicit output folder; defaulting to CWD");
+        _logger->warn("Configuration file {} lacks an explicit output folder; defaulting to CWD", _config);
 
     // Probably do some checking here first to make sure it loaded correctly
     _configLoaded = true;
