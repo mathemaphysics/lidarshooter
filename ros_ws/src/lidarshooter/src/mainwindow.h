@@ -16,7 +16,6 @@
 #include <thread>
 #include <atomic>
 #include <map>
-#include <tuple>
 
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>

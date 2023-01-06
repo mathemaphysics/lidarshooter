@@ -72,15 +72,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    // Stop everything if it's running
+    // Shut down and remove sensors one by one
     for (auto& [uid, config] : deviceConfigMap)
-        deleteSensor(uid);
+        deleteSensor(uid); // Sets up for delete but doesn't erase
 
-    // Device config maps will still be there
-    deviceConfigMap.clear();
-
-    // These should already be destroyed
-    runtimeMap.clear();
+    // Actually need to remove these to trigger destructor
+    runtimeMap.clear(); // deleteSensor does not delete its key from runtimeMap
+    deviceConfigMap.clear(); // deleteSensor does not delete its key from deviceConfigMap
 
     // UI elements
     delete ui;
@@ -174,8 +172,12 @@ void MainWindow::slotPushButtonStopMeshProjector()
 
 void MainWindow::deleteSensor(QString _sensorUid)
 {
-    // Silently check to see if it's already running
+    // Set up the sensor for delete
     deleteSensor(_sensorUid.toStdString());
+    
+    // Function deleteSensor does not erase the runtime or config
+    runtimeMap.erase(_sensorUid.toStdString());
+    deviceConfigMap.erase(_sensorUid.toStdString());
 
     // TODO: Change this to debug
     loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
@@ -248,9 +250,6 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
         
         // Update the GL window to show the change
         emit runtimePointer->second.traceCloudUpdated();
-
-        // You can't do this if you're iterating over runtimeMap; be careful
-        runtimeMap.erase(runtimePointer); // This is important; clean up so meshProjector doesn't stick around
     }
 
     // Only removes the row in the sensorsDialog
