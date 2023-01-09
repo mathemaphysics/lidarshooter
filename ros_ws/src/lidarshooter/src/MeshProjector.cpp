@@ -31,7 +31,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(true),
-      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false),
+      _shouldPublishCloud(true)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -120,7 +121,8 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
-      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false),
+      _shouldPublishCloud(true)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -201,7 +203,8 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
-      _stateWasUpdated(false), _stateWasUpdatedPublic(false)
+      _stateWasUpdated(false), _stateWasUpdatedPublic(false),
+      _shouldPublishCloud(true)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -381,6 +384,14 @@ void lidarshooter::MeshProjector::publishCloud()
     _cloudPublisher.publish(_currentState);
     _logger->debug("Published sequence ID {} at time {}", _currentState->header.seq, _currentState->header.stamp.toSec());
     _cloudMutex.unlock();
+}
+
+void lidarshooter::MeshProjector::setCloudPublishState(bool __shouldPublishCloud)
+{
+    if (_shouldPublishCloud.load() == _shouldPublishCloud)
+        _logger->debug("Cloud publish state already set to {:boolalpha}", __shouldPublishCloud);
+    else
+        _shouldPublishCloud.store(__shouldPublishCloud);
 }
 
 bool lidarshooter::MeshProjector::meshWasUpdated()

@@ -156,6 +156,13 @@ public:
     void publishCloud();
 
     /**
+     * @brief Set whether or not traced cloud is published to the topic
+     * 
+     * @param _shouldPublishCloud True or false, publish or do not publish
+     */
+    void setCloudPublishState(bool __shouldPublishCloud);
+
+    /**
      * @brief Indicates whether mesh was updated
      * 
      * This function is nost const because it must flip the switch
@@ -218,6 +225,7 @@ private:
     std::atomic<bool> _stateWasUpdated;
     std::atomic<bool> _meshWasUpdatedPublic;
     std::atomic<bool> _stateWasUpdatedPublic;
+    std::atomic<bool> _shouldPublishCloud;
     ros::Duration _publishPeriod;
     ros::Timer _publishTimer;
     ros::Duration _tracePeriod;
