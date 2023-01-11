@@ -6,6 +6,7 @@
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QString>
 
 #include <spdlog/spdlog.h>
@@ -27,7 +28,7 @@ class TaggedPushButton : public QPushButton
     Q_OBJECT
 
 public:
-    TaggedPushButton(QString __tag, QString __label);
+    TaggedPushButton(QString __tag, QString __label, QWidget* _parent = nullptr);
     ~TaggedPushButton() = default;
 
 signals:
@@ -35,6 +36,24 @@ signals:
 
 private slots:
     void rowButtonClicked();
+
+private:
+    QString _tag;
+};
+
+class TaggedCheckbox : public QCheckBox
+{
+    Q_OBJECT
+
+public:
+    TaggedCheckbox(QString __tag, QWidget* _parent = nullptr);
+    ~TaggedCheckbox() = default;
+
+signals:
+    void rowToggled(QString, bool);
+
+private slots:
+    void emitRowToggled(bool);
 
 private:
     QString _tag;
@@ -52,6 +71,7 @@ public:
     std::string getMeshName(int _index);
 
 signals:
+    void sensorToggled(QString, bool);
 
 public slots:
     int getSensorRow(QString _tag);
@@ -59,6 +79,7 @@ public slots:
     void deleteSensorRow(QString _tag);
     void setMeshRow(int _row, std::string _name, std::string _path);
     void deleteMeshRow(int _row);
+    void emitSensorToggled(QString _sensorUid, bool _toggled);
 
 private:
     Ui::SensorsDialog *ui;

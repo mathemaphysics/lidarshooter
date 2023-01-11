@@ -183,6 +183,12 @@ void MainWindow::deleteSensor(QString _sensorUid)
     loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
 }
 
+void MainWindow::updatePublishCloud(QString _sensorUid, bool _shouldPublishCloud)
+{
+    auto runtimePointer = runtimeMap.find(_sensorUid.toStdString());
+    runtimePointer->second.setCloudPublishState(_shouldPublishCloud);
+}
+
 void MainWindow::slotRenderWindow()
 {
     ui->openGLWidget->renderWindow()->Render();

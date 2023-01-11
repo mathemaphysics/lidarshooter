@@ -60,7 +60,10 @@ public:
     int startTraceThread();
     int stopTraceThread();
     bool isTraceThreadRunning();
-    int addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
+    
+    // Pass through functions to _meshProjector
+    void addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
+    void setCloudPublishState(bool _shouldPublishCloud);
 
 signals:
     void traceCloudUpdated();

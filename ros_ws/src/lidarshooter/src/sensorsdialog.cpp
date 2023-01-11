@@ -5,8 +5,8 @@
 
 #include <iostream>
 
-TaggedPushButton::TaggedPushButton(QString __tag, QString __label)
-    : QPushButton(__label)
+TaggedPushButton::TaggedPushButton(QString __tag, QString __label, QWidget* _parent)
+    : QPushButton(__label, _parent)
 {
     // Store your location in the table
     _tag = __tag;
@@ -21,6 +21,24 @@ void TaggedPushButton::rowButtonClicked()
     emit clickedRow(_tag);
 }
 
+TaggedCheckbox::TaggedCheckbox(QString __tag, QWidget* _parent)
+    : QCheckBox(_parent)
+{
+    // Set the tag for reference
+    _tag = __tag;
+
+    // Make it default on
+    setChecked(true);
+
+    // Connect toggled to rowToggled slot to emit
+    connect(this, SIGNAL(toggled(bool)), this, SLOT(emitRowToggled(bool)));
+}
+
+void TaggedCheckbox::emitRowToggled(bool _toggled)
+{
+    emit rowToggled(_tag, _toggled);
+}
+
 SensorsDialog::SensorsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SensorsDialog)
@@ -33,13 +51,15 @@ SensorsDialog::SensorsDialog(QWidget *parent) :
     ui->tableViewMeshes->setModel(_meshItemsModel);
 
     // Set up the sensors rows
-    _sensorItemsModel->setColumnCount(3);
+    _sensorItemsModel->setColumnCount(4);
     _sensorItemsModel->setHeaderData(0, Qt::Orientation::Horizontal, QVariant(QString("Device")));
     ui->tableViewSensors->setColumnWidth(0, 100); // Sensor UID
     _sensorItemsModel->setHeaderData(1, Qt::Orientation::Horizontal, QVariant(QString("Path")));
     ui->tableViewSensors->setColumnWidth(1, 200); // Path to this UID's config file
     _sensorItemsModel->setHeaderData(2, Qt::Orientation::Horizontal, QVariant(QString("Delete")));
     ui->tableViewSensors->setColumnWidth(2, 50); // Delete button for this item
+    _sensorItemsModel->setHeaderData(3, Qt::Orientation::Horizontal, QVariant(QString("Publish")));
+    ui->tableViewSensors->setColumnWidth(3, 50); // Delete button for this item
 
     // Set up the meshes rows
     _meshItemsModel->setColumnCount(3);
@@ -92,10 +112,16 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
     auto deleteSensorButton = new TaggedPushButton(_device.c_str(), "Delete");
     ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 2), deleteSensorButton);
 
+    // Add the publish checkbox
+    auto publishCheckbox = new TaggedCheckbox(_device.c_str(), this);
+    ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 3), publishCheckbox);
+
     // Link them to their actions
     auto mainWindow = dynamic_cast<MainWindow*>(parentWidget());
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), mainWindow, SLOT(deleteSensor(QString))); // Have to do this first because
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString))); // This one knows the device key and needs to be here
+    connect(publishCheckbox, SIGNAL(rowToggled(QString, bool)), this, SLOT(emitSensorToggled(QString, bool)));
+    connect(this, SIGNAL(sensorToggled(QString, bool)), mainWindow, SLOT(updatePublishCloud(QString, bool)));
 }
 
 void SensorsDialog::deleteSensorRow(QString _tag)
@@ -110,6 +136,11 @@ void SensorsDialog::deleteSensorRow(QString _tag)
     
     // Drop the row now that things memory is freed
     _sensorItemsModel->removeRow(itemIndex.row());
+}
+
+void SensorsDialog::emitSensorToggled(QString _sensorUid, bool _toggled)
+{
+    emit sensorToggled(_sensorUid, _toggled);
 }
 
 void SensorsDialog::setMeshRow(int _row, std::string _device, std::string _path)

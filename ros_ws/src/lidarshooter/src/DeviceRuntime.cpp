@@ -264,9 +264,12 @@ bool lidarshooter::DeviceRuntime::isTraceThreadRunning()
     return _traceThreadRunning.load();
 }
 
-int lidarshooter::DeviceRuntime::addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh)
+void lidarshooter::DeviceRuntime::addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh)
 {
     _meshProjector->addMeshToScene(_mesh);
+}
 
-    return 0;
+void lidarshooter::DeviceRuntime::setCloudPublishState(bool _shouldPublishCloud)
+{
+    _meshProjector->setCloudPublishState(_shouldPublishCloud);
 }
