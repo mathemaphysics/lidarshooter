@@ -31,7 +31,7 @@ TaggedCheckbox::TaggedCheckbox(QString __tag, QWidget* _parent)
     setChecked(true);
 
     // Connect toggled to rowToggled slot to emit
-    connect(this, SIGNAL(toggled(bool)), this, SLOT(emitRowToggled(bool)));
+    connect(this, SIGNAL(clicked(bool)), this, SLOT(emitRowToggled(bool)));
 }
 
 void TaggedCheckbox::emitRowToggled(bool _toggled)
@@ -109,19 +109,18 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
     auto itemIndex = _sensorItemsModel->indexFromItem(thisRow.at(0)); // Device string should be unique
     
     // Add the start/stop button
-    auto deleteSensorButton = new TaggedPushButton(_device.c_str(), "Delete");
+    auto deleteSensorButton = new TaggedPushButton(_device.c_str(), "Delete", ui->tableViewSensors);
     ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 2), deleteSensorButton);
 
     // Add the publish checkbox
-    auto publishCheckbox = new TaggedCheckbox(_device.c_str(), this);
+    auto publishCheckbox = new TaggedCheckbox(_device.c_str(), ui->tableViewSensors);
     ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 3), publishCheckbox);
 
     // Link them to their actions
     auto mainWindow = dynamic_cast<MainWindow*>(parentWidget());
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), mainWindow, SLOT(deleteSensor(QString))); // Have to do this first because
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString))); // This one knows the device key and needs to be here
-    connect(publishCheckbox, SIGNAL(rowToggled(QString, bool)), this, SLOT(emitSensorToggled(QString, bool)));
-    connect(this, SIGNAL(sensorToggled(QString, bool)), mainWindow, SLOT(updatePublishCloud(QString, bool)));
+    connect(publishCheckbox, SIGNAL(rowToggled(QString, bool)), mainWindow, SLOT(updatePublishCloud(QString, bool)));
 }
 
 void SensorsDialog::deleteSensorRow(QString _tag)
@@ -133,6 +132,7 @@ void SensorsDialog::deleteSensorRow(QString _tag)
     // Get the QModelIndex and free the individual buttons
     auto itemIndex = _sensorItemsModel->indexFromItem(itemList.at(0));
     delete ui->tableViewSensors->indexWidget(_sensorItemsModel->index(itemIndex.row(), 2));
+    delete ui->tableViewSensors->indexWidget(_sensorItemsModel->index(itemIndex.row(), 3));
     
     // Drop the row now that things memory is freed
     _sensorItemsModel->removeRow(itemIndex.row());

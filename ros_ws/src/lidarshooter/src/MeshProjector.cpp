@@ -391,10 +391,8 @@ void lidarshooter::MeshProjector::publishCloud()
 
 void lidarshooter::MeshProjector::setCloudPublishState(bool __shouldPublishCloud)
 {
-    if (_shouldPublishCloud.load() == __shouldPublishCloud)
-        _logger->debug("Cloud publish state already set to {}", __shouldPublishCloud);
-    else
-        _shouldPublishCloud.store(__shouldPublishCloud);
+    _shouldPublishCloud.store(__shouldPublishCloud);
+    _logger->debug("Set publish state to {}", __shouldPublishCloud);
 }
 
 bool lidarshooter::MeshProjector::meshWasUpdated()
