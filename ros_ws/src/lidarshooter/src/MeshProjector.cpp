@@ -380,10 +380,13 @@ void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::C
 void lidarshooter::MeshProjector::publishCloud()
 {
     // This runs whether the cloud was updated or not; constant stream
-    _cloudMutex.lock();
-    _cloudPublisher.publish(_currentState);
-    _logger->debug("Published sequence ID {} at time {}", _currentState->header.seq, _currentState->header.stamp.toSec());
-    _cloudMutex.unlock();
+    if (_shouldPublishCloud.load() == true)
+    {
+        _cloudMutex.lock();
+        _cloudPublisher.publish(_currentState);
+        _logger->debug("Published sequence ID {} at time {}", _currentState->header.seq, _currentState->header.stamp.toSec());
+        _cloudMutex.unlock();
+    }
 }
 
 void lidarshooter::MeshProjector::setCloudPublishState(bool __shouldPublishCloud)
