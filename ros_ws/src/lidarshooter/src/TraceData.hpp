@@ -15,7 +15,8 @@
 
 #include <embree3/rtcore.h>
 
-#include <vector>
+#include <string>
+#include <map>
 
 namespace lidarshooter
 {
@@ -26,25 +27,25 @@ class TraceData
 		TraceData();
 		~TraceData();
 	
-		void addGeometry(enum RTCBufferType _bufferType)
-		{
-			// Now create the actual storage space for the vertices and set up
-			//_objectVertices = new float[_numVertices * 3 * sizeof(float)];
-			//_objectVerticesBuffer = rtcNewSharedBuffer(_device, _objectVertices, _numVertices * 3 * sizeof(float) + LIDARSHOOTER_EMBREE_BUFFER_PADDING);
-			//rtcSetSharedGeometryBuffer(_objectGeometry, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, _objectVertices, 0, 3 * sizeof(float), _numVertices);
-
-		}
+		bool addGeometry(std::string _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
 
 	private:
+		// TODO: Figure out if these should even be in here
 		RTCDevice _device;
 		RTCScene _scene;
-		std::vector<float*> _objectVertices;
-		std::vector<RTCBuffer> _objectVerticesBuffer;
-		std::vector<long> _objectVerticesCounts;
-		std::vector<RTCBuffer> _objectElementsBuffer;
-		std::vector<unsigned int*> _objectElements;
-		std::vector<long> _objectElementsCounts;
-		std::vector<RTCGeometry> _objectGeometries;
+
+		// Vertex storage space and accounting
+		std::map<std::string, long> _objectVerticesCounts;
+		std::map<std::string, float*> _objectVertices;
+		std::map<std::string, RTCBuffer> _objectVerticesBuffer;
+
+		// Element storage space and accounting
+		std::map<std::string, long> _objectElementsCounts;
+		std::map<std::string, RTCBuffer> _objectElementsBuffer;
+		std::map<std::string, unsigned int*> _objectElements;
+
+		// The geometries themselves for embree raytracing
+		std::map<std::string, RTCGeometry> _objectGeometries;
 };
 
 }
