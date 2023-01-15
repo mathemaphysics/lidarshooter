@@ -226,16 +226,6 @@ endif(ENABLE_OPENACC)
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_lidarshooter.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
@@ -350,3 +340,13 @@ if (ENABLE_OPENACC)
     target_link_libraries(lidarshooter OpenACC::OpenACC_CXX)
 endif (ENABLE_OPENACC)
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
+
+#############
+## Testing ##
+#############
+
+# Add gtest based cpp test target and link libraries
+catkin_add_gtest(TraceData_test src/test/TraceData_test.cpp)
+if(TARGET TraceData_test)
+  target_link_libraries(TraceData_test lidarshooter)
+endif()
