@@ -110,10 +110,7 @@ bool lidarshooter::TraceData::addGeometry(std::string _meshName, enum RTCGeometr
     }
 
     // Attach the new geometry to the _scene
-    auto attachResult = rtcAttachGeometry(_scene, _objectGeometries[_meshName]);
-
-    // For some ridiculous reason the documentation won't tell me what the
-    // return value means, so I guess that just doesn't matter, thanks
+    rtcAttachGeometry(_scene, _objectGeometries[_meshName]);
 
     // All probably went well
     return true;
