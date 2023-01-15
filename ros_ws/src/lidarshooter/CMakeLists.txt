@@ -267,6 +267,7 @@ set(PROJECT_SOURCES
         src/sensorsdialog.h
         src/sensorsdialog.cpp
         src/sensorsdialog.ui
+        src/DeviceRuntime.cpp
         src/${TS_FILES}
 )
 
@@ -315,18 +316,18 @@ endif()
 
 add_dependencies(LiDARShooterGUI ${catkin_EXPORTED_TARGETS})
 
-#add_executable(projector src/projector.cpp)
-#target_compile_features(projector PUBLIC cxx_std_17)
-#target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-#target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-#target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
-#add_dependencies(projector ${catkin_EXPORTED_TARGETS})
+add_executable(projector src/projector.cpp)
+target_compile_features(projector PUBLIC cxx_std_17)
+target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
+target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
+add_dependencies(projector ${catkin_EXPORTED_TARGETS})
 
-#add_executable(objtracker src/objtracker.cpp)
-#target_compile_features(objtracker PUBLIC cxx_std_17)
-#target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-#target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt Poco::Net)
-#add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
+add_executable(objtracker src/objtracker.cpp)
+target_compile_features(objtracker PUBLIC cxx_std_17)
+target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt Poco::Net)
+add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
 
 add_library(lidarshooter
     src/IntBytes.cpp
@@ -337,7 +338,6 @@ add_library(lidarshooter
     src/MeshProjector.cpp
     src/CloudTransformer.cpp
     src/CloudConverter.cpp
-    src/DeviceRuntime.cpp
     src/TraceData.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
