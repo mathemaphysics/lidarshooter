@@ -39,13 +39,17 @@ public:
         const std::string& _fileName,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         std::shared_ptr<spdlog::logger> __logger = nullptr,
-        QObject* _parent = nullptr
+        QObject* _parent = nullptr,
+        ros::Duration _publishPeriod = ros::Duration(0.1),
+        ros::Duration _tracePeriod = ros::Duration(0.1)
     );
     DeviceRuntime(
         std::shared_ptr<LidarDevice> _deviceConfig,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         std::shared_ptr<spdlog::logger> __logger = nullptr,
-        QObject* _parent = nullptr
+        QObject* _parent = nullptr,
+        ros::Duration _publishPeriod = ros::Duration(0.1),
+        ros::Duration _tracePeriod = ros::Duration(0.1)
     );
     ~DeviceRuntime();
 

@@ -13,7 +13,9 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     const std::string& _fileName,
     pcl::visualization::PCLVisualizer::Ptr __viewer,
     std::shared_ptr<spdlog::logger> __logger,
-    QObject* _parent
+    QObject* _parent,
+    ros::Duration _publishPeriod,
+    ros::Duration _tracePeriod
 )
     : _traceThreadRunning(false),
       _viewer(__viewer),
@@ -38,8 +40,8 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     // Allocate space for mesh projector
     _meshProjector = std::make_shared<lidarshooter::MeshProjector>(
         _deviceConfig,
-        ros::Duration(0.1),
-        ros::Duration(0.1),
+        _publishPeriod, // TODO: Should be taken as argument from constructor
+        _tracePeriod, // TODO: Should be taken as argument from constructor
         _logger
     );
 
@@ -60,7 +62,9 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     std::shared_ptr<lidarshooter::LidarDevice> __deviceConfig,
     pcl::visualization::PCLVisualizer::Ptr __viewer,
     std::shared_ptr<spdlog::logger> __logger,
-    QObject* _parent
+    QObject* _parent,
+    ros::Duration _publishPeriod,
+    ros::Duration _tracePeriod
 )
     : _traceThreadRunning(false),
       _viewer(__viewer),
@@ -82,8 +86,8 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     // Allocate space for mesh projector
     _meshProjector = std::make_shared<lidarshooter::MeshProjector>(
         _deviceConfig,
-        ros::Duration(0.1),
-        ros::Duration(0.1),
+        _publishPeriod,
+        _tracePeriod,
         _logger
     );
 
