@@ -15,6 +15,46 @@ lidarshooter::TraceData::~TraceData()
 
 }
 
+RTCDevice lidarshooter::TraceData::getDevice()
+{
+    return _device;
+}
+
+RTCScene lidarshooter::TraceData::getScene()
+{
+    return _scene;
+}
+
+long lidarshooter::TraceData::getVertexCount(std::string _meshName)
+{
+    return _objectVerticesCounts[_meshName];
+}
+
+float* lidarshooter::TraceData::getVertices(std::string _meshName)
+{
+    return _objectVertices[_meshName];
+}
+
+RTCBuffer lidarshooter::TraceData::getVertexBuffer(std::string _meshName)
+{
+    return _objectVerticesBuffer[_meshName];
+}
+
+long lidarshooter::TraceData::getElementCount(std::string _meshName)
+{
+    return _objectElementsCounts[_meshName];
+}
+
+unsigned int* lidarshooter::TraceData::getElements(std::string _meshName)
+{
+    return _objectElements[_meshName];
+}
+
+RTCBuffer lidarshooter::TraceData::getElementBuffer(std::string _meshName)
+{
+    return _objectElementsBuffer[_meshName];
+}
+
 bool lidarshooter::TraceData::addGeometry(std::string _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
 {
     // Create the actual geometry to be added to the _scene
