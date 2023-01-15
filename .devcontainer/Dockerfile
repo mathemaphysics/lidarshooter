@@ -25,6 +25,10 @@ WORKDIR /usr/src
 RUN wget https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x86_64.linux.tar.gz \
 	&& tar xvf embree-3.13.4.x86_64.linux.tar.gz
 
+# Add a testing layer
+RUN apt-get -y update \
+	&& apt-get -y install libgtest-dev
+
 ENV DEVUSER=${DEVUSER}
 RUN adduser --uid 1000 --disabled-password --gecos "" ${DEVUSER} \
     && echo "${DEVUSER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${DEVUSER}
