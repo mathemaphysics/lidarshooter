@@ -229,7 +229,10 @@ endif(ENABLE_OPENACC)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-## Qt5 targets setup here
+###########################
+## LiDARShooter Frontend ##
+###########################
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOUIC ON)
@@ -318,6 +321,10 @@ target_compile_features(objtracker PUBLIC cxx_std_17)
 target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt Poco::Net)
 add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
+
+##########################
+## LiDARShooter Library ##
+##########################
 
 add_library(lidarshooter
     src/IntBytes.cpp
