@@ -27,7 +27,7 @@
 #include <Eigen/Dense>
 
 #define NEXT_RAY_BASE nextRay
-#define NEXT_RAY(__rayhit, __valid) GLUE(NEXT_RAY_BASE, RAY_PACKET_SIZE)(__rayhit, __valid)
+#define NEXT_RAY(__rayhit, __valid) GLUE(NEXT_RAY_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__rayhit, __valid)
 
 namespace lidarshooter
 {
@@ -138,7 +138,7 @@ public:
      * @brief Abstraction of the \c nextRayNN functions
      * 
      * This function decides which \c nextRayNN to call based on what the
-     * value of \c RAY_PACKET_SIZE is. Note also that \c RayHitType is a
+     * value of \c LIDARSHOOTER_RAY_PACKET_SIZE is. Note also that \c RayHitType is a
      * \c typedef which depends on the packet size as well.
      * 
      * @param _ray Ray or packet of rays to trace
@@ -151,7 +151,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      *
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 1.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 1.
      *  
      * @param _ray A single ray from the device
      * @param _valid Ignored for a single ray
@@ -163,7 +163,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 4.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 4.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 4; 0 means don't compute, -1 means compute
@@ -175,7 +175,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 8.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 8.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 8; 0 means don't compute, -1 means compute
@@ -187,7 +187,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 16.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 16.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 16; 0 means don't compute, -1 means compute

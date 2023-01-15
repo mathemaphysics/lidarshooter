@@ -24,14 +24,14 @@
  * or 16 now, and note that some of the functions corresponding to these sizes
  * haven't been written yet.
  */
-#define RAY_PACKET_SIZE 16
+#define LIDARSHOOTER_RAY_PACKET_SIZE 16
 
 /**
  * Define ray packet size-invariant types
  */
 #include <embree3/rtcore_ray.h> // Need it to know what RTCRayHit is
 #define RAY_HIT_BASE RTCRayHit
-#define RAY_HIT_TYPE GLUE(RAY_HIT_BASE, RAY_PACKET_SIZE)
+#define RAY_HIT_TYPE GLUE(RAY_HIT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)
 typedef RAY_HIT_TYPE RayHitType;
 
 /**
@@ -39,3 +39,12 @@ typedef RAY_HIT_TYPE RayHitType;
  */
 #define MESH_SUB_QUEUE_SIZE 20
 #define JOYSTICK_SUB_QUEUE_SIZE 100
+
+/**
+ * @brief Embree shaerd geometry buffers require padding for SIMD ops
+ * 
+ * This is important to the correct tracing of geometries so we're
+ * going to include it at the top level; just to be same set it to at
+ * the very least 16 bytes; we'll stick with 32 for now
+ */
+#define LIDARSHOOTER_EMBREE_BUFFER_PADDING 32

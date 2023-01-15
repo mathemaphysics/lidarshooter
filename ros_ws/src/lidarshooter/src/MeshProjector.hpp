@@ -275,10 +275,10 @@ private:
     void traceMesh();
 
 #define GET_MESH_INTERSECT_BASE getMeshIntersect
-#define GET_MESH_INTERSECT(__valid, __rayhit) GLUE(GET_MESH_INTERSECT_BASE, RAY_PACKET_SIZE)(__valid, __rayhit)
+#define GET_MESH_INTERSECT(__valid, __rayhit) GLUE(GET_MESH_INTERSECT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__valid, __rayhit)
 
     /**
-     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectRAY_PACKET_SIZE
+     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_RAY_PACKET_SIZE
      * 
      * Ray packet size generalization function; this will automatically
      * select which ray packet size to use based on the system preprocessor

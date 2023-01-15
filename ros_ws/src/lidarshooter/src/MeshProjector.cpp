@@ -528,7 +528,7 @@ void lidarshooter::MeshProjector::traceMesh()
 
     // Count the total iterations because the limits are needed for threading
     unsigned int numTotalRays = _config->getTotalRays();
-    unsigned int numIterations = numTotalRays / RAY_PACKET_SIZE + (numTotalRays % RAY_PACKET_SIZE > 0 ? 1 : 0);
+    unsigned int numIterations = numTotalRays / LIDARSHOOTER_RAY_PACKET_SIZE + (numTotalRays % LIDARSHOOTER_RAY_PACKET_SIZE > 0 ? 1 : 0);
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
@@ -546,11 +546,11 @@ void lidarshooter::MeshProjector::traceMesh()
                 {
                     // Set up packet processing
                     int rayState = 0;
-                    int validRays[RAY_PACKET_SIZE]; // Initialize all invalid
-                    int rayRings[RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
-                    for (int i = 0; i < RAY_PACKET_SIZE; ++i)
+                    int validRays[LIDARSHOOTER_RAY_PACKET_SIZE]; // Initialize all invalid
+                    int rayRings[LIDARSHOOTER_RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
+                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
                         validRays[i] = 0;
-                    for (int i = 0; i < RAY_PACKET_SIZE; ++i)
+                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
                         rayRings[i] = -1;
                     RayHitType rayhitn;
 
@@ -558,12 +558,12 @@ void lidarshooter::MeshProjector::traceMesh()
                     configMutex.lock();
                     rayState = this->_config->nextRay(rayhitn, validRays);
                     configMutex.unlock();
-                    for (int idx = 0; idx < RAY_PACKET_SIZE; ++idx)
+                    for (int idx = 0; idx < LIDARSHOOTER_RAY_PACKET_SIZE; ++idx)
                         rayRings[idx] = 0;
 
                     // Execute when the buffer is full
                     this->getMeshIntersect(validRays, &rayhitn); // TODO: Make sure meshMutex doesn't need set?
-                    for (int ri = 0; ri < RAY_PACKET_SIZE; ++ri)
+                    for (int ri = 0; ri < LIDARSHOOTER_RAY_PACKET_SIZE; ++ri)
                     {
                         if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
                         {
