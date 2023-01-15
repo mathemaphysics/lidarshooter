@@ -27,7 +27,7 @@
 #include <Eigen/Dense>
 
 #define NEXT_RAY_BASE nextRay
-#define NEXT_RAY(__rayhit, __valid) GLUE(NEXT_RAY_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__rayhit, __valid)
+#define NEXT_RAY(__rayhit, __valid) LIDARSHOOTER_GLUE(NEXT_RAY_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__rayhit, __valid)
 
 namespace lidarshooter
 {
@@ -245,7 +245,7 @@ private:
     /**
      * @brief Name of the application to use as global logger reference
      */
-    const std::string _applicationName = APPLICATION_NAME;
+    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
 
     /**
      * @brief Folder into which output files are written when needed

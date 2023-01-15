@@ -103,8 +103,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Create the pubsub situation; in this constructor cloud advertises on /[namespace]/pandar
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20); // TODO: Make this queue size and "pandar" parameters
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
@@ -189,8 +189,8 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
@@ -271,8 +271,8 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
 
     // Create the pubsub situation
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
+    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
+    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 

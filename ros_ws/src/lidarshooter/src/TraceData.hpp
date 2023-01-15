@@ -26,13 +26,13 @@ class TraceData
 		TraceData();
 		~TraceData();
 	
-		template<typename T>
-		void addGeometry()
+		void addGeometry(enum RTCBufferType _bufferType)
 		{
 			// Now create the actual storage space for the vertices and set up
 			//_objectVertices = new float[_numVertices * 3 * sizeof(float)];
 			//_objectVerticesBuffer = rtcNewSharedBuffer(_device, _objectVertices, _numVertices * 3 * sizeof(float) + LIDARSHOOTER_EMBREE_BUFFER_PADDING);
 			//rtcSetSharedGeometryBuffer(_objectGeometry, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, _objectVertices, 0, 3 * sizeof(float), _numVertices);
+
 		}
 
 	private:
