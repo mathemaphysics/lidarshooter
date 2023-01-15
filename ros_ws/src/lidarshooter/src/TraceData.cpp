@@ -17,11 +17,6 @@ lidarshooter::TraceData::~TraceData()
 
 bool lidarshooter::TraceData::addGeometry(std::string _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
 {
-    // Now create the actual storage space for the vertices and set up
-    //_objectVertices = new float[_numVertices * 3 * sizeof(float)];
-    //_objectVerticesBuffer = rtcNewSharedBuffer(_device, _objectVertices, _numVertices * 3 * sizeof(float) + LIDARSHOOTER_EMBREE_BUFFER_PADDING);
-    // rtcSetSharedGeometryBuffer(_objectGeometry, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, _objectVertices, 0, 3 * sizeof(float), _numVertices);
-
     // Create the actual geometry to be added to the _scene
     auto geometry = _objectGeometries.emplace(
         _meshName,
