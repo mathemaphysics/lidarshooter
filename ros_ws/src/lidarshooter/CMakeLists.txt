@@ -309,6 +309,10 @@ endif()
 
 add_dependencies(LiDARShooterGUI ${catkin_EXPORTED_TARGETS})
 
+######################
+## LiDARShooter CLI ##
+######################
+
 add_executable(projector src/projector.cpp)
 target_compile_features(projector PUBLIC cxx_std_17)
 target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
