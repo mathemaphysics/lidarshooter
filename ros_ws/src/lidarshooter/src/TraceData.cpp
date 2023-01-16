@@ -9,7 +9,7 @@ lidarshooter::TraceData::TraceData()
     : _device(rtcNewDevice(nullptr)),
       _scene(rtcNewScene(_device))
 {
-
+    _geometryCount = 0;
 }
 
 lidarshooter::TraceData::~TraceData()
@@ -43,8 +43,6 @@ lidarshooter::TraceData::~TraceData()
     // Maybe not needed; just in case
     rtcReleaseScene(_scene);
     rtcReleaseDevice(_device);
-
-    std::cout << "Succeeded in destroying geometries, scene, and device" << std::endl;
 }
 
 RTCDevice lidarshooter::TraceData::getDevice()

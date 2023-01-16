@@ -28,28 +28,6 @@ class TraceData
 		~TraceData();
 	
 		/**
-		 * @brief Adds a new geometry to the scene
-		 * 
-		 * @param _meshName Key corresponding to the mesh
-		 * @param _geometryType \c RTCGeometryType enum value; triangles, quadrilateral, etc.
-		 * @param _numVertices Number of vertices in the added geometry
-		 * @param _numElements Number of elements in the added geometry
-		 * @return true Successfully added the geometry
-		 * @return false Failed to add the geometry
-		 */
-		bool addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
-
-		/**
-		 * @brief Remove the geometry from the \c _scene
-		 * 
-		 * @param _meshName Key corresponding to this mesh geometry
-		 * @return int Returns -1 if error, otherwise cast as \c unsigned \c int
-		 * 		   to get the deleted geometry ID
-		 */
-		int removeGeometry(const std::string& _meshName);
-
-		// Getters
-		/**
 		 * @brief Get the device object
 		 * 
 		 * @return RTCDevice Device on which tracing is done
@@ -77,6 +55,27 @@ class TraceData
 		 * @return unsigned int ID of the geometry in the \c _scene
 		 */
 		int getGeometryId(const std::string& _meshName) const;
+
+		/**
+		 * @brief Adds a new geometry to the scene
+		 * 
+		 * @param _meshName Key corresponding to the mesh
+		 * @param _geometryType \c RTCGeometryType enum value; triangles, quadrilateral, etc.
+		 * @param _numVertices Number of vertices in the added geometry
+		 * @param _numElements Number of elements in the added geometry
+		 * @return true Successfully added the geometry
+		 * @return false Failed to add the geometry
+		 */
+		bool addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
+
+		/**
+		 * @brief Remove the geometry from the \c _scene
+		 * 
+		 * @param _meshName Key corresponding to this mesh geometry
+		 * @return int Returns -1 if error, otherwise cast as \c unsigned \c int
+		 * 		   to get the deleted geometry ID
+		 */
+		int removeGeometry(const std::string& _meshName);
 
 		/**
 		 * @brief Get the vertex count
