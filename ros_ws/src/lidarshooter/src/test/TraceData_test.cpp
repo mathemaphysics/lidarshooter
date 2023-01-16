@@ -44,6 +44,12 @@ TEST_F(TraceDataTest, VertexElementCounts)
     EXPECT_EQ(traceData->getElementCount("mesh"), 200l);
 }
 
+TEST_F(TraceDataTest, GeometryTotalCount)
+{
+    // Make sure we have only one
+    EXPECT_EQ(traceData->getGeometryCount(), 1);
+}
+
 TEST_F(TraceDataTest, AddGeometryId)
 {
     // Internal map and returned IDs should match
