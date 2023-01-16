@@ -359,10 +359,10 @@ void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::C
     
     // Output actual displacement applied after rotation to local coordinates
     // TODO: Set both of these info() calls to debug() as soon as settled
-    _logger->info("Joystick signal: {}, {}, {}, {}, {}, {}",
+    _logger->debug("Joystick signal: {}, {}, {}, {}, {}, {}",
                   _vel->linear.x, _vel->linear.y, _vel->linear.z,
                   _vel->angular.x, _vel->angular.y, _vel->angular.z);
-    _logger->info("Global displacement: {}, {}, {}, {}, {}, {}",
+    _logger->debug("Global displacement: {}, {}, {}, {}, {}, {}",
                   globalDisplacement.x(), globalDisplacement.y(), globalDisplacement.z(),
                   _vel->angular.x, _vel->angular.y, _vel->angular.z);
 
@@ -464,7 +464,7 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
     }
 
     // Set the actual vertex positions
-    _logger->info("Current net displacement: {}, {}, {}, {}, {}, {}",
+    _logger->debug("Current net displacement: {}, {}, {}, {}, {}, {}",
                   _linearDisplacement.x(), _linearDisplacement.y(), _linearDisplacement.z(),
                   _angularDisplacement.x(), _angularDisplacement.y(), _angularDisplacement.z());
 
