@@ -4,5 +4,7 @@ services:
   devcontainer:
     environment:
       - DISPLAY=host.docker.internal:0.0
+		  - QT_AUTO_SCREEN_SCALE_FACTOR=1
+		  - LIBGL_ALWAYS_INDIRECT=0
     volumes:
       - ${USERPROFILE}/.ssh:/home/devuser/.ssh:ro

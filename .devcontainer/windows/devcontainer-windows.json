@@ -62,7 +62,8 @@
 		"DISPLAY": "host.docker.internal:0.0",
 		"ROS_IP": "${localEnv:ROS_IP}",
 		"ROS_MASTER_URI": "${localEnv:ROS_MASTER_URI}",
-		"QT_AUTO_SCREEN_SCALE_FACTOR": "1"
+		"QT_AUTO_SCREEN_SCALE_FACTOR": "1",
+		"LIBGL_ALWAYS_INDIRECT": "0"
 	},
 
 	// Maps the .ssh/ folder from your ${HOME} into /home/devuser/.ssh
