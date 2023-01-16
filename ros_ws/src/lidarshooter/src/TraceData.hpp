@@ -66,7 +66,7 @@ class TraceData
 		 * @return true Successfully added the geometry
 		 * @return false Failed to add the geometry
 		 */
-		bool addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
+		int addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
 
 		/**
 		 * @brief Remove the geometry from the \c _scene

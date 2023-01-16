@@ -69,7 +69,7 @@ int lidarshooter::TraceData::getGeometryId(const std::string& _meshName) const
         return static_cast<int>(idIterator->second);
 }
 
-bool lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
+int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
 {
     // Create the actual geometry to be added to the _scene
     auto geometry = _objectGeometries.emplace(
@@ -168,7 +168,7 @@ bool lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTC
     _geometryCount = _geometryCount + 1;
 
     // All probably went well
-    return true;
+    return static_cast<int>(geomId); // Cast because it could be -1 if error
 }
 
 int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)

@@ -11,11 +11,13 @@ protected:
     void SetUp() override
     {
         traceData = new lidarshooter::TraceData();
-        traceData->addGeometry(
-            "mesh",
-            RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
-            100,
-            200
+        geometryIdAdded = static_cast<unsigned int>(
+            traceData->addGeometry(
+                "mesh",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                100,
+                200
+            )
         );
     }
 
@@ -25,6 +27,7 @@ protected:
     }
 
     lidarshooter::TraceData* traceData;
+    unsigned int geometryIdAdded;
 };
 
 TEST_F(TraceDataTest, NoDeviceError)
@@ -39,6 +42,13 @@ TEST_F(TraceDataTest, VertexElementCounts)
     // Check that the number of vertices and elements is right
     EXPECT_EQ(traceData->getVertexCount("mesh"), 100l);
     EXPECT_EQ(traceData->getElementCount("mesh"), 200l);
+}
+
+TEST_F(TraceDataTest, AddGeometryId)
+{
+    // Internal map and returned IDs should match
+    unsigned int idStored = static_cast<unsigned int>(traceData->getGeometryId("mesh"));
+    EXPECT_EQ(geometryIdAdded, idStored);
 }
 
 TEST_F(TraceDataTest, DeleteGeometryId)
