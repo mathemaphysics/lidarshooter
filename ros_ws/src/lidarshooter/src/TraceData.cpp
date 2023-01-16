@@ -40,6 +40,9 @@ lidarshooter::TraceData::~TraceData()
     for (auto& [mesh, geometry] : _objectGeometries)
         rtcReleaseGeometry(geometry);
 
+    // Just for completeness
+    _geometryCount = 0;
+
     // Maybe not needed; just in case
     rtcReleaseScene(_scene);
     rtcReleaseDevice(_device);
