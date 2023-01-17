@@ -15,29 +15,29 @@ lidarshooter::TraceData::TraceData()
 lidarshooter::TraceData::~TraceData()
 {
     // Clean up for vertex buffers
-    for (auto& [mesh, buffer] : _objectVerticesBuffer)
+    for (auto& [mesh, buffer] : _verticesBuffer)
         rtcReleaseBuffer(buffer);
-    for (auto& [mesh, pointer] : _objectVertices)
+    for (auto& [mesh, pointer] : _vertices)
         delete [] pointer;
 
     // Just clearing the maps for good measure
-    _objectVerticesBuffer.clear();
-    _objectVertices.clear();
-    _objectVerticesCounts.clear();
+    _verticesBuffer.clear();
+    _vertices.clear();
+    _vertexCounts.clear();
 
     // Cleanup for element buffers
-    for (auto& [mesh, buffer] : _objectElementsBuffer)
+    for (auto& [mesh, buffer] : _elementsBuffer)
         rtcReleaseBuffer(buffer);
-    for (auto& [mesh, pointer] : _objectElements)
+    for (auto& [mesh, pointer] : _elements)
         delete [] pointer;
     
     // Just clearing the maps for good measure
-    _objectElementsBuffer.clear();
-    _objectElements.clear();
-    _objectElementsCounts.clear();
+    _elementsBuffer.clear();
+    _elements.clear();
+    _elementCounts.clear();
 
     // Release the geometries themselves
-    for (auto& [mesh, geometry] : _objectGeometries)
+    for (auto& [mesh, geometry] : _geometries)
         rtcReleaseGeometry(geometry);
 
     // Just for completeness
@@ -65,8 +65,8 @@ long lidarshooter::TraceData::getGeometryCount() const
 
 int lidarshooter::TraceData::getGeometryId(const std::string& _meshName) const
 {
-    auto idIterator = _objectGeometryIds.find(_meshName);
-    if (idIterator == _objectGeometryIds.end())
+    auto idIterator = _geometryIds.find(_meshName);
+    if (idIterator == _geometryIds.end())
         return -1;
     else
         return static_cast<int>(idIterator->second);
@@ -75,41 +75,41 @@ int lidarshooter::TraceData::getGeometryId(const std::string& _meshName) const
 int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
 {
     // Create the actual geometry to be added to the _scene
-    auto geometry = _objectGeometries.emplace(
+    auto geometry = _geometries.emplace(
         _meshName,
         rtcNewGeometry(_device, _geometryType)
     );
 
     // Set up space for vertices (just the float points in R3)
-    auto verticesCount = _objectVerticesCounts.emplace(_meshName, _numVertices);
-    auto vertices = _objectVertices.emplace(
+    auto verticesCount = _vertexCounts.emplace(_meshName, _numVertices);
+    auto vertices = _vertices.emplace(
         _meshName,
         new float[_numVertices * 3 * sizeof(float)
             + LIDARSHOOTER_EMBREE_BUFFER_PADDING]
     );
-    auto verticesBuffer = _objectVerticesBuffer.emplace(
+    auto verticesBuffer = _verticesBuffer.emplace(
         _meshName,
         rtcNewSharedBuffer(
             _device,
-            _objectVertices[_meshName],
+            _vertices[_meshName],
             _numVertices * 3 * sizeof(float)
         )
     );
 
     // Create the shared vertex buffer for embree
     rtcSetSharedGeometryBuffer(
-        _objectGeometries[_meshName],
+        _geometries[_meshName],
         RTC_BUFFER_TYPE_VERTEX,
         0,
         RTC_FORMAT_FLOAT3,
-        _objectVertices[_meshName],
+        _vertices[_meshName],
         0,
         3 * sizeof(float),
         _numVertices
     );
 
     // Set up space for elements (triangles/quadrilaters/etc., indexes of )
-    auto elementsCount = _objectElementsCounts.emplace(_meshName, _numElements);
+    auto elementsCount = _elementCounts.emplace(_meshName, _numElements);
     
     // Treat allocation of elements differently based on geometry type
     switch (_geometryType)
@@ -117,7 +117,7 @@ int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCG
         // Currently only triangles and quadrilaterals supported
         case RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE:
             // Allocate space for the elements if they're triangles
-            _objectElements.emplace(
+            _elements.emplace(
                 _meshName,
                 new unsigned[_numElements * 3 * sizeof(unsigned)
                     + LIDARSHOOTER_EMBREE_BUFFER_PADDING]
@@ -125,11 +125,11 @@ int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCG
 
             // Create the shared element buffer for embree
             rtcSetSharedGeometryBuffer(
-                _objectGeometries[_meshName],
+                _geometries[_meshName],
                 RTC_BUFFER_TYPE_INDEX,
                 0,
                 RTC_FORMAT_UINT3,
-                _objectElements[_meshName],
+                _elements[_meshName],
                 0,
                 3 * sizeof(unsigned),
                 _numElements
@@ -138,7 +138,7 @@ int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCG
 
         case RTCGeometryType::RTC_GEOMETRY_TYPE_QUAD:
             // Allocate the space for the elements if they're quadrilaterals
-            _objectElements.emplace(
+            _elements.emplace(
                 _meshName,
                 new unsigned[_numElements * 4 * sizeof(unsigned)
                     + LIDARSHOOTER_EMBREE_BUFFER_PADDING]
@@ -146,11 +146,11 @@ int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCG
     
             // Create the shared element buffer for embree
             rtcSetSharedGeometryBuffer(
-                _objectGeometries[_meshName],
+                _geometries[_meshName],
                 RTC_BUFFER_TYPE_INDEX,
                 0,
                 RTC_FORMAT_UINT4,
-                _objectElements[_meshName],
+                _elements[_meshName],
                 0,
                 4 * sizeof(unsigned),
                 _numElements
@@ -162,10 +162,10 @@ int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCG
     }
 
     // Attach the new geometry to the _scene
-    unsigned int geomId = rtcAttachGeometry(_scene, _objectGeometries[_meshName]);
+    unsigned int geomId = rtcAttachGeometry(_scene, _geometries[_meshName]);
 
     // Save this geometry ID for later when it might need to be removed
-    _objectGeometryIds.emplace(_meshName, geomId);
+    _geometryIds.emplace(_meshName, geomId);
 
     // Don't increment geometry count until after successfully added
     _geometryCount = _geometryCount + 1;
@@ -176,9 +176,9 @@ int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCG
 
 int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
 {
-    // If _meshName present in _objectGeometryIds assume present elsewhere
-    auto idIterator = _objectGeometryIds.find(_meshName);
-    if (idIterator == _objectGeometryIds.end())
+    // If _meshName present in _geometryIds assume present elsewhere
+    auto idIterator = _geometryIds.find(_meshName);
+    if (idIterator == _geometryIds.end())
         return -1; // Geometry doesn't exist; just ignore?
     else
     {
@@ -187,23 +187,23 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
 
         // Use the stored geometry ID to detach and remove it
         rtcDetachGeometry(_scene, idIterator->second);
-        rtcReleaseGeometry(_objectGeometries[_meshName]);
-        _objectGeometries.erase(_meshName);
-        _objectGeometryIds.erase(idIterator); // Alread have an iterator to it; use it; it's the little things that count
+        rtcReleaseGeometry(_geometries[_meshName]);
+        _geometries.erase(_meshName);
+        _geometryIds.erase(idIterator); // Alread have an iterator to it; use it; it's the little things that count
 
         // Release vertices buffer and free space
-        rtcReleaseBuffer(_objectVerticesBuffer[_meshName]);
-        delete [] _objectVertices[_meshName];
-        _objectVerticesBuffer.erase(_meshName);
-        _objectVertices.erase(_meshName);
-        _objectVerticesCounts.erase(_meshName);
+        rtcReleaseBuffer(_verticesBuffer[_meshName]);
+        delete [] _vertices[_meshName];
+        _verticesBuffer.erase(_meshName);
+        _vertices.erase(_meshName);
+        _vertexCounts.erase(_meshName);
 
         // Release elements buffer and free space
-        rtcReleaseBuffer(_objectElementsBuffer[_meshName]);
-        delete [] _objectElements[_meshName];
-        _objectElementsBuffer.erase(_meshName);
-        _objectElements.erase(_meshName);
-        _objectElementsCounts.erase(_meshName);
+        rtcReleaseBuffer(_elementsBuffer[_meshName]);
+        delete [] _elements[_meshName];
+        _elementsBuffer.erase(_meshName);
+        _elements.erase(_meshName);
+        _elementCounts.erase(_meshName);
         
         // Make sure it all worked before decrementing count
         _geometryCount = _geometryCount - 1;
@@ -215,30 +215,30 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
 
 long lidarshooter::TraceData::getVertexCount(const std::string& _meshName)
 {
-    return _objectVerticesCounts[_meshName];
+    return _vertexCounts[_meshName];
 }
 
 float* lidarshooter::TraceData::getVertices(const std::string& _meshName)
 {
-    return _objectVertices[_meshName];
+    return _vertices[_meshName];
 }
 
 RTCBuffer lidarshooter::TraceData::getVertexBuffer(const std::string& _meshName)
 {
-    return _objectVerticesBuffer[_meshName];
+    return _verticesBuffer[_meshName];
 }
 
 long lidarshooter::TraceData::getElementCount(const std::string& _meshName)
 {
-    return _objectElementsCounts[_meshName];
+    return _elementCounts[_meshName];
 }
 
 unsigned int* lidarshooter::TraceData::getElements(const std::string& _meshName)
 {
-    return _objectElements[_meshName];
+    return _elements[_meshName];
 }
 
 RTCBuffer lidarshooter::TraceData::getElementBuffer(const std::string& _meshName)
 {
-    return _objectElementsBuffer[_meshName];
+    return _elementsBuffer[_meshName];
 }
