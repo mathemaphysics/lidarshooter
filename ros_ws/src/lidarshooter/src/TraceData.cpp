@@ -213,6 +213,11 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
     }
 }
 
+int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, pcl::PolygonMesh::ConstPtr& _mesh)
+{
+    return 0;
+}
+
 long lidarshooter::TraceData::getVertexCount(const std::string& _meshName)
 {
     return _vertexCounts[_meshName];

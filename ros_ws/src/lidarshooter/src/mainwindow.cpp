@@ -128,7 +128,7 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
 
     // Set the mesh for each
     for (auto& [uid, runtime] : runtimeMap)
-        runtime.addMeshToScene(meshMap[meshName]);
+        runtime.addMeshToScene(meshName, meshMap[meshName]);
 }
 
 void MainWindow::slotLogPoseTranslation()
@@ -234,7 +234,7 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
             loggerTop->warn("Could not insert runtime for sensor UID {}", devicePointer->getSensorUid());
         else
             for (auto& [name, mesh] : meshMap)
-                result.first->second.addMeshToScene(mesh);
+                result.first->second.addMeshToScene(name, mesh);
     }
 
     // Add the actual line in the sensors list

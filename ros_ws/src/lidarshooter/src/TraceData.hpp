@@ -18,6 +18,11 @@
 #include <string>
 #include <map>
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/io/vtk_io.h>
+#include <pcl/io/vtk_lib_io.h>
+
 namespace lidarshooter
 {
 
@@ -76,6 +81,14 @@ class TraceData
 		 * 		   to get the deleted geometry ID
 		 */
 		int removeGeometry(const std::string& _meshName);
+
+		/**
+		 * @brief Update the points and elements via a \c PolygonMesh
+		 * 
+		 * @param _meshName Key name for the associated geometry
+		 * @return int Returns 0 if all went well, < 0 otherwise
+		 */
+		int updateGeometry(const std::string& _meshName, pcl::PolygonMesh::ConstPtr& _mesh);
 
 		/**
 		 * @brief Get the vertex count

@@ -35,12 +35,14 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <map>
 
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
+#include "TraceData.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -111,7 +113,7 @@ public:
      * 
      * @param _mesh Mesh to be copied into the internal mesh state
      */
-    void addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
+    void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::ConstPtr& _mesh);
 
     /**
      * @brief Get a shared pointer to the current traced cloud
@@ -212,6 +214,7 @@ private:
 
     // Messages in class format
     pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector
+    std::map<const std::string, pcl::PolygonMesh::Ptr> _trackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
 
     // Raytracing items
@@ -219,6 +222,9 @@ private:
     RTCScene _scene;
     RTCGeometry _objectGeometry;
     RTCGeometry _groundGeometry;
+
+    // NEW
+    TraceData _traceData;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;

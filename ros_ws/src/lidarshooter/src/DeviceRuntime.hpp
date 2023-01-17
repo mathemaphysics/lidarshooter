@@ -131,7 +131,7 @@ public:
      * 
      * @param _mesh Pointer to the mesh to add
      */
-    void addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
+    void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::ConstPtr& _mesh);
 
     /**
      * @brief Turns the publication of trace cloud on and off

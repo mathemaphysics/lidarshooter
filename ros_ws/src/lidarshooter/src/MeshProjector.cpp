@@ -32,7 +32,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(true),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _shouldPublishCloud(true)
+      _shouldPublishCloud(true),
+      _traceData()
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -46,7 +47,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
-    
+
     // Initialize to zero buffer size; dynamic allocation is okay
     _objectVerticesBufferSize = 0;
     _objectElementsBufferSize = 0;
@@ -122,7 +123,8 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _shouldPublishCloud(true)
+      _shouldPublishCloud(true),
+      _traceData()
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -204,7 +206,8 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _shouldPublishCloud(true)
+      _shouldPublishCloud(true),
+      _traceData()
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -315,11 +318,20 @@ void lidarshooter::MeshProjector::meshCallback(const pcl_msgs::PolygonMesh::Cons
 // Important: This is only for initializing the mesh; you shouldn't use this
 // function to make updates to the pointcloud geometry when rigid body rotations
 // and translations are all you've done.
-void lidarshooter::MeshProjector::addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh)
+void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::ConstPtr& _mesh)
 {
     // This may not be what we want; make sure this is efficient
     _meshMutex.lock();
-    _trackObject = *_mesh;
+    _trackObject = *_mesh; // Remove this when done with _trackObjects (plural)
+
+    // Emplace new copy of _mesh into _trackObjects
+    _trackObjects.emplace(
+        _meshName,
+        pcl::PolygonMesh::Ptr(new pcl::PolygonMesh(*_mesh)) // Make a copy
+    );
+    _traceData.addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->cloud.width * _mesh->cloud.height, _mesh->polygons.size());
+
+    // Indicate the mesh was updated so we need a retrace
     _meshWasUpdated.store(true);
     _meshWasUpdatedPublic.store(true);
     _meshMutex.unlock();
