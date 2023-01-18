@@ -72,4 +72,21 @@ private:
     std::string fileName;
 };
 
+class TraceException : public BaseException
+{
+public:
+    TraceException() = default;
+    TraceException(std::string _errorLocation, std::string _errorString, long _errorCode)
+        : BaseException(_errorLocation, _errorString, _errorCode) {}
+    ~TraceException() = default;
+
+    virtual std::string getError() override
+    {
+        return fmt::format("Trace error: {} in {} (code {})", getErrorString(), getErrorLocation(), getErrorCode());
+    }
+
+private:
+    std::string fileName;
+};
+
 }

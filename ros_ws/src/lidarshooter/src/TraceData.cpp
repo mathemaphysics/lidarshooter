@@ -1,5 +1,8 @@
 #include "TraceData.hpp"
 
+#include "MeshTransformer.hpp"
+#include "Exceptions.hpp"
+
 #include <memory>
 #include <utility>
 
@@ -73,6 +76,18 @@ int lidarshooter::TraceData::getGeometryId(const std::string& _meshName) const
         return -1;
     else
         return static_cast<int>(idIterator->second);
+}
+
+RTCGeometry lidarshooter::TraceData::getGeometry(const std::string& _meshName)
+{
+    auto geomIterator = _geometries.find(_meshName);
+    if (geomIterator == _geometries.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in geometries map",
+            7
+        ));
+    return geomIterator->second;
 }
 
 int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
@@ -216,55 +231,109 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
     }
 }
 
-int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, pcl::PolygonMesh::ConstPtr& _mesh)
+int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh)
 {
+    // Get the geometry for this key for later use
+    auto thisGeometry = getGeometry(_meshName); // _geometries[_meshName]
 
+    // Get the vertices for this key
+    auto thisVertices = getVertices(_meshName); // _vertices[_meshName];
+    
+    // Get the elements for this key
+    auto thisElements = getElements(_meshName); // _elements[_meshName];
+
+    // Now update the internal buffers to align with the mesh passed in
+    auto thisCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2(_mesh->cloud));
+    auto cloudTransformer = MeshTransformer::create(_mesh, _transform, _config);
+    cloudTransformer->applyInverseTransform();
 
     return 0;
 }
 
 long lidarshooter::TraceData::getVertexCount(const std::string& _meshName)
 {
-    return _vertexCounts[_meshName];
+    auto countIterator = _vertexCounts.find(_meshName);
+    if (countIterator == _vertexCounts.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in vertex count map",
+            1
+        ));
+    return countIterator->second;
 }
 
 float* lidarshooter::TraceData::getVertices(const std::string& _meshName)
 {
-    return _vertices[_meshName];
+    auto verticesIterator = _vertices.find(_meshName);
+    if (verticesIterator == _vertices.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in vertces map",
+            2
+        ));
+    return verticesIterator->second;
 }
 
 RTCBuffer lidarshooter::TraceData::getVertexBuffer(const std::string& _meshName)
 {
-    return _verticesBuffer[_meshName];
+    auto bufferIterator = _verticesBuffer.find(_meshName);
+    if (bufferIterator == _verticesBuffer.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in vertex buffer map",
+            3
+        ));
+    return bufferIterator->second;
 }
 
 long lidarshooter::TraceData::getElementCount(const std::string& _meshName)
 {
-    return _elementCounts[_meshName];
+    auto countIterator = _elementCounts.find(_meshName);
+    if (countIterator == _elementCounts.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in element count map",
+            4
+        ));
+    return countIterator->second;
 }
 
 unsigned int* lidarshooter::TraceData::getElements(const std::string& _meshName)
 {
-    return _elements[_meshName];
+    auto elementsIterator = _elements.find(_meshName);
+    if (elementsIterator == _elements.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in elements map",
+            5
+        ));
+    return elementsIterator->second;
 }
 
 RTCBuffer lidarshooter::TraceData::getElementBuffer(const std::string& _meshName)
 {
-    return _elementsBuffer[_meshName];
+    auto bufferIterator = _elementsBuffer.find(_meshName);
+    if (bufferIterator == _elementsBuffer.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in element buffer map",
+            6
+        ));
+    return bufferIterator->second;
 }
 
-int lidarshooter::TraceData::commitGeometry(const std::string& _meshName)
+inline int lidarshooter::TraceData::commitGeometry(const std::string& _meshName)
 {
-    auto geomIterator = _geometries.find(_meshName);
-    if (geomIterator == _geometries.end())
-        return -1;
-
-    rtcCommitGeometry(geomIterator->second);
+    rtcCommitGeometry(
+        getGeometry(
+            _meshName
+        )
+    );
 
     return 0;
 }
 
-int lidarshooter::TraceData::commitScene()
+inline int lidarshooter::TraceData::commitScene()
 {
     rtcCommitScene(_scene);
 

@@ -24,6 +24,9 @@
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
 
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+
 #include "LidarDevice.hpp"
 
 namespace lidarshooter
@@ -79,6 +82,14 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		int getGeometryId(const std::string& _meshName) const;
 
 		/**
+		 * @brief Get the \c RTCGeometry for the given key
+		 * 
+		 * @param _meshName Key corresponding to the geometry you want
+		 * @return RTCGeometry The internal geometry for the key
+		 */
+		RTCGeometry getGeometry(const std::string& _meshName);
+
+		/**
 		 * @brief Adds a new geometry to the scene
 		 * 
 		 * @param _meshName Key corresponding to the mesh
@@ -103,9 +114,11 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		 * @brief Update the points and elements via a \c PolygonMesh
 		 * 
 		 * @param _meshName Key name for the associated geometry
+		 * @param _transform Addition affine transformation to apply to all points
+		 * @param _mesh Mesh containing points to use to update the internal scene
 		 * @return int Returns 0 if all went well, < 0 otherwise
 		 */
-		int updateGeometry(const std::string& _meshName, pcl::PolygonMesh::ConstPtr& _mesh);
+		int updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh);
 
 		/**
 		 * @brief Get the vertex count

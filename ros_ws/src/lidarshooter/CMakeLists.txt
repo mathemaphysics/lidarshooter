@@ -338,6 +338,7 @@ add_library(lidarshooter
     src/LidarDevice.cpp
     src/MeshProjector.cpp
     src/CloudTransformer.cpp
+    src/MeshTransformer.cpp
     src/CloudConverter.cpp
     src/TraceData.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)

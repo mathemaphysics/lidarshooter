@@ -515,7 +515,7 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
         _config->originToSensor(ptrans);
 
         // Linear position update here
-        _joystickMutex.lock();
+        _joystickMutex.lock(); // TODO: This is not needed at all now
         _objectVertices[3 * jdx + 0] = ptrans.x();
         _objectVertices[3 * jdx + 1] = ptrans.y();
         _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
