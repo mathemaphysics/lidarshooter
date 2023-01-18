@@ -17,19 +17,36 @@
 
 #include <string>
 #include <map>
+#include <memory>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
 
+#include "LidarDevice.hpp"
+
 namespace lidarshooter
 {
 
-class TraceData
+class TraceData : public std::enable_shared_from_this<TraceData>
 {
 	public:
-		TraceData();
+	 	/**
+	 	 * @brief Factory shared pointer creator for \c TraceData
+	 	 * 
+	 	 * @return std::shared_ptr<TraceData> Your new shared \c TraceData
+	 	 */
+		static std::shared_ptr<TraceData> create(std::shared_ptr<LidarDevice> _sensorConfig);
+
+		/**
+		 * @brief Get a shared pointer to this object
+		 * 
+		 * @return std::shared_ptr<TraceData> A pointer to the object
+		 */
+		std::shared_ptr<TraceData> getPtr();
+
+		// Still need to clean up
 		~TraceData();
 	
 		/**
@@ -139,9 +156,15 @@ class TraceData
 		RTCBuffer getElementBuffer(const std::string& _meshName);
 
 	private:
+		// Private constructor for factory production of shared_ptr
+		TraceData(std::shared_ptr<LidarDevice>);
+
 		// TODO: Figure out if these should even be in here
 		RTCDevice _device;
 		RTCScene _scene;
+
+		// Sensor configuration for the affine transformation
+		std::shared_ptr<LidarDevice> _config;
 
 		// Keep a total for easy reference
 		long _geometryCount;
@@ -159,6 +182,23 @@ class TraceData
 		// The geometries themselves for embree raytracing
 		std::map<std::string, RTCGeometry> _geometries;
 		std::map<std::string, unsigned int> _geometryIds;
+
+		// Private functions
+
+		/**
+		 * @brief Commits any changes to geometries within
+		 * 
+		 * @param _meshName Key name for the associated geometry
+		 * @return int Returns 0 if all went well, < 0 otherwise
+		 */
+		int commitGeometry(const std::string& _meshName);
+
+		/**
+		 * @brief Commits geometry changes to the scene
+		 * 
+		 * @return int Returns 0 if all went well, < 0 otherwise
+		 */
+		int commitScene();
 };
 
 }

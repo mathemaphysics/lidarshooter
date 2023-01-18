@@ -32,8 +32,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(true),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _shouldPublishCloud(true),
-      _traceData()
+      _shouldPublishCloud(true)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -76,6 +75,9 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     // Initializing the LiDAR device
     _logger->info("Loading config file {} specified via configfile ROS parameter", configFile);
     _config.reset(new LidarDevice(configFile, _sensorUid, __logger));
+
+    // Setup for the contextless tracing space
+    _traceData = TraceData::create(_config);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -123,8 +125,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _shouldPublishCloud(true),
-      _traceData()
+      _shouldPublishCloud(true)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -163,6 +164,9 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     // Initializing the LiDAR device
     _logger->info("Loading device configuration from {}", _configFile);
     _config.reset(new LidarDevice(_configFile, _sensorUid, __logger));
+
+    // Setup for the contextless tracing space
+    _traceData = TraceData::create(_config);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -206,8 +210,7 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
       _device(rtcNewDevice(nullptr)), _scene(rtcNewScene(_device)),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
-      _shouldPublishCloud(true),
-      _traceData()
+      _shouldPublishCloud(true)
 {
     // Set up the logger
     if (__logger == nullptr)
@@ -246,6 +249,9 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     // Initializing the LiDAR device
     _logger->info("Loaded device {} from preloaded device object", _configDevice->getSensorUid());
     _config = _configDevice;
+
+    // Setup for the contextless tracing space
+    _traceData = TraceData::create(_config);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -329,7 +335,8 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
         _meshName,
         pcl::PolygonMesh::Ptr(new pcl::PolygonMesh(*_mesh)) // Make a copy
     );
-    _traceData.addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->cloud.width * _mesh->cloud.height, _mesh->polygons.size());
+    int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->cloud.width * _mesh->cloud.height, _mesh->polygons.size());
+    _logger->debug("Added geometric ID {}", geomId);
 
     // Indicate the mesh was updated so we need a retrace
     _meshWasUpdated.store(true);

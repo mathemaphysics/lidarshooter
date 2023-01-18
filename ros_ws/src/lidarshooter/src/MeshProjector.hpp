@@ -224,7 +224,7 @@ private:
     RTCGeometry _groundGeometry;
 
     // NEW
-    TraceData _traceData;
+    std::shared_ptr<TraceData> _traceData;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;

@@ -5,11 +5,14 @@
 
 #include <iostream>
 
-lidarshooter::TraceData::TraceData()
-    : _device(rtcNewDevice(nullptr)),
-      _scene(rtcNewScene(_device))
+std::shared_ptr<lidarshooter::TraceData> lidarshooter::TraceData::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig)
 {
-    _geometryCount = 0;
+    return std::shared_ptr<lidarshooter::TraceData>(new TraceData(_sensorConfig));
+}
+
+std::shared_ptr<lidarshooter::TraceData> lidarshooter::TraceData::getPtr()
+{
+    return shared_from_this();
 }
 
 lidarshooter::TraceData::~TraceData()
@@ -215,6 +218,8 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
 
 int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, pcl::PolygonMesh::ConstPtr& _mesh)
 {
+
+
     return 0;
 }
 
@@ -246,4 +251,33 @@ unsigned int* lidarshooter::TraceData::getElements(const std::string& _meshName)
 RTCBuffer lidarshooter::TraceData::getElementBuffer(const std::string& _meshName)
 {
     return _elementsBuffer[_meshName];
+}
+
+int lidarshooter::TraceData::commitGeometry(const std::string& _meshName)
+{
+    auto geomIterator = _geometries.find(_meshName);
+    if (geomIterator == _geometries.end())
+        return -1;
+
+    rtcCommitGeometry(geomIterator->second);
+
+    return 0;
+}
+
+int lidarshooter::TraceData::commitScene()
+{
+    rtcCommitScene(_scene);
+
+    return 0;
+}
+
+lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig)
+    : _device(rtcNewDevice(nullptr)),
+      _scene(rtcNewScene(_device)),
+      _config(_sensorConfig)
+{
+    // Make sure the std::shaerd_ptr<LidarDevice> copy constructor increments
+    // the reference counter and doesn't make a copy
+
+    _geometryCount = 0;
 }

@@ -10,7 +10,11 @@ class TraceDataTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        traceData = new lidarshooter::TraceData();
+        traceData = lidarshooter::TraceData::create(
+            std::make_shared<lidarshooter::LidarDevice>(
+                lidarshooter::LidarDevice()
+            )
+        );
         geometryIdAdded = static_cast<unsigned int>(
             traceData->addGeometry(
                 "mesh",
@@ -23,10 +27,10 @@ protected:
 
     void TearDown() override
     {
-        delete traceData;
+        traceData.reset();
     }
 
-    lidarshooter::TraceData* traceData;
+    std::shared_ptr<lidarshooter::TraceData> traceData;
     unsigned int geometryIdAdded;
 };
 
