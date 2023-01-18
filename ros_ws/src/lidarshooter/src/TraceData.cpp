@@ -244,8 +244,8 @@ int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, Eigen:
 
     // Now update the internal buffers to align with the mesh passed in
     auto thisCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2(_mesh->cloud));
-    auto cloudTransformer = MeshTransformer::create(_mesh, _transform, _config);
-    cloudTransformer->applyInverseTransform();
+    auto meshTransformer = MeshTransformer::create(_mesh, _transform, _config);
+    meshTransformer->applyInverseTransform();
 
     return 0;
 }
