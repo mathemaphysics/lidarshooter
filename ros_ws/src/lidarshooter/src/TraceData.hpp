@@ -90,6 +90,14 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		RTCGeometry getGeometry(const std::string& _meshName);
 
 		/**
+		 * @brief Get the type of geometry stored by key indicated
+		 * 
+		 * @param _meshName Key corresponding to the geometry you want
+		 * @return RTCGeometryType The type of geometry stored in the \c RTCGeometry
+		 */
+		RTCGeometryType getGeometryType(const std::string& _meshName);
+
+		/**
 		 * @brief Adds a new geometry to the scene
 		 * 
 		 * @param _meshName Key corresponding to the mesh
@@ -206,9 +214,9 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		// The geometries themselves for embree raytracing
 		std::map<std::string, RTCGeometry> _geometries;
 		std::map<std::string, unsigned int> _geometryIds;
+		std::map<std::string, RTCGeometryType> _geometryTypes;
 
 		// Private functions
-
 		/**
 		 * @brief Commits any changes to geometries within
 		 * 

@@ -77,9 +77,25 @@ public:
 	void applyTransform();
 
 	/**
+	 * @brief Transform the cloud and put it into a buffer
+	 * 
+	 * @param _vertices Vertex storage buffer output
+	 * @param _elements Elements storage buffer output
+	 */
+	void transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
+
+	/**
 	 * @brief Apply the stored transform to the target cloud
 	 */
 	void applyInverseTransform();
+
+	/**
+	 * @brief Inverse transform the cloud and put it into a buffer
+	 * 
+	 * @param _vertices Vertex storage buffer output
+	 * @param _elements Elements storage buffer output
+	 */
+	void inverseTransformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
 
     // Make it faster to specify a shared_ptr
     using Ptr = std::shared_ptr< ::lidarshooter::CloudTransformer>;

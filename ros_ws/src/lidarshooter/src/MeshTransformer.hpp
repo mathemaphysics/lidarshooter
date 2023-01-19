@@ -78,9 +78,25 @@ public:
 	void applyTransform();
 
 	/**
+	 * @brief Transforms the input mesh and puts result in buffer
+	 * 
+	 * @param _vertices Vertex destination buffer space
+	 * @param _elements Element destination buffer space
+	 */
+	void transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
+
+	/**
 	 * @brief Apply the stored transform to the target cloud
 	 */
 	void applyInverseTransform();
+
+	/**
+	 * @brief Inverse transforms the input mesh and puts results in buffer
+	 * 
+	 * @param _vertices Vertex destination buffer space
+	 * @param _elements Elements destination buffer space
+	 */
+	void inverseTransformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
 
     // Make it faster to specify a shared_ptr
     using Ptr = std::shared_ptr< ::lidarshooter::MeshTransformer>;
@@ -145,6 +161,14 @@ private:
 	 * @param _transform The particular \c Affine3d from which to return the parameters
 	 */
 	void componentsFromTransform(const Eigen::Affine3f& _transform);
+
+	/**
+	 * @brief Copy elements into the given elements buffer
+	 * 
+	 * @param _geometryType \c RTCGeometryType for this geometry
+	 * @param _elements Pointer to the elements storage space
+	 */
+	void copyElementsIntoBuffer(RTCGeometryType _geometryType, unsigned int* _elements);
 };
 
 }

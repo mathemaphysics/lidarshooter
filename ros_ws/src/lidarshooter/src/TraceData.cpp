@@ -90,6 +90,18 @@ RTCGeometry lidarshooter::TraceData::getGeometry(const std::string& _meshName)
     return geomIterator->second;
 }
 
+RTCGeometryType lidarshooter::TraceData::getGeometryType(const std::string& _meshName)
+{
+    auto typeIterator = _geometryTypes.find(_meshName);
+    if (typeIterator == _geometryTypes.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in geometry types map",
+            8
+        ));
+    return typeIterator->second;
+}
+
 int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
 {
     // Create the actual geometry to be added to the _scene
@@ -184,6 +196,9 @@ int lidarshooter::TraceData::addGeometry(const std::string& _meshName, enum RTCG
 
     // Save this geometry ID for later when it might need to be removed
     _geometryIds.emplace(_meshName, geomId);
+    
+    // Needs stored for updates to be done correctly later
+    _geometryTypes.emplace(_meshName, _geometryType);
 
     // Don't increment geometry count until after successfully added
     _geometryCount = _geometryCount + 1;
@@ -233,44 +248,32 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
 
 int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh)
 {
-    // Get the geometry for this key for later use
-    auto thisGeometry = getGeometry(_meshName); // _geometries[_meshName]
-
-    // Get the vertices for this key
-    auto thisVertices = getVertices(_meshName); // _vertices[_meshName];
-    
-    // Get the elements for this key
-    auto thisElements = getElements(_meshName); // _elements[_meshName];
-
     // Now update the internal buffers to align with the mesh passed in
     auto thisCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2(_mesh->cloud));
     auto meshTransformer = MeshTransformer::create(_mesh, _transform, _config);
-    meshTransformer->applyInverseTransform();
+    meshTransformer->inverseTransformIntoBuffer(
+        getGeometryType(_meshName),
+        getVertices(_meshName),
+        getElements(_meshName)
+    );
 
-    // Copy the transformed mesh into the destination geometry
-
-    return 0;
+    // Commit the changes to this geometry
+    return commitGeometry(_meshName);
 }
 
 int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, const Eigen::Vector3f& _translation, const Eigen::Vector3f& _rotation, pcl::PolygonMesh::Ptr& _mesh)
 {
-    // Get the geometry for this key for later use
-    auto thisGeometry = getGeometry(_meshName); // _geometries[_meshName]
-
-    // Get the vertices for this key
-    auto thisVertices = getVertices(_meshName); // _vertices[_meshName];
-    
-    // Get the elements for this key
-    auto thisElements = getElements(_meshName); // _elements[_meshName];
-
     // Now update the internal buffers to align with the mesh passed in
     auto thisCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2(_mesh->cloud));
     auto meshTransformer = MeshTransformer::create(_mesh, _translation, _rotation, _config);
-    meshTransformer->applyInverseTransform();
+    meshTransformer->inverseTransformIntoBuffer(
+        getGeometryType(_meshName),
+        getVertices(_meshName),
+        getElements(_meshName)
+    );
 
-    // Copy the transformed mesh into the destination geometry
-
-    return 0;
+    // Commit the changes to this geometry
+    return commitGeometry(_meshName);
 }
 
 long lidarshooter::TraceData::getVertexCount(const std::string& _meshName)

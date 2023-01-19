@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include <fmt/format.h>
+#include <embree3/rtcore.h>
 
 namespace lidarshooter
 {
@@ -70,6 +71,41 @@ public:
 
 private:
     std::string fileName;
+};
+
+class MeshNotSetException : public BaseException
+{
+public:
+    MeshNotSetException() = default;
+    MeshNotSetException(std::string _errorLocation, std::string _errorString, long _errorCode)
+        : BaseException(_errorLocation, _errorString, _errorCode) {}
+    ~MeshNotSetException() = default;
+
+    virtual std::string getError() override
+    {
+        return fmt::format("MeshNotSet error: {} in {} (code {})", getErrorString(), getErrorLocation(), getErrorCode());
+    }
+
+private:
+    std::string fileName;
+};
+
+class BadGeometryException : public BaseException
+{
+public:
+    BadGeometryException() = default;
+    BadGeometryException(std::string _errorLocation, std::string _errorString, long _errorCode, RTCGeometryType _geometryType)
+        : BaseException(_errorLocation, _errorString, _errorCode), geometryType(_geometryType) {}
+    ~BadGeometryException() = default;
+
+    virtual std::string getError() override
+    {
+        return fmt::format("BadGeometry error (type {}): {} in {} (code {})", geometryType, getErrorString(), getErrorLocation(), getErrorCode());
+    }
+
+private:
+    std::string fileName;
+    RTCGeometryType geometryType;
 };
 
 class TraceException : public BaseException

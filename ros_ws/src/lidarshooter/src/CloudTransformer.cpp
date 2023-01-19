@@ -137,6 +137,68 @@ void lidarshooter::CloudTransformer::applyTransform()
         threadItr->join();
 }
 
+void lidarshooter::CloudTransformer::transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements)
+{
+    if (_cloud == nullptr)
+    {
+        throw(CloudNotSetException(
+            __FILE__,
+            "No cloud data to operate on",
+            2
+        ));
+    }
+
+    // TODO: This should be threaded
+    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int startPointIndex = 0;
+
+    // Overall: for (std::size_t jdx = 0; jdx < numTotalPoint; ++jdx)
+    std::vector<std::thread> threads;
+    for (int threadIdx = 0; threadIdx < numThreads; ++threadIdx)
+    {
+        // Number of iterations for the current threadIdx
+        unsigned int numIterations =
+            numTotalPoints / numThreads
+                + (threadIdx < numTotalPoints % numThreads ? 1 : 0);
+
+        // Start thread index threadIdx
+        threads.emplace_back(
+            [this, numIterations, threadIdx, startPointIndex, _vertices]() {
+                for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
+                {
+                    // No mutex required since we're accessing different locations
+                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
+
+                    // TODO: Generalize this to what will likely be different point types
+                    float px, py, pz;
+                    auto point = lidarshooter::XYZIRPoint(rawData);
+                    point.getPoint(&px, &py, &pz, nullptr, nullptr);
+
+                    // Rotate into the local coordinate frame for this device
+                    Eigen::Vector3f ptrans(px, py, pz);
+
+                    // Apply the affine transformation and then transf
+                    ptrans = _transform * ptrans;
+                    _config->originToSensor(ptrans);
+
+                    // Linear position update here
+                    _vertices[3 * jdx + 0] = ptrans.x();
+                    _vertices[3 * jdx + 1] = ptrans.y();
+                    _vertices[3 * jdx + 2] = ptrans.z();
+                }
+            }
+        );
+
+        // Each block might be different size
+        startPointIndex += numIterations;
+    }
+
+    // For the sake of sanity block here
+    for (auto threadItr = threads.begin(); threadItr != threads.end(); ++threadItr)
+        threadItr->join();
+}
+
 void lidarshooter::CloudTransformer::applyInverseTransform()
 {
     if (_cloud == nullptr)
@@ -189,6 +251,68 @@ void lidarshooter::CloudTransformer::applyInverseTransform()
 
                     // Write it to memory; no mutex required
                     point.writePoint(rawData);
+                }
+            }
+        );
+
+        // Each block might be different size
+        startPointIndex += numIterations;
+    }
+
+    // For the sake of sanity block here
+    for (auto threadItr = threads.begin(); threadItr != threads.end(); ++threadItr)
+        threadItr->join();
+}
+
+void lidarshooter::CloudTransformer::inverseTransformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements)
+{
+    if (_cloud == nullptr)
+    {
+        throw(CloudNotSetException(
+            __FILE__,
+            "No cloud data to operate on",
+            2
+        ));
+    }
+
+    // TODO: This should be threaded
+    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int startPointIndex = 0;
+
+    // Overall: for (std::size_t jdx = 0; jdx < numTotalPoint; ++jdx)
+    std::vector<std::thread> threads;
+    for (int threadIdx = 0; threadIdx < numThreads; ++threadIdx)
+    {
+        // Number of iterations for the current threadIdx
+        unsigned int numIterations =
+            numTotalPoints / numThreads
+                + (threadIdx < numTotalPoints % numThreads ? 1 : 0);
+
+        // Start thread index threadIdx
+        threads.emplace_back(
+            [this, numIterations, threadIdx, startPointIndex, _vertices]() {
+                for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
+                {
+                    // No mutex required since we're accessing different locations
+                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
+
+                    // TODO: Generalize this to what will likely be different point types
+                    float px, py, pz;
+                    auto point = lidarshooter::XYZIRPoint(rawData);
+                    point.getPoint(&px, &py, &pz, nullptr, nullptr);
+
+                    // Rotate into the local coordinate frame for this device
+                    Eigen::Vector3f ptrans(px, py, pz);
+
+                    // Apply the affine transformation and then transf
+                    ptrans = _transform * ptrans;
+                    _config->originToSensorInverse(ptrans);
+
+                    // Linear position update here
+                    _vertices[3 * jdx + 0] = ptrans.x();
+                    _vertices[3 * jdx + 1] = ptrans.y();
+                    _vertices[3 * jdx + 2] = ptrans.z();
                 }
             }
         );
