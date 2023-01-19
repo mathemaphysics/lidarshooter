@@ -31,6 +31,7 @@
 
 namespace lidarshooter
 {
+
 /**
  * @brief Class that builds a header for our specific sensor's cloud
  * 
@@ -42,6 +43,10 @@ namespace lidarshooter
 class LidarDevice
 {
 public:
+	// TODO: For later when LidarDevice has a factory create
+    //using Ptr = std::shared_ptr<LidarDevice>;
+    //using ConstPtr = std::shared_ptr<LidarDevice const>;
+
     /**
      * @brief Construct a new LidarDevice
      * 
@@ -381,4 +386,5 @@ private:
      */
     int advanceRayIndex();
 };
+
 }

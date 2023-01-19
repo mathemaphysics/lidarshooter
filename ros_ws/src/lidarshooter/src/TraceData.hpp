@@ -13,16 +13,16 @@
 
 #include "LidarShooter.hpp"
 
-#include <embree3/rtcore.h>
-
 #include <string>
 #include <map>
 #include <memory>
 
+#include <embree3/rtcore.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
+#include <sensor_msgs/PointCloud2.h>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -35,19 +35,22 @@ namespace lidarshooter
 class TraceData : public std::enable_shared_from_this<TraceData>
 {
 	public:
+		using Ptr = std::shared_ptr<TraceData>;
+		using ConstPtr = std::shared_ptr<TraceData const>;
+
 	 	/**
 	 	 * @brief Factory shared pointer creator for \c TraceData
 	 	 * 
-	 	 * @return std::shared_ptr<TraceData> Your new shared \c TraceData
+	 	 * @return TraceData::Ptr Your new shared \c TraceData
 	 	 */
-		static std::shared_ptr<TraceData> create(std::shared_ptr<LidarDevice> _sensorConfig);
+		static TraceData::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig);
 
 		/**
 		 * @brief Get a shared pointer to this object
 		 * 
 		 * @return std::shared_ptr<TraceData> A pointer to the object
 		 */
-		std::shared_ptr<TraceData> getPtr();
+		TraceData::Ptr getPtr();
 
 		// Still need to clean up
 		~TraceData();
@@ -187,7 +190,13 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		 */
 		RTCBuffer getElementBuffer(const std::string& _meshName);
 
-		// Private functions
+		/**
+		 * @brief Returns a const shared pointer to the trace cloud
+		 * 
+		 * @return sensor_msgs::PointCloud2::ConstPtr Pointer to the traced cloud
+		 */
+		sensor_msgs::PointCloud2::ConstPtr getTraceCloud() const;
+
 		/**
 		 * @brief Commits any changes to geometries within
 		 * 
@@ -245,6 +254,9 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		std::map<std::string, RTCGeometry> _geometries;
 		std::map<std::string, unsigned int> _geometryIds;
 		std::map<std::string, RTCGeometryType> _geometryTypes;
+
+		// The trace cloud itself
+		sensor_msgs::PointCloud2::Ptr _traceCloud;
 };
 
 }

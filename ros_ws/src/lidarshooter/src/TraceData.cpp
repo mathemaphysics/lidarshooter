@@ -8,12 +8,12 @@
 
 #include <iostream>
 
-std::shared_ptr<lidarshooter::TraceData> lidarshooter::TraceData::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig)
+lidarshooter::TraceData::Ptr lidarshooter::TraceData::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig)
 {
-    return std::shared_ptr<lidarshooter::TraceData>(new TraceData(_sensorConfig));
+    return lidarshooter::TraceData::Ptr(new TraceData(_sensorConfig));
 }
 
-std::shared_ptr<lidarshooter::TraceData> lidarshooter::TraceData::getPtr()
+lidarshooter::TraceData::Ptr lidarshooter::TraceData::getPtr()
 {
     return shared_from_this();
 }
@@ -349,12 +349,17 @@ RTCBuffer lidarshooter::TraceData::getElementBuffer(const std::string& _meshName
     return bufferIterator->second;
 }
 
+sensor_msgs::PointCloud2::ConstPtr lidarshooter::TraceData::getTraceCloud() const
+{
+    return _traceCloud;
+}
+
 lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig)
     : _device(rtcNewDevice(nullptr)),
       _scene(rtcNewScene(_device)),
       _config(_sensorConfig)
 {
-    // Make sure the std::shaerd_ptr<LidarDevice> copy constructor increments
+    // Make sure the std::shared_ptr<LidarDevice> copy constructor increments
     // the reference counter and doesn't make a copy
 
     _geometryCount = 0;
