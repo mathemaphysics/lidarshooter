@@ -292,6 +292,11 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
 
 lidarshooter::MeshProjector::~MeshProjector()
 {
+    // Obtain mutex locks before destruction so we don't interrupt publishing
+    _cloudMutex.lock();
+    _meshMutex.lock();
+    _joystickMutex.lock();
+
     // Probably some geometry cleanup if possible here when making the geometry
     // buffers persistent gets sorted
     releaseObjectGeometryBuffers();

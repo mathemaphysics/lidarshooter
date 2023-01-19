@@ -350,6 +350,38 @@ private:
      * @brief Clean up ground geometry buffers
      */
     void releaseGroundGeometryBuffers();
+
+    /**
+     * @brief Method for locking the trace cloud mutex
+     */
+    inline void lockCloudMutex()
+    {
+        _cloudMutex.lock();
+    }
+
+    /**
+     * @brief Method for unlocking the trace cloud mutex
+     */
+    inline void unlockCloudMutex()
+    {
+        _cloudMutex.unlock();
+    }
+
+    /**
+     * @brief Method for locking the mesh mutex
+     */
+    inline void lockMeshMutex()
+    {
+        _meshMutex.lock();
+    }
+
+    /**
+     * @brief Method for unlocking the mesh mutex
+     */
+    inline void unlockMeshMutex()
+    {
+        _meshMutex.unlock();
+    }
 };
 
 }

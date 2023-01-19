@@ -175,12 +175,18 @@ void MainWindow::deleteSensor(QString _sensorUid)
     // Set up the sensor for delete
     deleteSensor(_sensorUid.toStdString());
     
-    // Function deleteSensor does not erase the runtime or config
-    runtimeMap.erase(_sensorUid.toStdString());
-    deviceConfigMap.erase(_sensorUid.toStdString());
+    // Other function deleteSensor does not erase the runtime or config
+    auto runtimeIterator = runtimeMap.find(_sensorUid.toStdString());
+    if (runtimeIterator == runtimeMap.end())
+        loggerTop->warn("Failed to find runtime {} during delete", _sensorUid.toStdString());
+    else
+    {
+        runtimeMap.erase(runtimeIterator); // No need to unlockCloudMutex; it's gone
+        deviceConfigMap.erase(_sensorUid.toStdString());
 
-    // TODO: Change this to debug
-    loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
+        // TODO: Change this to debug
+        loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
+    }
 }
 
 void MainWindow::updatePublishCloud(QString _sensorUid, bool _shouldPublishCloud)
