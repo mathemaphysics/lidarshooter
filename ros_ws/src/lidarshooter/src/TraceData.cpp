@@ -223,6 +223,7 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
         rtcReleaseGeometry(_geometries[_meshName]);
         _geometries.erase(_meshName);
         _geometryIds.erase(idIterator); // Alread have an iterator to it; use it; it's the little things that count
+        _geometryTypes.erase(_meshName);
 
         // Release vertices buffer and free space
         rtcReleaseBuffer(_verticesBuffer[_meshName]);
