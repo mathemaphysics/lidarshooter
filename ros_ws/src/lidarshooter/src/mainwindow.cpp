@@ -250,7 +250,13 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
         loggerTop->warn("No device runtime for UID {} found", _sensorUid);
     else
     {
+        // Stop the thread that copies traced data over to viewer first
         runtimePointer->second.stopTraceThread();
+        
+        // Stop publishing before deleting
+        runtimePointer->second.setCloudPublishState(false);
+
+        // Try to delete the trace from the viewer
         if (runtimePointer->second.deleteTraceFromViewer() == 0)
             loggerTop->info("Removed trace of mesh from sensor UID {}", _sensorUid);
         
