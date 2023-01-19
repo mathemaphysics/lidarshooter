@@ -121,6 +121,17 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		int updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh);
 
 		/**
+		 * @brief Update the points and elements via a \c PolygonMesh
+		 * 
+		 * @param _meshName Key name for the associated geometry
+		 * @param _translation Translation part of the affine transformation
+		 * @param _rotation Rotation part of the affine transformation
+		 * @param _mesh Mesh containing points to use to update the internal scene
+		 * @return int Returns 0 if all went well, < 0 otherwise
+		 */
+		int updateGeometry(const std::string& _meshName, const Eigen::Vector3f& _translation, const Eigen::Vector3f& _rotation, pcl::PolygonMesh::Ptr& _mesh);
+
+		/**
 		 * @brief Get the vertex count
 		 * 
 		 * @param _meshName Key name for the associated geometry
