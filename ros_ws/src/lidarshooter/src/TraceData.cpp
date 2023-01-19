@@ -349,24 +349,6 @@ RTCBuffer lidarshooter::TraceData::getElementBuffer(const std::string& _meshName
     return bufferIterator->second;
 }
 
-inline int lidarshooter::TraceData::commitGeometry(const std::string& _meshName)
-{
-    rtcCommitGeometry(
-        getGeometry(
-            _meshName
-        )
-    );
-
-    return 0;
-}
-
-inline int lidarshooter::TraceData::commitScene()
-{
-    rtcCommitScene(_scene);
-
-    return 0;
-}
-
 lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig)
     : _device(rtcNewDevice(nullptr)),
       _scene(rtcNewScene(_device)),

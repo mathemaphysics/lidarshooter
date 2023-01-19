@@ -525,6 +525,16 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
 
 void lidarshooter::MeshProjector::traceMesh()
 {
+    // Do the update the new way
+    for (auto& [name, mesh] : _trackObjects)
+        _traceData->updateGeometry(
+            name,
+            _linearDisplacement,
+            _angularDisplacement,
+            mesh
+        );
+    _traceData->commitScene();
+
     // Update mesh with new locations and possibly structure
     updateGround();
 

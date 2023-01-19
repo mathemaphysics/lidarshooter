@@ -187,6 +187,36 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		 */
 		RTCBuffer getElementBuffer(const std::string& _meshName);
 
+		// Private functions
+		/**
+		 * @brief Commits any changes to geometries within
+		 * 
+		 * @param _meshName Key name for the associated geometry
+		 * @return int Returns 0 if all went well, < 0 otherwise
+		 */
+		inline int commitGeometry(const std::string& _meshName)
+		{
+			rtcCommitGeometry(
+				getGeometry(
+					_meshName
+				)
+			);
+
+			return 0;
+		}
+
+		/**
+		 * @brief Commits geometry changes to the scene
+		 * 
+		 * @return int Returns 0 if all went well, < 0 otherwise
+		 */
+		inline int commitScene()
+		{
+			rtcCommitScene(_scene);
+
+			return 0;
+		}
+
 	private:
 		// Private constructor for factory production of shared_ptr
 		TraceData(std::shared_ptr<LidarDevice>);
@@ -215,22 +245,6 @@ class TraceData : public std::enable_shared_from_this<TraceData>
 		std::map<std::string, RTCGeometry> _geometries;
 		std::map<std::string, unsigned int> _geometryIds;
 		std::map<std::string, RTCGeometryType> _geometryTypes;
-
-		// Private functions
-		/**
-		 * @brief Commits any changes to geometries within
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return int Returns 0 if all went well, < 0 otherwise
-		 */
-		int commitGeometry(const std::string& _meshName);
-
-		/**
-		 * @brief Commits geometry changes to the scene
-		 * 
-		 * @return int Returns 0 if all went well, < 0 otherwise
-		 */
-		int commitScene();
 };
 
 }
