@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "../TraceData.hpp"
+#include "../LidarDevice.hpp"
 
 namespace
 {
@@ -10,11 +11,8 @@ class TraceDataTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        traceData = lidarshooter::TraceData::create(
-            std::make_shared<lidarshooter::LidarDevice>(
-                lidarshooter::LidarDevice()
-            )
-        );
+        sensorConfig = std::make_shared<lidarshooter::LidarDevice>();
+        traceData = lidarshooter::TraceData::create(sensorConfig);
         geometryIdAdded = static_cast<unsigned int>(
             traceData->addGeometry(
                 "mesh",
@@ -28,9 +26,11 @@ protected:
     void TearDown() override
     {
         traceData.reset();
+        sensorConfig.reset();
     }
 
-    std::shared_ptr<lidarshooter::TraceData> traceData;
+    std::shared_ptr<lidarshooter::LidarDevice> sensorConfig;
+    lidarshooter::TraceData::Ptr traceData;
     unsigned int geometryIdAdded;
 };
 
@@ -69,6 +69,12 @@ TEST_F(TraceDataTest, DeleteGeometryId)
 
     // Make sure the geometry it claims it deleted was the right one; consistency check
     EXPECT_EQ(idDeleted, actualGeomId);
+}
+
+TEST_F(TraceDataTest, GeometryType)
+{
+    RTCGeometryType geometryType = traceData->getGeometryType("mesh");
+    EXPECT_EQ(geometryType, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE);
 }
 
 }
