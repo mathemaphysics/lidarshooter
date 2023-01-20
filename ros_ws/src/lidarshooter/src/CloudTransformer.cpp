@@ -7,29 +7,29 @@
 #include <thread>
 #include <chrono>
 
-std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
 {
     // Set the cloud pointer rather than inplace creation?
-    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__cloud, __transform, __config));
+    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__cloud, __transform, __config));
 }
 
-std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
 {
-    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__cloud,  __translation,  __rotation, __config));
+    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__cloud,  __translation,  __rotation, __config));
 }
 
-std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
 {
     // Fill in the missing _translation and _rotation vectors
-    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__transform, __config));
+    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__transform, __config));
 }
 
-std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::create(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
 {
-    return std::shared_ptr<lidarshooter::CloudTransformer>(new lidarshooter::CloudTransformer(__translation, __rotation, __config));
+    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__translation, __rotation, __config));
 }
 
-std::shared_ptr<lidarshooter::CloudTransformer> lidarshooter::CloudTransformer::getPtr()
+lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::getPtr()
 {
     return shared_from_this();
 }
