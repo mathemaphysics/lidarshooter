@@ -361,6 +361,12 @@ lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig)
 {
     // Make sure the std::shared_ptr<LidarDevice> copy constructor increments
     // the reference counter and doesn't make a copy
+    
+    // Allocate an empty point cloud; make sure points cloud is zero at first
+    _traceCloud = sensor_msgs::PointCloud2::Ptr(new sensor_msgs::PointCloud2());
+    _traceCloud->width = 0;
+    _traceCloud->height = 0;
 
+    // Number of geometries added to the scene
     _geometryCount = 0;
 }
