@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <mutex>
 
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointField.h>
@@ -269,7 +270,16 @@ private:
      */
     unsigned int _verticalIndex;
     unsigned int _horizontalIndex;
-    
+
+    /**
+     * @brief Mutex making the \c nextRayXX functions atomic
+     * 
+     * This is the mutex that makes calling the \c nextRayXX functions
+     * thread-safe; multiple threads calling \c nextRay8 at the same time will
+     * mangle the state without this mutex.
+     */
+    std::mutex _rayMutex;
+
     /**
      * @brief UID/node name reference for this LiDAR device in SENSR API
      * 
