@@ -3,6 +3,12 @@
 #include "../TraceData.hpp"
 #include "../LidarDevice.hpp"
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/PolygonMesh.h>
+#include <pcl/io/vtk_io.h>
+#include <pcl/io/vtk_lib_io.h>
+
 namespace
 {
 
@@ -11,14 +17,29 @@ class TraceDataTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        sensorConfig = std::make_shared<lidarshooter::LidarDevice>();
+        // Silence the logger for testing
+        spdlog::set_level(spdlog::level::off);
+
+        // Load the mesh for reference
+        meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
+        pcl::io::loadPolygonFileSTL(
+            "/workspaces/lidarshooter/mesh/ben.stl",
+            *meshData
+        );
+
+        // Make the LidarDevice
+        sensorConfig = std::make_shared<lidarshooter::LidarDevice>(
+            "/workspaces/lidarshooter/config/hesai-pandar-XT-32-lidar_0000.json"
+        );
+
+        // Make tracer
         traceData = lidarshooter::TraceData::create(sensorConfig);
         geometryIdAdded = static_cast<unsigned int>(
             traceData->addGeometry(
                 "mesh",
                 RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
-                100,
-                200
+                meshData->cloud.width * meshData->cloud.height,
+                meshData->polygons.size()
             )
         );
     }
@@ -27,8 +48,10 @@ protected:
     {
         traceData.reset();
         sensorConfig.reset();
+        meshData.reset();
     }
 
+    pcl::PolygonMesh::Ptr meshData;
     std::shared_ptr<lidarshooter::LidarDevice> sensorConfig;
     lidarshooter::TraceData::Ptr traceData;
     unsigned int geometryIdAdded;
@@ -44,8 +67,8 @@ TEST_F(TraceDataTest, NoDeviceError)
 TEST_F(TraceDataTest, VertexElementCounts)
 {
     // Check that the number of vertices and elements is right
-    EXPECT_EQ(traceData->getVertexCount("mesh"), 100l);
-    EXPECT_EQ(traceData->getElementCount("mesh"), 200l);
+    EXPECT_EQ(traceData->getVertexCount("mesh"), 2823l);
+    EXPECT_EQ(traceData->getElementCount("mesh"), 5489l);
 }
 
 TEST_F(TraceDataTest, GeometryTotalCount)
@@ -77,6 +100,14 @@ TEST_F(TraceDataTest, GeometryType)
     EXPECT_EQ(geometryType, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE);
 }
 
+}
+
+// TODO: There's probably a better test for this
+TEST_F(TraceDataTest, UpdateGeometry)
+{
+    EXPECT_NO_FATAL_FAILURE(
+        traceData->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
+    );
 }
 
 int main(int argc, char *argv[])
