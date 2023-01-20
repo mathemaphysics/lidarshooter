@@ -540,6 +540,10 @@ void lidarshooter::MeshProjector::traceMesh()
         );
     _traceData->commitScene();
 
+    /**
+     * OLD METHOD GEOMETRY UPDATE
+     */
+
     // Update mesh with new locations and possibly structure
     updateGround();
 
@@ -553,7 +557,13 @@ void lidarshooter::MeshProjector::traceMesh()
     rtcCommitGeometry(_groundGeometry);
     rtcCommitScene(_scene);
 
-    // Trace out the Hesai configuration for now
+    /* 
+     * OLD METHOD GEOMETRY UPDATE
+     **/
+
+    /**
+     * OLD METHOD RAYTRACING
+     */
     // Initialize ray state for batch processing
     _cloudMutex.lock();
     _config->initMessage(_currentState, ++_frameIndex);
@@ -566,7 +576,7 @@ void lidarshooter::MeshProjector::traceMesh()
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
-    std::mutex configMutex, sharedCloudMutex;
+    std::mutex sharedCloudMutex;
     std::vector<std::thread> threads;
     std::atomic<int> totalPointCount;
     totalPointCount.store(0);
@@ -575,7 +585,7 @@ void lidarshooter::MeshProjector::traceMesh()
         //unsigned int startPosition = rayChunk * numChunks;
         // TODO: Convert the contents of the thread into a "chunk" function to simplify
         threads.emplace_back(
-            [this, &configMutex, &sharedCloudMutex, numChunks, &totalPointCount](){
+            [this, &sharedCloudMutex, numChunks, &totalPointCount](){
                 for (int ix = 0; ix < numChunks; ++ix)
                 {
                     // Set up packet processing
@@ -589,9 +599,7 @@ void lidarshooter::MeshProjector::traceMesh()
                     RayHitType rayhitn;
 
                     // Fill up the next ray in the buffer
-                    configMutex.lock();
                     rayState = this->_config->nextRay(rayhitn, validRays);
-                    configMutex.unlock();
                     for (int idx = 0; idx < LIDARSHOOTER_RAY_PACKET_SIZE; ++idx)
                         rayRings[idx] = 0;
 
@@ -628,6 +636,10 @@ void lidarshooter::MeshProjector::traceMesh()
     _stateWasUpdated.store(true);
     _stateWasUpdatedPublic.store(true);
     _cloudMutex.unlock();
+
+    /*
+     * OLD METHOD RAYTRACING
+     **/
 }
 
 void lidarshooter::MeshProjector::getMeshIntersect(int *_valid, RayHitType *_rayhit)
