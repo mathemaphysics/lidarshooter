@@ -1,12 +1,27 @@
-#include "TraceData.hpp"
+/**
+ * @file TraceData.cpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief TraceData class is an implementation of a tracer
+ * @version 0.1
+ * @date 2023-01-20
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 
+#include "LidarShooter.hpp"
+#include "TraceData.hpp"
 #include "MeshTransformer.hpp"
+#include "XYZIRBytes.hpp"
 #include "Exceptions.hpp"
 
 #include <memory>
 #include <utility>
 
 #include <iostream>
+#include <cstdint>
+#include <thread>
+#include <mutex>
 
 lidarshooter::TraceData::Ptr lidarshooter::TraceData::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig)
 {
@@ -277,6 +292,77 @@ int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, const 
     return commitGeometry(_meshName);
 }
 
+int lidarshooter::TraceData::traceScene(std::uint32_t _frameIndex)
+{
+    _config->initMessage(_traceCloud, ++_frameIndex);
+    _traceCloud->data.clear();
+    _config->reset();
+
+    // Count the total iterations because the limits are needed for threading
+    unsigned int numTotalRays = _config->getTotalRays();
+    unsigned int numIterations = numTotalRays / LIDARSHOOTER_RAY_PACKET_SIZE + (numTotalRays % LIDARSHOOTER_RAY_PACKET_SIZE > 0 ? 1 : 0);
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
+
+    std::mutex sharedCloudMutex;
+    std::vector<std::thread> threads;
+    std::atomic<int> totalPointCount;
+    totalPointCount.store(0);
+    for (int rayChunk = 0; rayChunk < numThreads; ++rayChunk)
+    {
+        //unsigned int startPosition = rayChunk * numChunks;
+        // TODO: Convert the contents of the thread into a "chunk" function to simplify
+        threads.emplace_back(
+            [this, &sharedCloudMutex, numChunks, &totalPointCount](){
+                for (int ix = 0; ix < numChunks; ++ix)
+                {
+                    // Set up packet processing
+                    int rayState = 0;
+                    int validRays[LIDARSHOOTER_RAY_PACKET_SIZE]; // Initialize all invalid
+                    int rayRings[LIDARSHOOTER_RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
+                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
+                        validRays[i] = 0;
+                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
+                        rayRings[i] = -1;
+                    RayHitType rayhitn;
+
+                    // Fill up the next ray in the buffer
+                    rayState = this->_config->nextRay(rayhitn, validRays);
+                    for (int idx = 0; idx < LIDARSHOOTER_RAY_PACKET_SIZE; ++idx)
+                        rayRings[idx] = 0;
+
+                    // Execute when the buffer is full
+                    this->getMeshIntersect(validRays, &rayhitn); // TODO: Make sure meshMutex doesn't need set?
+                    for (int ri = 0; ri < LIDARSHOOTER_RAY_PACKET_SIZE; ++ri)
+                    {
+                        if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
+                        {
+                            lidarshooter::XYZIRBytes cloudBytes(
+                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri],
+                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri],
+                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
+                                64.0, rayRings[ri]
+                            );
+                            sharedCloudMutex.lock();
+                            cloudBytes.addToCloud(this->_traceCloud);
+                            totalPointCount.store(totalPointCount.load() + 1);
+                            sharedCloudMutex.unlock();
+                        }
+                        validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
+                    }
+                }
+            }
+        );
+    }
+    for (auto th = threads.begin(); th != threads.end(); ++th)
+        th->join();
+
+    // Set the point count to the value that made it back from tracing
+    _traceCloud->width = totalPointCount;
+
+    return 0;
+}
+
 long lidarshooter::TraceData::getVertexCount(const std::string& _meshName)
 {
     auto countIterator = _vertexCounts.find(_meshName);
@@ -353,6 +439,48 @@ sensor_msgs::PointCloud2::ConstPtr lidarshooter::TraceData::getTraceCloud() cons
 {
     return _traceCloud;
 }
+
+void lidarshooter::TraceData::getMeshIntersect(int *_valid, RayHitType *_rayhit)
+{
+    TRACEDATA_GET_MESH_INTERSECT(_valid, _rayhit);
+}
+
+void lidarshooter::TraceData::getMeshIntersect1(float ox, float oy, float oz, float dx, float dy, float dz, RTCRayHit *rayhit)
+{
+    rayhit->ray.org_x  = ox; rayhit->ray.org_y = oy; rayhit->ray.org_z = oz;
+    rayhit->ray.dir_x  = dx; rayhit->ray.dir_y = dy; rayhit->ray.dir_z = dz;
+    rayhit->ray.tnear  = 0.f;
+    rayhit->ray.tfar   = std::numeric_limits<float>::infinity();
+    rayhit->hit.geomID = RTC_INVALID_GEOMETRY_ID;
+    
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+
+    // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
+    // at a distance of rayhit.ray.tfar
+    rtcIntersect1(_scene, &context, rayhit);
+}
+
+void lidarshooter::TraceData::getMeshIntersect8(const int *validRays, RTCRayHit8 *rayhit)
+{
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+
+    // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
+    // at a distance of rayhit.ray.tfar
+    rtcIntersect8(validRays, _scene, &context, rayhit);
+}
+
+void lidarshooter::TraceData::getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit)
+{
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+
+    // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
+    // at a distance of rayhit.ray.tfar
+    rtcIntersect16(validRays, _scene, &context, rayhit);
+}
+
 
 lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig)
     : _device(rtcNewDevice(nullptr)),

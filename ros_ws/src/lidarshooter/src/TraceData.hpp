@@ -1,9 +1,9 @@
 /**
  * @file TraceData.hpp
  * @author Ryan P. Daly (rdaly@herzog.com)
- * @brief TraceData class contains the 
+ * @brief TraceData class is an implementation of a tracer
  * @version 0.1
- * @date 2023-01-15
+ * @date 2023-01-20
  * 
  * @copyright Copyright (c) 2023
  * 
@@ -16,6 +16,9 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <cstdint>
+#include <thread>
+#include <mutex>
 
 #include <embree3/rtcore.h>
 #include <pcl/point_cloud.h>
@@ -34,229 +37,287 @@ namespace lidarshooter
 
 class TraceData : public std::enable_shared_from_this<TraceData>
 {
-	public:
-		using Ptr = std::shared_ptr<TraceData>;
-		using ConstPtr = std::shared_ptr<TraceData const>;
+public:
+	using Ptr = std::shared_ptr<TraceData>;
+	using ConstPtr = std::shared_ptr<TraceData const>;
 
-	 	/**
-	 	 * @brief Factory shared pointer creator for \c TraceData
-	 	 * 
-	 	 * @return TraceData::Ptr Your new shared \c TraceData
-	 	 */
-		static TraceData::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig);
+	/**
+	 * @brief Factory shared pointer creator for \c TraceData
+	 * 
+	 * @return TraceData::Ptr Your new shared \c TraceData
+	 */
+	static TraceData::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig);
 
-		/**
-		 * @brief Get a shared pointer to this object
-		 * 
-		 * @return std::shared_ptr<TraceData> A pointer to the object
-		 */
-		TraceData::Ptr getPtr();
+	/**
+	 * @brief Get a shared pointer to this object
+	 * 
+	 * @return std::shared_ptr<TraceData> A pointer to the object
+	 */
+	TraceData::Ptr getPtr();
 
-		// Still need to clean up
-		~TraceData();
-	
-		/**
-		 * @brief Get the device object
-		 * 
-		 * @return RTCDevice Device on which tracing is done
-		 */
-		RTCDevice getDevice();
+	// Still need to clean up
+	~TraceData();
 
-		/**
-		 * @brief Get the scene object
-		 * 
-		 * @return RTCScene Scene to be traced
-		 */
-		RTCScene getScene();
+	/**
+	 * @brief Get the device object
+	 * 
+	 * @return RTCDevice Device on which tracing is done
+	 */
+	RTCDevice getDevice();
 
-		/**
-		 * @brief Get the number of geometries added
-		 * 
-		 * @return long Number of geometries currently registered
-		 */
-		long getGeometryCount() const;
+	/**
+	 * @brief Get the scene object
+	 * 
+	 * @return RTCScene Scene to be traced
+	 */
+	RTCScene getScene();
 
-		/**
-		 * @brief Get the Geometry Id object
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return unsigned int ID of the geometry in the \c _scene
-		 */
-		int getGeometryId(const std::string& _meshName) const;
+	/**
+	 * @brief Get the number of geometries added
+	 * 
+	 * @return long Number of geometries currently registered
+	 */
+	long getGeometryCount() const;
 
-		/**
-		 * @brief Get the \c RTCGeometry for the given key
-		 * 
-		 * @param _meshName Key corresponding to the geometry you want
-		 * @return RTCGeometry The internal geometry for the key
-		 */
-		RTCGeometry getGeometry(const std::string& _meshName);
+	/**
+	 * @brief Get the Geometry Id object
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return unsigned int ID of the geometry in the \c _scene
+	 */
+	int getGeometryId(const std::string& _meshName) const;
 
-		/**
-		 * @brief Get the type of geometry stored by key indicated
-		 * 
-		 * @param _meshName Key corresponding to the geometry you want
-		 * @return RTCGeometryType The type of geometry stored in the \c RTCGeometry
-		 */
-		RTCGeometryType getGeometryType(const std::string& _meshName);
+	/**
+	 * @brief Get the \c RTCGeometry for the given key
+	 * 
+	 * @param _meshName Key corresponding to the geometry you want
+	 * @return RTCGeometry The internal geometry for the key
+	 */
+	RTCGeometry getGeometry(const std::string& _meshName);
 
-		/**
-		 * @brief Adds a new geometry to the scene
-		 * 
-		 * @param _meshName Key corresponding to the mesh
-		 * @param _geometryType \c RTCGeometryType enum value; triangles, quadrilateral, etc.
-		 * @param _numVertices Number of vertices in the added geometry
-		 * @param _numElements Number of elements in the added geometry
-		 * @return true Successfully added the geometry
-		 * @return false Failed to add the geometry
-		 */
-		int addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
+	/**
+	 * @brief Get the type of geometry stored by key indicated
+	 * 
+	 * @param _meshName Key corresponding to the geometry you want
+	 * @return RTCGeometryType The type of geometry stored in the \c RTCGeometry
+	 */
+	RTCGeometryType getGeometryType(const std::string& _meshName);
 
-		/**
-		 * @brief Remove the geometry from the \c _scene
-		 * 
-		 * @param _meshName Key corresponding to this mesh geometry
-		 * @return int Returns -1 if error, otherwise cast as \c unsigned \c int
-		 * 		   to get the deleted geometry ID
-		 */
-		int removeGeometry(const std::string& _meshName);
+	/**
+	 * @brief Adds a new geometry to the scene
+	 * 
+	 * @param _meshName Key corresponding to the mesh
+	 * @param _geometryType \c RTCGeometryType enum value; triangles, quadrilateral, etc.
+	 * @param _numVertices Number of vertices in the added geometry
+	 * @param _numElements Number of elements in the added geometry
+	 * @return true Successfully added the geometry
+	 * @return false Failed to add the geometry
+	 */
+	int addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
 
-		/**
-		 * @brief Update the points and elements via a \c PolygonMesh
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @param _transform Addition affine transformation to apply to all points
-		 * @param _mesh Mesh containing points to use to update the internal scene
-		 * @return int Returns 0 if all went well, < 0 otherwise
-		 */
-		int updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh);
+	/**
+	 * @brief Remove the geometry from the \c _scene
+	 * 
+	 * @param _meshName Key corresponding to this mesh geometry
+	 * @return int Returns -1 if error, otherwise cast as \c unsigned \c int
+	 * 		   to get the deleted geometry ID
+	 */
+	int removeGeometry(const std::string& _meshName);
 
-		/**
-		 * @brief Update the points and elements via a \c PolygonMesh
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @param _translation Translation part of the affine transformation
-		 * @param _rotation Rotation part of the affine transformation
-		 * @param _mesh Mesh containing points to use to update the internal scene
-		 * @return int Returns 0 if all went well, < 0 otherwise
-		 */
-		int updateGeometry(const std::string& _meshName, const Eigen::Vector3f& _translation, const Eigen::Vector3f& _rotation, pcl::PolygonMesh::Ptr& _mesh);
+	/**
+	 * @brief Update the points and elements via a \c PolygonMesh
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @param _transform Addition affine transformation to apply to all points
+	 * @param _mesh Mesh containing points to use to update the internal scene
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	int updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh);
 
-		/**
-		 * @brief Get the vertex count
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return long Number of vertices in the geometry
-		 */
-		long getVertexCount(const std::string& _meshName);
+	/**
+	 * @brief Update the points and elements via a \c PolygonMesh
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @param _translation Translation part of the affine transformation
+	 * @param _rotation Rotation part of the affine transformation
+	 * @param _mesh Mesh containing points to use to update the internal scene
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	int updateGeometry(const std::string& _meshName, const Eigen::Vector3f& _translation, const Eigen::Vector3f& _rotation, pcl::PolygonMesh::Ptr& _mesh);
 
-		/**
-		 * @brief Get the vertices storage space
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return float* Pointer to the vertex storage for this geometry
-		 */
-		float* getVertices(const std::string& _meshName);
+	/**
+	 * @brief Traces the scene and puts the result in \c _traceCloud
+	 * 
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	int traceScene(std::uint32_t _franeIndex);
 
-		/**
-		 * @brief Get the vertex buffer object
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return RTCBuffer Vertex buffer object associated with this mesh key
-		 */
-		RTCBuffer getVertexBuffer(const std::string& _meshName);
+	/**
+	 * @brief Get the vertex count
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return long Number of vertices in the geometry
+	 */
+	long getVertexCount(const std::string& _meshName);
 
-		/**
-		 * @brief Get the element count
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return long Number of elements in the geometry
-		 */
-		long getElementCount(const std::string& _meshName);
+	/**
+	 * @brief Get the vertices storage space
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return float* Pointer to the vertex storage for this geometry
+	 */
+	float* getVertices(const std::string& _meshName);
 
-		/**
-		 * @brief Get the element storage space
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return unsigned int* Pointer to the element storage for this geometry
-		 */
-		unsigned int* getElements(const std::string& _meshName);
+	/**
+	 * @brief Get the vertex buffer object
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return RTCBuffer Vertex buffer object associated with this mesh key
+	 */
+	RTCBuffer getVertexBuffer(const std::string& _meshName);
 
-		/**
-		 * @brief Get the element buffer object
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return RTCBuffer Element buffer object associated with this mesh key
-		 */
-		RTCBuffer getElementBuffer(const std::string& _meshName);
+	/**
+	 * @brief Get the element count
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return long Number of elements in the geometry
+	 */
+	long getElementCount(const std::string& _meshName);
 
-		/**
-		 * @brief Returns a const shared pointer to the trace cloud
-		 * 
-		 * @return sensor_msgs::PointCloud2::ConstPtr Pointer to the traced cloud
-		 */
-		sensor_msgs::PointCloud2::ConstPtr getTraceCloud() const;
+	/**
+	 * @brief Get the element storage space
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return unsigned int* Pointer to the element storage for this geometry
+	 */
+	unsigned int* getElements(const std::string& _meshName);
 
-		/**
-		 * @brief Commits any changes to geometries within
-		 * 
-		 * @param _meshName Key name for the associated geometry
-		 * @return int Returns 0 if all went well, < 0 otherwise
-		 */
-		inline int commitGeometry(const std::string& _meshName)
-		{
-			rtcCommitGeometry(
-				getGeometry(
-					_meshName
-				)
-			);
+	/**
+	 * @brief Get the element buffer object
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return RTCBuffer Element buffer object associated with this mesh key
+	 */
+	RTCBuffer getElementBuffer(const std::string& _meshName);
 
-			return 0;
-		}
+	/**
+	 * @brief Returns a const shared pointer to the trace cloud
+	 * 
+	 * @return sensor_msgs::PointCloud2::ConstPtr Pointer to the traced cloud
+	 */
+	sensor_msgs::PointCloud2::ConstPtr getTraceCloud() const;
 
-		/**
-		 * @brief Commits geometry changes to the scene
-		 * 
-		 * @return int Returns 0 if all went well, < 0 otherwise
-		 */
-		inline int commitScene()
-		{
-			rtcCommitScene(_scene);
+	/**
+	 * @brief Commits any changes to geometries within
+	 * 
+	 * @param _meshName Key name for the associated geometry
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	inline int commitGeometry(const std::string& _meshName)
+	{
+		rtcCommitGeometry(
+			getGeometry(
+				_meshName
+			)
+		);
 
-			return 0;
-		}
+		return 0;
+	}
 
-	private:
-		// Private constructor for factory production of shared_ptr
-		TraceData(std::shared_ptr<LidarDevice>);
+	/**
+	 * @brief Commits geometry changes to the scene
+	 * 
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	inline int commitScene()
+	{
+		rtcCommitScene(_scene);
 
-		// TODO: Figure out if these should even be in here
-		RTCDevice _device;
-		RTCScene _scene;
+		return 0;
+	}
 
-		// Sensor configuration for the affine transformation
-		std::shared_ptr<LidarDevice> _config;
+#define TRACEDATA_GET_MESH_INTERSECT_BASE getMeshIntersect
+#define TRACEDATA_GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(TRACEDATA_GET_MESH_INTERSECT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__valid, __rayhit)
 
-		// Keep a total for easy reference
-		long _geometryCount;
+    /**
+     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_RAY_PACKET_SIZE
+     * 
+     * Ray packet size generalization function; this will automatically
+     * select which ray packet size to use based on the system preprocessor
+     */
+    void getMeshIntersect(int *_valid, RayHitType *_rayhit);
 
-		// Vertex storage space and accounting
-		std::map<std::string, long> _vertexCounts;
-		std::map<std::string, float*> _vertices;
-		std::map<std::string, RTCBuffer> _verticesBuffer;
+    /**
+     * @brief Get the intersection of a single ray with the \c _scene
+     * 
+     * @param ox Origin x coordinate
+     * @param oy Origin y coordinate
+     * @param oz Origin z coordinate
+     * @param dx Normalized ray vector x coordinate
+     * @param dy Normalized ray vector y coordinate
+     * @param dz Normalized ray vector z coordinate
+     * @param rayhit Input/output ray/hit structure
+     */
+    void getMeshIntersect1(float ox, float oy, float oz, float dx, float dy, float dz, RTCRayHit *rayhit);
 
-		// Element storage space and accounting
-		std::map<std::string, long> _elementCounts;
-		std::map<std::string, unsigned int*> _elements;
-		std::map<std::string, RTCBuffer> _elementsBuffer;
+    /**
+     * @brief Get the intersection of a packet of 4 rays with the \c _scene
+     * 
+     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
+     *                  where -1 indicates do compute its intersection and 0 don't
+     * @param rayhit The input/output ray hit data structure
+     */
+    void getMeshIntersect4(const int *validRays, RTCRayHit4 *rayhit);
 
-		// The geometries themselves for embree raytracing
-		std::map<std::string, RTCGeometry> _geometries;
-		std::map<std::string, unsigned int> _geometryIds;
-		std::map<std::string, RTCGeometryType> _geometryTypes;
+    /**
+     * @brief Get the intersection of a packet of 8 rays with the \c _scene
+     * 
+     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
+     *                  where -1 indicates do compute its intersection and 0 don't
+     * @param rayhit The input/output ray hit data structure
+     */
+    void getMeshIntersect8(const int *validRays, RTCRayHit8 *rayhit);
 
-		// The trace cloud itself
-		sensor_msgs::PointCloud2::Ptr _traceCloud;
+    /**
+     * @brief Get the intersection of a packet of 16 rays with the \c _scene
+     * 
+     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
+     *                  where -1 indicates do compute its intersection and 0 don't
+     * @param rayhit The input/output ray hit data structure
+     */
+    void getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit);
+
+private:
+	// Private constructor for factory production of shared_ptr
+	TraceData(std::shared_ptr<LidarDevice>);
+
+	// TODO: Figure out if these should even be in here
+	RTCDevice _device;
+	RTCScene _scene;
+
+	// Sensor configuration for the affine transformation
+	std::shared_ptr<LidarDevice> _config;
+
+	// Keep a total for easy reference
+	long _geometryCount;
+
+	// Vertex storage space and accounting
+	std::map<std::string, long> _vertexCounts;
+	std::map<std::string, float*> _vertices;
+	std::map<std::string, RTCBuffer> _verticesBuffer;
+
+	// Element storage space and accounting
+	std::map<std::string, long> _elementCounts;
+	std::map<std::string, unsigned int*> _elements;
+	std::map<std::string, RTCBuffer> _elementsBuffer;
+
+	// The geometries themselves for embree raytracing
+	std::map<std::string, RTCGeometry> _geometries;
+	std::map<std::string, unsigned int> _geometryIds;
+	std::map<std::string, RTCGeometryType> _geometryTypes;
+
+	// The trace cloud itself
+	sensor_msgs::PointCloud2::Ptr _traceCloud;
 };
 
 }
