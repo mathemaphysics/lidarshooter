@@ -32,7 +32,7 @@ protected:
             "/workspaces/lidarshooter/config/hesai-pandar-XT-32-lidar_0000.json"
         );
 
-        // Make tracer
+        // Make tracer; default to create internal trace cloud storage
         traceData = lidarshooter::TraceData::create(sensorConfig);
         geometryIdAdded = static_cast<unsigned int>(
             traceData->addGeometry(

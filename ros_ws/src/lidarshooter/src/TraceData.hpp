@@ -46,7 +46,7 @@ public:
 	 * 
 	 * @return TraceData::Ptr Your new shared \c TraceData
 	 */
-	static TraceData::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig);
+	static TraceData::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 
 	/**
 	 * @brief Get a shared pointer to this object
@@ -289,7 +289,7 @@ public:
 
 private:
 	// Private constructor for factory production of shared_ptr
-	TraceData(std::shared_ptr<LidarDevice>);
+	TraceData(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 
 	// TODO: Figure out if these should even be in here
 	RTCDevice _device;

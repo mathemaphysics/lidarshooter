@@ -76,15 +76,15 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _logger->info("Loading config file {} specified via configfile ROS parameter", configFile);
     _config.reset(new LidarDevice(configFile, _sensorUid, __logger));
 
+    // The current state cloud is now a shared pointer and needs alloc'ed
+    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+    
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config);
+    _traceData = TraceData::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
 
-    // The current state cloud is now a shared pointer and needs alloc'ed
-    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
-    
     /**
      * This is critical because without initialization of the header of the
      * current cloud state, publishing this to SENSR will cause some memory
@@ -165,14 +165,14 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     _logger->info("Loading device configuration from {}", _configFile);
     _config.reset(new LidarDevice(_configFile, _sensorUid, __logger));
 
+    // The current state cloud is now a shared pointer and needs alloc'ed
+    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config);
+    _traceData = TraceData::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
-
-    // The current state cloud is now a shared pointer and needs alloc'ed
-    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
 
     /**
      * This is critical because without initialization of the header of the
@@ -250,14 +250,14 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _logger->info("Loaded device {} from preloaded device object", _configDevice->getSensorUid());
     _config = _configDevice;
 
+    // The current state cloud is now a shared pointer and needs alloc'ed
+    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config);
+    _traceData = TraceData::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
-
-    // The current state cloud is now a shared pointer and needs alloc'ed
-    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
 
     /**
      * This is critical because without initialization of the header of the
@@ -530,7 +530,10 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
 
 void lidarshooter::MeshProjector::traceMesh()
 {
-    // Do the update the new way
+    /**
+     * NEW METHOD RAYTRACING 
+     */
+
     _meshMutex.lock(); // Lock becuase mesh callback might fire
     for (auto& [name, mesh] : _trackObjects)
         _traceData->updateGeometry(
@@ -541,6 +544,11 @@ void lidarshooter::MeshProjector::traceMesh()
         );
     _meshMutex.unlock();
     _traceData->commitScene();
+    _traceData->traceScene(++_frameIndex);
+
+    /*
+     * NEW METHOD RAYTRACING 
+     **/
 
     /**
      * OLD METHOD GEOMETRY UPDATE

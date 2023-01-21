@@ -23,9 +23,9 @@
 #include <thread>
 #include <mutex>
 
-lidarshooter::TraceData::Ptr lidarshooter::TraceData::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig)
+lidarshooter::TraceData::Ptr lidarshooter::TraceData::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
 {
-    return lidarshooter::TraceData::Ptr(new TraceData(_sensorConfig));
+    return lidarshooter::TraceData::Ptr(new TraceData(_sensorConfig, _traceStorage));
 }
 
 lidarshooter::TraceData::Ptr lidarshooter::TraceData::getPtr()
@@ -482,7 +482,7 @@ void lidarshooter::TraceData::getMeshIntersect16(const int *validRays, RTCRayHit
 }
 
 
-lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig)
+lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
     : _device(rtcNewDevice(nullptr)),
       _scene(rtcNewScene(_device)),
       _config(_sensorConfig)
@@ -490,8 +490,11 @@ lidarshooter::TraceData::TraceData(std::shared_ptr<LidarDevice> _sensorConfig)
     // Make sure the std::shared_ptr<LidarDevice> copy constructor increments
     // the reference counter and doesn't make a copy
     
-    // Allocate an empty point cloud; make sure points cloud is zero at first
-    _traceCloud = sensor_msgs::PointCloud2::Ptr(new sensor_msgs::PointCloud2());
+    // If input _traceStorage == nullptr, create space; else take given pointer
+    if (_traceStorage == nullptr)
+        _traceCloud = sensor_msgs::PointCloud2::Ptr(new sensor_msgs::PointCloud2());
+    else
+       _traceCloud = _traceStorage;
     _traceCloud->width = 0;
     _traceCloud->height = 0;
 
