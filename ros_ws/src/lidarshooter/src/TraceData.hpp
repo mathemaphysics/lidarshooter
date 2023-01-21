@@ -302,19 +302,19 @@ private:
 	long _geometryCount;
 
 	// Vertex storage space and accounting
-	std::map<std::string, long> _vertexCounts;
-	std::map<std::string, float*> _vertices;
-	std::map<std::string, RTCBuffer> _verticesBuffer;
+	std::map<const std::string, long> _vertexCounts;
+	std::map<const std::string, float*> _vertices;
+	std::map<const std::string, RTCBuffer> _verticesBuffer;
 
 	// Element storage space and accounting
-	std::map<std::string, long> _elementCounts;
-	std::map<std::string, unsigned int*> _elements;
-	std::map<std::string, RTCBuffer> _elementsBuffer;
+	std::map<const std::string, long> _elementCounts;
+	std::map<const std::string, unsigned int*> _elements;
+	std::map<const std::string, RTCBuffer> _elementsBuffer;
 
 	// The geometries themselves for embree raytracing
-	std::map<std::string, RTCGeometry> _geometries;
-	std::map<std::string, unsigned int> _geometryIds;
-	std::map<std::string, RTCGeometryType> _geometryTypes;
+	std::map<const std::string, RTCGeometry> _geometries;
+	std::map<const std::string, unsigned int> _geometryIds;
+	std::map<const std::string, RTCGeometryType> _geometryTypes;
 
 	// The trace cloud itself
 	sensor_msgs::PointCloud2::Ptr _traceCloud;
