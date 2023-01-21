@@ -531,6 +531,7 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
 void lidarshooter::MeshProjector::traceMesh()
 {
     // Do the update the new way
+    _meshMutex.lock(); // Lock becuase mesh callback might fire
     for (auto& [name, mesh] : _trackObjects)
         _traceData->updateGeometry(
             name,
@@ -538,6 +539,7 @@ void lidarshooter::MeshProjector::traceMesh()
             _angularDisplacement,
             mesh
         );
+    _meshMutex.unlock();
     _traceData->commitScene();
 
     /**

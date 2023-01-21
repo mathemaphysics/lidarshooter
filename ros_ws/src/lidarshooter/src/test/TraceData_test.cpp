@@ -100,14 +100,21 @@ TEST_F(TraceDataTest, GeometryType)
     EXPECT_EQ(geometryType, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE);
 }
 
-}
-
-// TODO: There's probably a better test for this
-TEST_F(TraceDataTest, UpdateGeometry)
+TEST_F(TraceDataTest, TraceSceneCloud)
 {
+    // Must call this to initialize ros::Time for LidarDevice::initMessage
+    ros::Time::init();
     EXPECT_NO_FATAL_FAILURE(
         traceData->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
     );
+    traceData->commitScene();
+    EXPECT_NO_FATAL_FAILURE(
+        traceData->traceScene(0)
+    );
+    auto cloud = traceData->getTraceCloud();
+    EXPECT_EQ(cloud->width * cloud->height, 77);
+}
+
 }
 
 int main(int argc, char *argv[])
