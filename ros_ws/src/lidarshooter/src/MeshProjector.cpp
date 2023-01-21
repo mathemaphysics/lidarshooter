@@ -544,7 +544,9 @@ void lidarshooter::MeshProjector::traceMesh()
         );
     _meshMutex.unlock();
     _traceData->commitScene();
+    _cloudMutex.lock(); // Locks _currentState
     _traceData->traceScene(++_frameIndex);
+    _cloudMutex.unlock(); // Unlocks _currentState
 
     /*
      * NEW METHOD RAYTRACING 
@@ -574,6 +576,7 @@ void lidarshooter::MeshProjector::traceMesh()
     /**
      * OLD METHOD RAYTRACING
      */
+
     // Initialize ray state for batch processing
     _cloudMutex.lock();
     _config->initMessage(_currentState, ++_frameIndex);
