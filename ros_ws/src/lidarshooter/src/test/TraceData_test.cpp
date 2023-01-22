@@ -32,6 +32,7 @@ protected:
         spdlog::set_level(spdlog::level::off);
 
         // Load the mesh for reference
+        // TODO: See the note below; the same goes here
         meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
         pcl::io::loadPolygonFileSTL(
             "/workspaces/lidarshooter/mesh/ben.stl",
@@ -39,6 +40,10 @@ protected:
         );
 
         // Make the LidarDevice
+        // TODO: Need a configure_file() in CMakeLists.txt for this file because
+        // I don't know where the ROS tests are run from and we can't use
+        // absolute file locations for obvious reasons; but this works from
+        // within the development container right now.
         sensorConfig = std::make_shared<lidarshooter::LidarDevice>(
             "/workspaces/lidarshooter/config/hesai-pandar-XT-32-lidar_0000.json"
         );
