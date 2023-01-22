@@ -208,6 +208,13 @@ public:
 	sensor_msgs::PointCloud2::ConstPtr getTraceCloud() const;
 
 	/**
+	 * @brief Set the location for the class to write the trace cloud
+	 * 
+	 * @param _traceStorage Trace cloud output pointer
+	 */
+	void setTraceCloud(sensor_msgs::PointCloud2::Ptr _traceStorage);
+
+	/**
 	 * @brief Commits any changes to geometries within
 	 * 
 	 * @param _meshName Key name for the associated geometry

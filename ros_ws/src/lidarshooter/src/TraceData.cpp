@@ -440,6 +440,11 @@ sensor_msgs::PointCloud2::ConstPtr lidarshooter::TraceData::getTraceCloud() cons
     return _traceCloud;
 }
 
+void lidarshooter::TraceData::setTraceCloud(sensor_msgs::PointCloud2::Ptr _traceStorage)
+{
+    _traceCloud = _traceStorage;
+}
+
 void lidarshooter::TraceData::getMeshIntersect(int *_valid, RayHitType *_rayhit)
 {
     TRACEDATA_GET_MESH_INTERSECT(_valid, _rayhit);
