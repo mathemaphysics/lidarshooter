@@ -1,3 +1,14 @@
+/**
+ * @file TraceData_test.cpp
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief Unit tests related to the TraceData class
+ * @version 0.1
+ * @date 2023-01-22
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <gtest/gtest.h>
 
 #include "../TraceData.hpp"
