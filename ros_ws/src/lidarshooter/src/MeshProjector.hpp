@@ -25,6 +25,9 @@
 #include <embree3/rtcore.h>
 #include <spdlog/spdlog.h>
 
+#include <lidarshooter/NamedPolygonMesh.h>
+#include <lidarshooter/NamedTwist.h>
+
 #include <cstdint>
 #include <cmath>
 #include <vector>
@@ -36,6 +39,7 @@
 #include <mutex>
 #include <atomic>
 #include <map>
+#include <tuple>
 
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
@@ -49,6 +53,7 @@
 
 namespace lidarshooter
 {
+
 class MeshProjector
 {
 public:
@@ -103,6 +108,13 @@ public:
      * @param _mesh Mesh of type \c pcl_msgs::PolygonMesh::ConstPtr
      */
     void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
+    
+    /**
+     * @brief ROS receiving callback function handling incoming meshes in \c _trackObjects
+     * 
+     * @param _mesh The key -> mesh pair
+     */
+    void multiMeshCallback(const lidarshooter::NamedPolygonMesh::ConstPtr& _mesh);
 
     /**
      * @brief Set the internal mesh
@@ -151,6 +163,13 @@ public:
      * @param _vel Twist message from the joystick
      */
     void joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel);
+    
+    /**
+     * @brief All tagged joystick message can go here
+     * 
+     * @param _vel The name/twist message combination message
+     */
+    void multiJoystickCallback(const lidarshooter::NamedTwist::ConstPtr& _vel);
 
     /**
      * @brief Publishes the currently buffered traced cloud
@@ -240,11 +259,11 @@ private:
     ros::NodeHandle _nodeHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _meshSubscriber;
-    std::map<const std::string, ros::Subscriber> _meshSubscribers;
+    ros::Subscriber _multiMeshSubscriber;
     std::mutex _meshMutex;
     std::map<const std::string, std::mutex> _meshMutexes;
     ros::Subscriber _joystickSubscriber;
-    std::map<const std::string, ros::Subscriber> _joystickSubscribers;
+    ros::Subscriber _multiJoystickSubscriber;
     std::mutex _joystickMutex;
     std::map<const std::string, std::mutex> _joystickMutexes;
 

@@ -30,11 +30,15 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
     StringWithHeader.msg
+    NamedPolygonMesh.msg
+    NamedTwist.msg
 )
 
 generate_messages(
   DEPENDENCIES
     std_msgs
+    pcl_msgs
+    geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
