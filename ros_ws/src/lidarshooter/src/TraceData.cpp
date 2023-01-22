@@ -381,7 +381,7 @@ float* lidarshooter::TraceData::getVertices(const std::string& _meshName)
     if (verticesIterator == _vertices.end())
         throw(TraceException(
             __FILE__,
-            "Geometry key does not exist in vertces map",
+            "Geometry key does not exist in vertices map",
             2
         ));
     return verticesIterator->second;
