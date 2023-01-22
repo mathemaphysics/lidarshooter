@@ -739,7 +739,7 @@ void lidarshooter::MeshProjector::traceMesh()
         th->join();
 
     // Set the point count to the value that made it back from tracing
-    _currentState->width = totalPointCount;
+    _currentState->width = totalPointCount.load();
 
     // Indicate that we just retraced and you can come and get it
     _stateWasUpdated.store(true);
