@@ -358,7 +358,7 @@ int lidarshooter::TraceData::traceScene(std::uint32_t _frameIndex)
         th->join();
 
     // Set the point count to the value that made it back from tracing
-    _traceCloud->width = totalPointCount;
+    _traceCloud->width = totalPointCount.load();
 
     return 0;
 }

@@ -623,7 +623,6 @@ void lidarshooter::MeshProjector::traceMesh()
      * NEW METHOD RAYTRACING 
      */
 
-    _meshMutex.lock(); // Lock becuase mesh callback might fire
     for (auto& [name, mesh] : _trackObjects)
     {
         // Make sure this mesh doesn't change during read
@@ -640,7 +639,6 @@ void lidarshooter::MeshProjector::traceMesh()
         // Release just this mesh
         _meshMutexes[name].unlock();
     }
-    _meshMutex.unlock();
     _traceData->commitScene();
     _cloudMutex.lock(); // Locks _currentState
     _traceData->traceScene(++_frameIndex);
