@@ -19,6 +19,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <map>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -106,7 +107,6 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Create the pubsub situation; in this constructor cloud advertises on /[namespace]/pandar
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20); // TODO: Make this queue size and "pandar" parameters
-    _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
     _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
@@ -295,6 +295,8 @@ lidarshooter::MeshProjector::~MeshProjector()
     // Obtain mutex locks before destruction so we don't interrupt publishing
     _cloudMutex.lock();
     _meshMutex.lock();
+    for (auto& [name, mesh] : _meshMutexes)
+        mesh.lock();
     _joystickMutex.lock();
 
     // Probably some geometry cleanup if possible here when making the geometry
@@ -340,10 +342,42 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
         _meshName,
         pcl::PolygonMesh::Ptr(new pcl::PolygonMesh(*_mesh)) // Make a copy
     );
+
+    // Emplace a new mesh mutex for each object
+    _meshMutexes.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple() // Create mutex with no arguments
+    );
+
+    // Emplace a new mesh subscriber to receive mesh state
+    _meshSubscribers.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple()
+    );
+    _meshSubscribers[_meshName] = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>(fmt::format("/objtracker/{}/meshstate", _meshName), LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
+    
+    // Emplace a new joystick mutex for each object
+    _joystickMutexes.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple() // Create mutex with no arguments
+    );
+
+    // Emplace a new joystick subscriber for each object
+    _joystickSubscribers.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple()
+    );
+    _joystickSubscribers[_meshName] = _nodeHandle.subscribe<geometry_msgs::Twist>(fmt::format("/joystick/{}/cmd_vel", _meshName), LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
+
+    // Add the geometry
     int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->cloud.width * _mesh->cloud.height, _mesh->polygons.size());
     _logger->debug("Added geometric ID {}", geomId);
 
-    // Indicate the mesh was updated so we need a retrace
+    // Indicate the mesh was updated so we get a retrace
     _meshWasUpdated.store(true);
     _meshWasUpdatedPublic.store(true);
     _meshMutex.unlock();
@@ -536,12 +570,21 @@ void lidarshooter::MeshProjector::traceMesh()
 
     _meshMutex.lock(); // Lock becuase mesh callback might fire
     for (auto& [name, mesh] : _trackObjects)
+    {
+        // Make sure this mesh doesn't change during read
+        _meshMutexes[name].lock();
+
+        // Copy vertex and elemet data from mesh into buffers
         _traceData->updateGeometry(
             name,
             _linearDisplacement,
             _angularDisplacement,
             mesh
         );
+
+        // Release just this mesh
+        _meshMutexes[name].unlock();
+    }
     _meshMutex.unlock();
     _traceData->commitScene();
     _cloudMutex.lock(); // Locks _currentState

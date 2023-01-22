@@ -224,7 +224,7 @@ private:
     RTCGeometry _groundGeometry;
 
     // NEW
-    std::shared_ptr<TraceData> _traceData;
+    TraceData::Ptr _traceData;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;
@@ -240,13 +240,19 @@ private:
     ros::NodeHandle _nodeHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _meshSubscriber;
+    std::map<const std::string, ros::Subscriber> _meshSubscribers;
     std::mutex _meshMutex;
+    std::map<const std::string, std::mutex> _meshMutexes;
     ros::Subscriber _joystickSubscriber;
+    std::map<const std::string, ros::Subscriber> _joystickSubscribers;
     std::mutex _joystickMutex;
+    std::map<const std::string, std::mutex> _joystickMutexes;
 
     // Current net state of the mesh
     Eigen::Vector3f _linearDisplacement; // The cumulative linear displacement since instantiation
+    std::map<const std::string, Eigen::Vector3f> _linearDisplacements;
     Eigen::Vector3f _angularDisplacement; // The cumulative angular displacement since instantiation
+    std::map<const std::string, Eigen::Vector3f> _angularDisplacements;
 
     /**
      * @brief Transforms a joystick signal to global coordinates
