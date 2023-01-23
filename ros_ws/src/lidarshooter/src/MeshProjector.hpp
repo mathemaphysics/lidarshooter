@@ -289,6 +289,15 @@ private:
     inline Eigen::Vector3f transformToGlobal(Eigen::Vector3f _displacement);
 
     /**
+     * @brief Transforms a joystick signal for specified mesh key to global coordinates
+     * 
+     * @param _meshName The whose coordinate system to whom we wish to transform
+     * @param _displacement The displacement vector to be transformed
+     * @return Eigen::Vector3f The resulting transformed displacement
+     */
+    inline Eigen::Vector3f transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement);
+
+    /**
      * @brief Draws the ground into the \c _scene geometry
      */
     void updateGround();

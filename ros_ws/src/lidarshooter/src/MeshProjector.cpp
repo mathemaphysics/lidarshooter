@@ -470,7 +470,7 @@ void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::C
 void lidarshooter::MeshProjector::multiJoystickCallback(const lidarshooter::NamedTwist::ConstPtr& _vel)
 {
     // TODO: Move this into its own function and replace everywhere
-    Eigen::Vector3f globalDisplacement = transformToGlobal(Eigen::Vector3f(_vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z));
+    Eigen::Vector3f globalDisplacement = transformToGlobal(_vel->name, Eigen::Vector3f(_vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z));
     
     // Output actual displacement applied after rotation to local coordinates
     // TODO: Set both of these info() calls to debug() as soon as settled
@@ -538,6 +538,17 @@ inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(Eigen::Vec
     Eigen::AngleAxisf xRotation(_angularDisplacement.x(), Eigen::Vector3f::UnitX());
     Eigen::AngleAxisf yRotation(_angularDisplacement.y(), Eigen::Vector3f::UnitY());
     Eigen::AngleAxisf zRotation(_angularDisplacement.z(), Eigen::Vector3f::UnitZ());
+    Eigen::Affine3f localRotation = Eigen::Translation3f(Eigen::Vector3f::Zero()) * zRotation * yRotation * xRotation;
+    Eigen::Vector3f localDisplacement = localRotation * _displacement;
+    return localDisplacement;
+}
+
+inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement)
+{
+    // Just for an Affine3f transform using an empty translation
+    Eigen::AngleAxisf xRotation(_angularDisplacements[_meshName].x(), Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf yRotation(_angularDisplacements[_meshName].y(), Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf zRotation(_angularDisplacements[_meshName].z(), Eigen::Vector3f::UnitZ());
     Eigen::Affine3f localRotation = Eigen::Translation3f(Eigen::Vector3f::Zero()) * zRotation * yRotation * xRotation;
     Eigen::Vector3f localDisplacement = localRotation * _displacement;
     return localDisplacement;
