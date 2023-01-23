@@ -156,13 +156,6 @@ public:
      * is no update to the mesh that produced the last trace.
      */
     void traceMeshWrapper();
-
-    /**
-     * @brief Updates the present velocity of the mesh
-     * 
-     * @param _vel Twist message from the joystick
-     */
-    void joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel);
     
     /**
      * @brief All tagged joystick message can go here
@@ -214,22 +207,6 @@ private:
 
     // Device with everyone you need to know about your scanner
     std::shared_ptr<LidarDevice> _config;
-
-    // Storage of actual geometries for Embree
-    float *_objectVertices;
-    unsigned *_objectTriangles;
-    float *_groundVertices;
-    unsigned *_groundQuadrilaterals;
-
-    // Object and ground buffer allocation size
-    long _objectVerticesBufferSize;
-    long _objectElementsBufferSize;
-    long _groundVerticesBufferSize;
-    long _groundElementsBufferSize;
-    RTCBuffer _objectVerticesBuffer;
-    RTCBuffer _objectElementsBuffer;
-    RTCBuffer _groundVerticesBuffer;
-    RTCBuffer _groundElementsBuffer;
 
     // Messages in class format
     pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector

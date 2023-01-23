@@ -47,12 +47,6 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
-
-    // Initialize to zero buffer size; dynamic allocation is okay
-    _objectVerticesBufferSize = 0;
-    _objectElementsBufferSize = 0;
-    _groundVerticesBufferSize = 0;
-    _groundElementsBufferSize = 0;
     
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
@@ -103,7 +97,6 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Create the pubsub situation; in this constructor cloud advertises on /[namespace]/pandar
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20); // TODO: Make this queue size and "pandar" parameters
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _multiJoystickSubscriber = _nodeHandle.subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
@@ -136,12 +129,6 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
 
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
-    
-    // Initialize to zero buffer size; dynamic allocation is okay
-    _objectVerticesBufferSize = 0;
-    _objectElementsBufferSize = 0;
-    _groundVerticesBufferSize = 0;
-    _groundElementsBufferSize = 0;
 
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
@@ -190,7 +177,6 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
     _multiMeshSubscriber = _nodeHandle.subscribe<lidarshooter::NamedPolygonMesh>("/objtracker/all/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::multiMeshCallback, this);
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _multiJoystickSubscriber = _nodeHandle.subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
@@ -220,12 +206,6 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
     
-    // Initialize to zero buffer size; dynamic allocation is okay
-    _objectVerticesBufferSize = 0;
-    _objectElementsBufferSize = 0;
-    _groundVerticesBufferSize = 0;
-    _groundElementsBufferSize = 0;
-
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
     std::regex slashRegex("/");
@@ -273,7 +253,6 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
     _meshSubscriber = _nodeHandle.subscribe<pcl_msgs::PolygonMesh>("/objtracker/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::meshCallback, this);
     _multiMeshSubscriber = _nodeHandle.subscribe<lidarshooter::NamedPolygonMesh>("/objtracker/all/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::multiMeshCallback, this);
-    _joystickSubscriber = _nodeHandle.subscribe<geometry_msgs::Twist>("/joystick/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::joystickCallback, this);
     _multiJoystickSubscriber = _nodeHandle.subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
     _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
@@ -290,7 +269,6 @@ lidarshooter::MeshProjector::~MeshProjector()
     _meshMutex.lock();
     for (auto& [name, mesh] : _meshMutexes)
         mesh.lock();
-    _joystickMutex.lock();
     for (auto& [name, mesh] : _joystickMutexes)
         mesh.lock();
 }
@@ -423,31 +401,6 @@ void lidarshooter::MeshProjector::traceMeshWrapper()
         // Turn off mesh updated flag
         _meshWasUpdated.store(false);
     }
-}
-
-void lidarshooter::MeshProjector::joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel)
-{
-    // TODO: Move this into its own function and replace everywhere
-    Eigen::Vector3f globalDisplacement = transformToGlobal(Eigen::Vector3f(_vel->linear.x, _vel->linear.y, _vel->linear.z));
-    
-    // Output actual displacement applied after rotation to local coordinates
-    // TODO: Set both of these info() calls to debug() as soon as settled
-    _logger->debug("Joystick signal: {}, {}, {}, {}, {}, {}",
-                  _vel->linear.x, _vel->linear.y, _vel->linear.z,
-                  _vel->angular.x, _vel->angular.y, _vel->angular.z);
-    _logger->debug("Global displacement: {}, {}, {}, {}, {}, {}",
-                  globalDisplacement.x(), globalDisplacement.y(), globalDisplacement.z(),
-                  _vel->angular.x, _vel->angular.y, _vel->angular.z);
-
-    // Update the linear total linear and angular displacement
-    _joystickMutex.lock();
-    _linearDisplacement += globalDisplacement;
-    _angularDisplacement += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
-
-    // Hint to the tracer that it needs to run again
-    _meshWasUpdated.store(true); // TODO: Don't update when the signal is (0, 0, 0, 0, 0, 0)
-    _meshWasUpdatedPublic.store(true);
-    _joystickMutex.unlock();
 }
 
 void lidarshooter::MeshProjector::multiJoystickCallback(const lidarshooter::NamedTwist::ConstPtr& _vel)
