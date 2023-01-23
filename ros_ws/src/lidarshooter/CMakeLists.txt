@@ -19,6 +19,7 @@ include(FetchContent)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   std_msgs
   sensor_msgs
   geometry_msgs
@@ -32,11 +33,13 @@ add_message_files(
     StringWithHeader.msg
     NamedPolygonMesh.msg
     NamedTwist.msg
+    NamedTwistStamped.msg
 )
 
 generate_messages(
   DEPENDENCIES
     std_msgs
+    geometry_msgs
     pcl_msgs
     geometry_msgs
 )

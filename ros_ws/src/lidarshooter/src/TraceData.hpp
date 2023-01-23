@@ -143,7 +143,7 @@ public:
 	 * @param _mesh Mesh containing points to use to update the internal scene
 	 * @return int Returns 0 if all went well, < 0 otherwise
 	 */
-	int updateGeometry(const std::string& _meshName, const Eigen::Vector3f& _translation, const Eigen::Vector3f& _rotation, pcl::PolygonMesh::Ptr& _mesh);
+	int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh);
 
 	/**
 	 * @brief Traces the scene and puts the result in \c _traceCloud

@@ -165,6 +165,9 @@ int lidarshooter::DeviceRuntime::updateTraceInViewer()
 
     // Convert the traced cloud in PointCloud2 format to local PointXYZ copy
     cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(_traceCloud);
+    
+    // Debugging information
+    _logger->debug("Runtime number of trace cloud points: {}", _traceCloud->width * _traceCloud->height);
 
     // Add it to the viewer as e.g. lidar_0000_trace
     if (_viewer->updatePointCloud<pcl::PointXYZ>(_traceCloud, cloudName) == false)

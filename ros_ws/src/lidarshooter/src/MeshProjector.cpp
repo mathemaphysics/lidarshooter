@@ -303,6 +303,8 @@ lidarshooter::MeshProjector::~MeshProjector()
     for (auto& [name, mesh] : _meshMutexes)
         mesh.lock();
     _joystickMutex.lock();
+    for (auto& [name, mesh] : _joystickMutexes)
+        mesh.lock();
 
     // Probably some geometry cleanup if possible here when making the geometry
     // buffers persistent gets sorted
@@ -619,10 +621,6 @@ void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
 
 void lidarshooter::MeshProjector::traceMesh()
 {
-    /**
-     * NEW METHOD RAYTRACING 
-     */
-
     for (auto& [name, mesh] : _trackObjects)
     {
         // Make sure this mesh doesn't change during read
@@ -631,10 +629,13 @@ void lidarshooter::MeshProjector::traceMesh()
         // Copy vertex and elemet data from mesh into buffers
         _traceData->updateGeometry(
             name,
-            _linearDisplacement,
-            _angularDisplacement,
+            _linearDisplacements[name],
+            _angularDisplacements[name],
             mesh
         );
+
+        // Debugging information
+        _logger->debug("Updated {} with {} points and {} elements", name, mesh->cloud.width * mesh->cloud.height, mesh->polygons.size());
 
         // Release just this mesh
         _meshMutexes[name].unlock();
@@ -644,111 +645,11 @@ void lidarshooter::MeshProjector::traceMesh()
     _traceData->traceScene(++_frameIndex);
     _cloudMutex.unlock(); // Unlocks _currentState
 
-    /*
-     * NEW METHOD RAYTRACING 
-     **/
-
-    /**
-     * OLD METHOD GEOMETRY UPDATE
-     */
-
-    // Update mesh with new locations and possibly structure
-    updateGround();
-
-    // Block changes to _trackObject->polygons until done
-    _meshMutex.lock();
-    updateMeshPolygons(_frameIndex);
-    _meshMutex.unlock();
-
-    // Commit the new geometry
-    rtcCommitGeometry(_objectGeometry);
-    rtcCommitGeometry(_groundGeometry);
-    rtcCommitScene(_scene);
-
-    /* 
-     * OLD METHOD GEOMETRY UPDATE
-     **/
-
-    /**
-     * OLD METHOD RAYTRACING
-     */
-
-    // Initialize ray state for batch processing
-    _cloudMutex.lock();
-    _config->initMessage(_currentState, ++_frameIndex);
-    _currentState->data.clear();
-    _config->reset();
-
-    // Count the total iterations because the limits are needed for threading
-    unsigned int numTotalRays = _config->getTotalRays();
-    unsigned int numIterations = numTotalRays / LIDARSHOOTER_RAY_PACKET_SIZE + (numTotalRays % LIDARSHOOTER_RAY_PACKET_SIZE > 0 ? 1 : 0);
-    unsigned int numThreads = 4; // TODO: Make this a parameter
-    unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
-
-    std::mutex sharedCloudMutex;
-    std::vector<std::thread> threads;
-    std::atomic<int> totalPointCount;
-    totalPointCount.store(0);
-    for (int rayChunk = 0; rayChunk < numThreads; ++rayChunk)
-    {
-        //unsigned int startPosition = rayChunk * numChunks;
-        // TODO: Convert the contents of the thread into a "chunk" function to simplify
-        threads.emplace_back(
-            [this, &sharedCloudMutex, numChunks, &totalPointCount](){
-                for (int ix = 0; ix < numChunks; ++ix)
-                {
-                    // Set up packet processing
-                    int rayState = 0;
-                    int validRays[LIDARSHOOTER_RAY_PACKET_SIZE]; // Initialize all invalid
-                    int rayRings[LIDARSHOOTER_RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
-                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
-                        validRays[i] = 0;
-                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
-                        rayRings[i] = -1;
-                    RayHitType rayhitn;
-
-                    // Fill up the next ray in the buffer
-                    rayState = this->_config->nextRay(rayhitn, validRays);
-                    for (int idx = 0; idx < LIDARSHOOTER_RAY_PACKET_SIZE; ++idx)
-                        rayRings[idx] = 0;
-
-                    // Execute when the buffer is full
-                    this->getMeshIntersect(validRays, &rayhitn); // TODO: Make sure meshMutex doesn't need set?
-                    for (int ri = 0; ri < LIDARSHOOTER_RAY_PACKET_SIZE; ++ri)
-                    {
-                        if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
-                        {
-                            lidarshooter::XYZIRBytes cloudBytes(
-                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_x[ri],
-                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_y[ri],
-                                rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
-                                64.0, rayRings[ri]
-                            );
-                            sharedCloudMutex.lock();
-                            cloudBytes.addToCloud(this->_currentState);
-                            totalPointCount.store(totalPointCount.load() + 1);
-                            sharedCloudMutex.unlock();
-                        }
-                        validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
-                    }
-                }
-            }
-        );
-    }
-    for (auto th = threads.begin(); th != threads.end(); ++th)
-        th->join();
-
-    // Set the point count to the value that made it back from tracing
-    _currentState->width = totalPointCount.load();
+    _logger->debug("Trace cloud has {} points in it", _traceData->getTraceCloud()->width * _traceData->getTraceCloud()->height);
 
     // Indicate that we just retraced and you can come and get it
     _stateWasUpdated.store(true);
     _stateWasUpdatedPublic.store(true);
-    _cloudMutex.unlock();
-
-    /*
-     * OLD METHOD RAYTRACING
-     **/
 }
 
 void lidarshooter::MeshProjector::getMeshIntersect(int *_valid, RayHitType *_rayhit)

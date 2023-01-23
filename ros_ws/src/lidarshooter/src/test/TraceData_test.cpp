@@ -128,7 +128,7 @@ TEST_F(TraceDataTest, TraceSceneCloud)
         traceData->traceScene(0)
     );
     auto cloud = traceData->getTraceCloud();
-    EXPECT_EQ(cloud->width * cloud->height, 77);
+    EXPECT_EQ(cloud->width * cloud->height, 235);
 }
 
 }

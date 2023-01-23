@@ -265,9 +265,8 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
 int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh)
 {
     // Now update the internal buffers to align with the mesh passed in
-    auto thisCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2(_mesh->cloud));
     auto meshTransformer = MeshTransformer::create(_mesh, _transform, _config);
-    meshTransformer->inverseTransformIntoBuffer(
+    meshTransformer->transformIntoBuffer(
         getGeometryType(_meshName),
         getVertices(_meshName),
         getElements(_meshName)
@@ -277,12 +276,11 @@ int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, Eigen:
     return commitGeometry(_meshName);
 }
 
-int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, const Eigen::Vector3f& _translation, const Eigen::Vector3f& _rotation, pcl::PolygonMesh::Ptr& _mesh)
+int lidarshooter::TraceData::updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh)
 {
     // Now update the internal buffers to align with the mesh passed in
-    auto thisCloud = pcl::PCLPointCloud2::Ptr(new pcl::PCLPointCloud2(_mesh->cloud));
     auto meshTransformer = MeshTransformer::create(_mesh, _translation, _rotation, _config);
-    meshTransformer->inverseTransformIntoBuffer(
+    meshTransformer->transformIntoBuffer(
         getGeometryType(_meshName),
         getVertices(_meshName),
         getElements(_meshName)
