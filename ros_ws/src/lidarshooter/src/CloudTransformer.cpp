@@ -335,7 +335,7 @@ void lidarshooter::CloudTransformer::transformFromComponents(const Eigen::Vector
     Eigen::AngleAxisf zRotation(__rotation.z(), Eigen::Vector3f::UnitZ());
 
     // Rotate first, then translate; remember, right-to-left operation order means rightmost goes first
-    Eigen::Affine3f _transform = translation * zRotation * yRotation * xRotation;
+    _transform = translation * zRotation * yRotation * xRotation;
 }
 
 void lidarshooter::CloudTransformer::componentsFromTransform(const Eigen::Affine3f &__transform)
