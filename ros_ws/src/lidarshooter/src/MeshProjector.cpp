@@ -54,10 +54,6 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _groundVerticesBufferSize = 0;
     _groundElementsBufferSize = 0;
     
-    // Set up geometry
-    setupObjectGeometryBuffers(3000, 6000); // TODO: Fix this immediately
-    setupGroundGeometryBuffers(8, 2);       // TODO: You need automatic buffer sizing
-
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
     std::regex slashRegex("/");
@@ -147,10 +143,6 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     _groundVerticesBufferSize = 0;
     _groundElementsBufferSize = 0;
 
-    // Set up geometry
-    setupObjectGeometryBuffers(3000, 6000);
-    setupGroundGeometryBuffers(8, 2);
-
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
     std::regex slashRegex("/");
@@ -234,10 +226,6 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _groundVerticesBufferSize = 0;
     _groundElementsBufferSize = 0;
 
-    // Set up geometry
-    setupObjectGeometryBuffers(3000, 6000);
-    setupGroundGeometryBuffers(8, 2);
-
     // Get the sensorUid we want to run
     std::string nodeNamespace = _nodeHandle.getNamespace();
     std::regex slashRegex("/");
@@ -305,11 +293,6 @@ lidarshooter::MeshProjector::~MeshProjector()
     _joystickMutex.lock();
     for (auto& [name, mesh] : _joystickMutexes)
         mesh.lock();
-
-    // Probably some geometry cleanup if possible here when making the geometry
-    // buffers persistent gets sorted
-    releaseObjectGeometryBuffers();
-    releaseGroundGeometryBuffers();
 }
 
 void lidarshooter::MeshProjector::shutdown()
@@ -554,82 +537,6 @@ inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(const std:
     return localDisplacement;
 }
 
-void lidarshooter::MeshProjector::updateGround()
-{
-    // Set the ground; eventually make this its own function
-    Eigen::Vector3f corner1(-50.0, -50.0, 0.0); _config->originToSensor(corner1); // TODO: Allow configuration of the ground in JSON format
-    Eigen::Vector3f corner2(-50.0,  50.0, 0.0); _config->originToSensor(corner2);
-    Eigen::Vector3f corner3( 50.0,  50.0, 0.0); _config->originToSensor(corner3);
-    Eigen::Vector3f corner4( 50.0, -50.0, 0.0); _config->originToSensor(corner4);
-
-    _groundVertices[0] = corner1.x(); _groundVertices[1]  = corner1.y(); _groundVertices[2]  = corner1.z();
-    _groundVertices[3] = corner2.x(); _groundVertices[4]  = corner2.y(); _groundVertices[5]  = corner2.z();
-    _groundVertices[6] = corner3.x(); _groundVertices[7]  = corner3.y(); _groundVertices[8]  = corner3.z();
-    _groundVertices[9] = corner4.x(); _groundVertices[10] = corner4.y(); _groundVertices[11] = corner4.z();
-
-    _groundQuadrilaterals[0] = 0;
-    _groundQuadrilaterals[1] = 1;
-    _groundQuadrilaterals[2] = 2;
-    _groundQuadrilaterals[3] = 3;
-}
-
-void lidarshooter::MeshProjector::updateMeshPolygons(int frameIndex)
-{
-    // Set the triangle element indexes 
-    std::size_t idx = 0;
-    for (auto poly : _trackObject.polygons)
-    {
-        std::uint32_t vert1 = poly.vertices[0];
-        std::uint32_t vert2 = poly.vertices[1];
-        std::uint32_t vert3 = poly.vertices[2];
-
-        _objectTriangles[3 * idx + 0] = vert1;
-        _objectTriangles[3 * idx + 1] = vert2;
-        _objectTriangles[3 * idx + 2] = vert3; // Mesh triangle
-        ++idx;
-    }
-
-    // Set the actual vertex positions
-    _logger->debug("Current net displacement: {}, {}, {}, {}, {}, {}",
-                  _linearDisplacement.x(), _linearDisplacement.y(), _linearDisplacement.z(),
-                  _angularDisplacement.x(), _angularDisplacement.y(), _angularDisplacement.z());
-
-    // TODO: Replace this whole section with CloudTransformer::applyTransform
-    for (std::size_t jdx = 0; jdx < _trackObject.cloud.width * _trackObject.cloud.height; ++jdx)
-    {
-        auto rawData = _trackObject.cloud.data.data() + jdx * _trackObject.cloud.point_step;
-        
-        float px, py, pz;
-        auto point = lidarshooter::XYZIRPoint(rawData);
-        point.getPoint(&px, &py, &pz, nullptr, nullptr);
-
-        // Rotate into the local coordinate frame for this device
-        Eigen::Vector3f ptrans(px, py, pz);
-
-        // Build the transformation according to the present position in
-        // _linearDisplacement and _angularDisplacement; TODO: Encapsulate this
-        // into a function
-        Eigen::Translation3f translation(_linearDisplacement);
-        Eigen::AngleAxisf xRotation(_angularDisplacement.x(), Eigen::Vector3f::UnitX());
-        Eigen::AngleAxisf yRotation(_angularDisplacement.y(), Eigen::Vector3f::UnitY());
-        Eigen::AngleAxisf zRotation(_angularDisplacement.z(), Eigen::Vector3f::UnitZ());
-
-        // Rotate first, then translate; remember, right-to-left operation order means rightmost goes first
-        Eigen::Affine3f transform = translation * zRotation * yRotation * xRotation;
-        
-        // Apply the affine transformation and then transf
-        ptrans = transform * ptrans;
-        _config->originToSensor(ptrans);
-
-        // Linear position update here
-        _joystickMutex.lock(); // TODO: This is not needed at all now
-        _objectVertices[3 * jdx + 0] = ptrans.x();
-        _objectVertices[3 * jdx + 1] = ptrans.y();
-        _objectVertices[3 * jdx + 2] = ptrans.z(); // Mesh vertex
-        _joystickMutex.unlock();
-    }
-}
-
 void lidarshooter::MeshProjector::traceMesh()
 {
     for (auto& [name, mesh] : _trackObjects)
@@ -661,113 +568,4 @@ void lidarshooter::MeshProjector::traceMesh()
     // Indicate that we just retraced and you can come and get it
     _stateWasUpdated.store(true);
     _stateWasUpdatedPublic.store(true);
-}
-
-void lidarshooter::MeshProjector::getMeshIntersect(int *_valid, RayHitType *_rayhit)
-{
-    GET_MESH_INTERSECT(_valid, _rayhit);
-}
-
-void lidarshooter::MeshProjector::getMeshIntersect1(float ox, float oy, float oz, float dx, float dy, float dz, RTCRayHit *rayhit)
-{
-    rayhit->ray.org_x  = ox; rayhit->ray.org_y = oy; rayhit->ray.org_z = oz;
-    rayhit->ray.dir_x  = dx; rayhit->ray.dir_y = dy; rayhit->ray.dir_z = dz;
-    rayhit->ray.tnear  = 0.f;
-    rayhit->ray.tfar   = std::numeric_limits<float>::infinity();
-    rayhit->hit.geomID = RTC_INVALID_GEOMETRY_ID;
-    
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-
-    // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
-    // at a distance of rayhit.ray.tfar
-    rtcIntersect1(_scene, &context, rayhit);
-}
-
-void lidarshooter::MeshProjector::getMeshIntersect8(const int *validRays, RTCRayHit8 *rayhit)
-{
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-
-    // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
-    // at a distance of rayhit.ray.tfar
-    rtcIntersect8(validRays, _scene, &context, rayhit);
-}
-
-void lidarshooter::MeshProjector::getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit)
-{
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-
-    // If rayhit.ray.geomID != RTC_INVALID_GEOMETRY_ID then you have a solid hit
-    // at a distance of rayhit.ray.tfar
-    rtcIntersect16(validRays, _scene, &context, rayhit);
-}
-
-void lidarshooter::MeshProjector::setupObjectGeometryBuffers(int _numVertices, int _numElements)
-{
-    // Create the geometry itself
-    _objectGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-    // Now create the actual storage space for the vertices and set up
-    _objectVertices = new float[_numVertices * 3 * sizeof(float)];
-    _objectVerticesBuffer = rtcNewSharedBuffer(_device, _objectVertices, _numVertices * 3 * sizeof(float));
-    rtcSetSharedGeometryBuffer(_objectGeometry, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, _objectVertices, 0, 3 * sizeof(float), _numVertices);
-
-    // Now create the actual storage space for the elements and set up
-    _objectTriangles = new unsigned[3 * sizeof(unsigned) * _numElements];
-    _objectElementsBuffer = rtcNewSharedBuffer(_device, _objectTriangles, _numElements * 3 * sizeof(unsigned));
-    rtcSetSharedGeometryBuffer(_objectGeometry, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, _objectTriangles, 0, 3 * sizeof(unsigned), _numElements);
-
-    // Attach this geometry to the global scene
-    rtcAttachGeometry(_scene, _objectGeometry);
-
-    // Save in case we need to check for insufficient allocated space
-    _objectVerticesBufferSize = _numVertices;
-    _objectElementsBufferSize = _numElements;
-}
-
-void lidarshooter::MeshProjector::setupGroundGeometryBuffers(int _numVertices, int _numElements)
-{
-    // Create the geometry buffers for the ground vertices; just a quadrilateral
-    _groundGeometry = rtcNewGeometry(_device, RTC_GEOMETRY_TYPE_QUAD);
-
-    // Do the allocation
-    _groundVertices = new float[_numVertices * 3 * sizeof(float)];
-    _groundVerticesBuffer = rtcNewSharedBuffer(_device, _groundVertices, _numVertices * 3 * sizeof(float));
-    rtcSetSharedGeometryBuffer(_groundGeometry, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, _groundVertices, 0, 3 * sizeof(float), _numVertices);
-    
-    // Repeat for the elements
-    _groundQuadrilaterals = new unsigned[_numElements * 4 * sizeof(unsigned)];
-    _groundElementsBuffer = rtcNewSharedBuffer(_device, _groundQuadrilaterals, _numElements * 4 * sizeof(unsigned));
-    rtcSetSharedGeometryBuffer(_groundGeometry, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, _groundQuadrilaterals, 0, 4 * sizeof(unsigned), _numElements);
-
-    // Attach the ground geometry to the global scene for tracing
-    rtcAttachGeometry(_scene, _groundGeometry);
-
-    // Save in case we need to check for insufficient allocated space
-    _groundVerticesBufferSize = _numVertices;
-    _groundElementsBufferSize = _numElements;
-}
-
-void lidarshooter::MeshProjector::releaseObjectGeometryBuffers()
-{
-    // Allow embree to do its thing
-    rtcReleaseBuffer(_objectVerticesBuffer);
-    rtcReleaseBuffer(_objectElementsBuffer);
-
-    // Release the memory
-    delete [] _objectVertices;
-    delete [] _objectTriangles;
-}
-
-void lidarshooter::MeshProjector::releaseGroundGeometryBuffers()
-{
-    // Allow embree to do its thing
-    rtcReleaseBuffer(_groundVerticesBuffer);
-    rtcReleaseBuffer(_groundElementsBuffer);
-
-    // Release the memory
-    delete [] _groundVertices;
-    delete [] _groundQuadrilaterals;
 }

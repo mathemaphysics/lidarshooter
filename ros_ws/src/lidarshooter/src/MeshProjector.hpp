@@ -298,92 +298,9 @@ private:
     inline Eigen::Vector3f transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement);
 
     /**
-     * @brief Draws the ground into the \c _scene geometry
-     */
-    void updateGround();
-
-    /**
-     * @brief Draws the traced mesh into the \c _scene geometry
-     * 
-     * @param frameIndex Which frame we're currently in (possibly irrelevant now)
-     */
-    void updateMeshPolygons(int frameIndex);
-
-    /**
      * @brief Perform raytracing on \c _currentState
      */
     void traceMesh();
-
-#define GET_MESH_INTERSECT_BASE getMeshIntersect
-#define GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(GET_MESH_INTERSECT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__valid, __rayhit)
-
-    /**
-     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_RAY_PACKET_SIZE
-     * 
-     * Ray packet size generalization function; this will automatically
-     * select which ray packet size to use based on the system preprocessor
-     */
-    void getMeshIntersect(int *_valid, RayHitType *_rayhit);
-
-    /**
-     * @brief Get the intersection of a single ray with the \c _scene
-     * 
-     * @param ox Origin x coordinate
-     * @param oy Origin y coordinate
-     * @param oz Origin z coordinate
-     * @param dx Normalized ray vector x coordinate
-     * @param dy Normalized ray vector y coordinate
-     * @param dz Normalized ray vector z coordinate
-     * @param rayhit Input/output ray/hit structure
-     */
-    void getMeshIntersect1(float ox, float oy, float oz, float dx, float dy, float dz, RTCRayHit *rayhit);
-
-    /**
-     * @brief Get the intersection of a packet of 4 rays with the \c _scene
-     * 
-     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
-     *                  where -1 indicates do compute its intersection and 0 don't
-     * @param rayhit The input/output ray hit data structure
-     */
-    void getMeshIntersect4(const int *validRays, RTCRayHit4 *rayhit);
-
-    /**
-     * @brief Get the intersection of a packet of 8 rays with the \c _scene
-     * 
-     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
-     *                  where -1 indicates do compute its intersection and 0 don't
-     * @param rayhit The input/output ray hit data structure
-     */
-    void getMeshIntersect8(const int *validRays, RTCRayHit8 *rayhit);
-
-    /**
-     * @brief Get the intersection of a packet of 16 rays with the \c _scene
-     * 
-     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
-     *                  where -1 indicates do compute its intersection and 0 don't
-     * @param rayhit The input/output ray hit data structure
-     */
-    void getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit);
-
-    /**
-     * @brief Set up object geometry buffers
-     */
-    void setupObjectGeometryBuffers(int _numVertices, int _numElements);
-    
-    /**
-     * @brief Set up ground geometry buffers
-     */
-    void setupGroundGeometryBuffers(int _numVertices, int _numElements);
-
-    /**
-     * @brief Clean up object geometry buffers
-     */
-    void releaseObjectGeometryBuffers();
-
-    /**
-     * @brief Clean up ground geometry buffers
-     */
-    void releaseGroundGeometryBuffers();
 
     /**
      * @brief Method for locking the trace cloud mutex
