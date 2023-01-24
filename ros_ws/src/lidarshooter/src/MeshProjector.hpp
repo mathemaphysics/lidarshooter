@@ -125,7 +125,7 @@ public:
      * 
      * @param _mesh Mesh to be copied into the internal mesh state
      */
-    void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::ConstPtr& _mesh);
+    void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh);
 
     /**
      * @brief Get a shared pointer to the current traced cloud
@@ -209,15 +209,8 @@ private:
     std::shared_ptr<LidarDevice> _config;
 
     // Messages in class format
-    pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector
     std::map<const std::string, pcl::PolygonMesh::Ptr> _trackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
-
-    // Raytracing items
-    RTCDevice _device;
-    RTCScene _scene;
-    RTCGeometry _objectGeometry;
-    RTCGeometry _groundGeometry;
 
     // NEW
     TraceData::Ptr _traceData;
@@ -235,38 +228,25 @@ private:
     std::mutex _cloudMutex;
     ros::NodeHandle _nodeHandle;
     ros::Publisher _cloudPublisher;
-    ros::Subscriber _meshSubscriber;
     ros::Subscriber _multiMeshSubscriber;
-    std::mutex _meshMutex;
+    std::mutex _meshMapsMutex;
     std::map<const std::string, std::mutex> _meshMutexes;
-    ros::Subscriber _joystickSubscriber;
     ros::Subscriber _multiJoystickSubscriber;
-    std::mutex _joystickMutex;
     std::map<const std::string, std::mutex> _joystickMutexes;
 
     // Current net state of the mesh
-    Eigen::Vector3f _linearDisplacement; // The cumulative linear displacement since instantiation
     std::map<const std::string, Eigen::Vector3f> _linearDisplacements;
-    Eigen::Vector3f _angularDisplacement; // The cumulative angular displacement since instantiation
     std::map<const std::string, Eigen::Vector3f> _angularDisplacements;
 
     /**
-     * @brief Transforms a joystick signal to global coordinates
+     * @brief Transforms a joystick signal for specified mesh key to global coordinates
      * 
      * When the joystick says move 1 unit forward along the y-axis, we want it
-     * to move 1 unit forward along the \c _trackObject 's frame of reference
+     * to move 1 unit forward along the \c _trackObjects 's frame of reference
      * rotated to its current configuration, i.e. the new y-axis given by
-     * rotating the \c _displacement by \c _angularDisplacement , which is the
+     * rotating the \c _displacement by \c _angularDisplacements , which is the
      * current mesh orientation. So when you say "go forward", it moves in the
      * direction the object is facing, and not along the fixed global y-axis.
-     * 
-     * @param _displacement Vector to move along relative to global coordinate system
-     * @return Eigen::Vector3f Displacement to apply to the mesh
-     */
-    inline Eigen::Vector3f transformToGlobal(Eigen::Vector3f _displacement);
-
-    /**
-     * @brief Transforms a joystick signal for specified mesh key to global coordinates
      * 
      * @param _meshName The whose coordinate system to whom we wish to transform
      * @param _displacement The displacement vector to be transformed
@@ -275,7 +255,7 @@ private:
     inline Eigen::Vector3f transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement);
 
     /**
-     * @brief Perform raytracing on \c _currentState
+     * @brief Perform raytracing to produce a new \c _currentState
      */
     void traceMesh();
 
@@ -298,17 +278,61 @@ private:
     /**
      * @brief Method for locking the mesh mutex
      */
-    inline void lockMeshMutex()
+    inline void lockMeshMutex(const std::string& _meshName)
     {
-        _meshMutex.lock();
+        _meshMapsMutex.lock();
+        _meshMutexes[_meshName].lock();
+        _meshMapsMutex.unlock();
     }
 
     /**
      * @brief Method for unlocking the mesh mutex
      */
-    inline void unlockMeshMutex()
+    inline void unlockMeshMutex(const std::string& _meshName)
     {
-        _meshMutex.unlock();
+        _meshMapsMutex.lock();
+        _meshMutexes[_meshName].unlock();
+        _meshMapsMutex.unlock();
+    }
+
+    /**
+     * @brief Method for locking the joystick mutex for \c _meshName
+     * 
+     * @param _meshName Name of mesh whose mutex we want to lock
+     */
+    inline void lockJoystickMutex(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        _joystickMutexes[_meshName].lock();
+        _meshMapsMutex.unlock();
+    }
+
+    /**
+     * @brief Method for unlocking the joystick mutex for \c _meshName
+     * 
+     * @param _meshName Name of mesh whose mutex we want to unlock
+     */
+    inline void unlockJoystickMutex(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        _joystickMutexes[_meshName].unlock();
+        _meshMapsMutex.unlock();
+    }
+
+    inline Eigen::Vector3f& getLinearDisplacement(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        auto& displacement = _linearDisplacements[_meshName];
+        _meshMapsMutex.unlock();
+        return displacement;
+    }
+
+    inline Eigen::Vector3f& getAngularDisplacement(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        auto& displacement = _angularDisplacements[_meshName];
+        _meshMapsMutex.unlock();
+        return displacement;
     }
 };
 

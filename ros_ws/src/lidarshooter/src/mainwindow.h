@@ -117,6 +117,7 @@ private:
     // Starting and stopping projector and ROS
     const std::string addSensor(const std::string& _fileName);
     void deleteSensor(const std::string& _sensorUid);
+    void deleteMesh(const std::string& _meshName);
     bool initializeROSThread();
     bool shutdownROSThread();
 

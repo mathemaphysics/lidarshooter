@@ -189,6 +189,15 @@ void MainWindow::deleteSensor(QString _sensorUid)
     }
 }
 
+void MainWindow::deleteMesh(const std::string& _meshName)
+{
+    // Iterate through all device runtimes and remove
+    for (auto& [name, runtime] : runtimeMap)
+    {
+        auto meshProjector = runtime.getMeshProjector();
+    }
+}
+
 void MainWindow::updatePublishCloud(QString _sensorUid, bool _shouldPublishCloud)
 {
     auto runtimePointer = runtimeMap.find(_sensorUid.toStdString());
