@@ -83,6 +83,16 @@ SensorsDialog::~SensorsDialog()
     delete _meshItemsModel;
 }
 
+std::string SensorsDialog::getSensorName(int _index)
+{
+    return _sensorItemsModel->data(_sensorItemsModel->index(_index, 0)).toString().toStdString();
+}
+
+std::string SensorsDialog::getMeshName(int _index)
+{
+    return _meshItemsModel->data(_meshItemsModel->index(_index, 0)).toString().toStdString();
+}
+
 int SensorsDialog::getSensorRow(QString _tag)
 {
     auto itemList = _sensorItemsModel->findItems(_tag);
@@ -107,7 +117,7 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
     // Otherwise it isn't present so add it
     _sensorItemsModel->appendRow(thisRow);
     auto itemIndex = _sensorItemsModel->indexFromItem(thisRow.at(0)); // Device string should be unique
-    
+
     // Add the start/stop button
     auto deleteSensorButton = new TaggedPushButton(_device.c_str(), "Delete", ui->tableViewSensors);
     ui->tableViewSensors->setIndexWidget(_sensorItemsModel->index(itemIndex.row(), 2), deleteSensorButton);
@@ -138,28 +148,53 @@ void SensorsDialog::deleteSensorRow(QString _tag)
     _sensorItemsModel->removeRow(itemIndex.row());
 }
 
-void SensorsDialog::emitSensorToggled(QString _sensorUid, bool _toggled)
-{
-    emit sensorToggled(_sensorUid, _toggled);
-}
-
 void SensorsDialog::setMeshRow(int _row, std::string _device, std::string _path)
 {
     _meshItemsModel->setItem(0, 0, new QStandardItem(_device.c_str()));
     _meshItemsModel->setItem(0, 1, new QStandardItem(_path.c_str()));
 }
 
-void SensorsDialog::deleteMeshRow(int _row)
+void SensorsDialog::addMeshRow(std::string _meshName, std::string _path)
 {
-    _meshItemsModel->removeRow(_row);
+    // Append a row then get the new index of that row
+    QList<QStandardItem*> thisRow;
+    thisRow.append(new QStandardItem(QString(_meshName.c_str())));
+    thisRow.append(new QStandardItem(QString(_path.c_str())));
+
+    // Make sure the item isn't adding a duplicate
+    auto itemsList = _meshItemsModel->findItems(_meshName.c_str(), Qt::MatchExactly, 0); // Match sensorUid column
+    if (itemsList.length() > 0)
+        return;
+
+    // Now that we know it isn't already in there
+    _meshItemsModel->appendRow(thisRow);
+    auto itemIndex = _sensorItemsModel->indexFromItem(thisRow.at(0)); // Device string should be unique
+
+    // Add the start/stop button
+    auto deleteMeshButton = new TaggedPushButton(_meshName.c_str(), "Delete", ui->tableViewMeshes);
+    ui->tableViewMeshes->setIndexWidget(_meshItemsModel->index(itemIndex.row(), 2), deleteMeshButton);
+    
+    // Link them to their actions
+    auto mainWindow = dynamic_cast<MainWindow*>(parentWidget());
+    connect(deleteMeshButton, SIGNAL(clickedRow(QString)), mainWindow, SLOT(deleteMesh(QString))); // Have to do this first because
+    connect(deleteMeshButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteMeshRow(QString))); // This one knows the device key and needs to be here
 }
 
-std::string SensorsDialog::getSensorName(int _index)
+void SensorsDialog::deleteMeshRow(QString _tag)
 {
-    return _sensorItemsModel->data(_sensorItemsModel->index(_index, 0)).toString().toStdString();
+    auto itemList = _meshItemsModel->findItems(_tag);
+    if (itemList.length() == 0)
+        return; // Because we can't get itemIndex from itemList.at(0); it doesn't exist
+
+    // Get the QModelIndex and free the individual buttons
+    auto itemIndex = _meshItemsModel->indexFromItem(itemList.at(0));
+    delete ui->tableViewMeshes->indexWidget(_meshItemsModel->index(itemIndex.row(), 2));
+    
+    // Drop the row now that things memory is freed
+    _meshItemsModel->removeRow(itemIndex.row());
 }
 
-std::string SensorsDialog::getMeshName(int _index)
+void SensorsDialog::emitSensorToggled(QString _sensorUid, bool _toggled)
 {
-    return _meshItemsModel->data(_meshItemsModel->index(_index, 0)).toString().toStdString();
+    emit sensorToggled(_sensorUid, _toggled);
 }
