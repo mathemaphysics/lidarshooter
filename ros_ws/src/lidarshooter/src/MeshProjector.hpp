@@ -319,6 +319,18 @@ private:
         _meshMapsMutex.unlock();
     }
 
+    /**
+     * @brief Atomic get for linear displacement
+     * 
+     * We're doing things this way because emplace/insert can be happening in
+     * another thread; we need the \c _meshMapsMutex locked and forcing all
+     * inserts needed for \c addMeshToScene to complete before access. It seems
+     * complicated and messy but that's because we allow dynamic changes to
+     * most of the data members.
+     * 
+     * @param _meshName Mesh name key into each mesh-related map
+     * @return Eigen::Vector3f& Reference to the linear displacement in the object
+     */
     inline Eigen::Vector3f& getLinearDisplacement(const std::string& _meshName)
     {
         _meshMapsMutex.lock();
@@ -327,6 +339,12 @@ private:
         return displacement;
     }
 
+    /**
+     * @brief Atomic get of the angular displacement (see above)
+     * 
+     * @param _meshName Mesh name key into each mesh-related map
+     * @return Eigen::Vector3f& Reference to the angular displacement in the object
+     */
     inline Eigen::Vector3f& getAngularDisplacement(const std::string& _meshName)
     {
         _meshMapsMutex.lock();
