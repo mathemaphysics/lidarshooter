@@ -297,6 +297,7 @@ void MainWindow::deleteMesh(const std::string& _meshName)
     for (auto& [name, runtime] : runtimeMap)
     {
         runtime.deleteMeshFromScene(_meshName);
+        meshMap.erase(_meshName);
     }
 }
 
