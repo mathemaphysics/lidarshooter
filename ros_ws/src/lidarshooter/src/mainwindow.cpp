@@ -112,16 +112,27 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
 
     // Check file exists
     auto meshPath = std::filesystem::path(meshFile.toStdString());
-    if (!std::filesystem::exists(meshPath))
+    if (meshPath.extension().string() != ".stl")
+    {
+        loggerTop->error("File {} is not in STL format", meshPath.string());
+        return;
+    }
+    else if (!std::filesystem::exists(meshPath))
     {
         loggerTop->error("File {} does not exist", meshPath.string());
         return;
     }
 
     // If file exists then go forward
-    auto meshName = fmt::format("mesh{}", meshMap.size() + 1);
+    auto meshName = meshPath.stem().string(); // Use base of file name as mesh tag
+    if (meshMap.find(meshName) != meshMap.end())
+    {
+        loggerTop->error("A mesh with the mesh key {} is already loaded; rename it", meshName);
+        loggerTop->error("Mesh keys are simply the name of the file without its extension");
+        return;
+    }
+
     meshMap[meshName] = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
-    //sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
     sensorsDialog->addMeshRow(meshName, meshFile.toStdString());
     pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
     //viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
