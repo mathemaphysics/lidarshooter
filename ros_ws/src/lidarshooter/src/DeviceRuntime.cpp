@@ -13,7 +13,9 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     const std::string& _fileName,
     pcl::visualization::PCLVisualizer::Ptr __viewer,
     std::shared_ptr<spdlog::logger> __logger,
-    QObject* _parent
+    QObject* _parent,
+    ros::Duration _publishPeriod,
+    ros::Duration _tracePeriod
 )
     : _traceThreadRunning(false),
       _viewer(__viewer),
@@ -38,8 +40,8 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     // Allocate space for mesh projector
     _meshProjector = std::make_shared<lidarshooter::MeshProjector>(
         _deviceConfig,
-        ros::Duration(0.1),
-        ros::Duration(0.1),
+        _publishPeriod, // TODO: Should be taken as argument from constructor
+        _tracePeriod, // TODO: Should be taken as argument from constructor
         _logger
     );
 
@@ -60,7 +62,9 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     std::shared_ptr<lidarshooter::LidarDevice> __deviceConfig,
     pcl::visualization::PCLVisualizer::Ptr __viewer,
     std::shared_ptr<spdlog::logger> __logger,
-    QObject* _parent
+    QObject* _parent,
+    ros::Duration _publishPeriod,
+    ros::Duration _tracePeriod
 )
     : _traceThreadRunning(false),
       _viewer(__viewer),
@@ -82,8 +86,8 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     // Allocate space for mesh projector
     _meshProjector = std::make_shared<lidarshooter::MeshProjector>(
         _deviceConfig,
-        ros::Duration(0.1),
-        ros::Duration(0.1),
+        _publishPeriod,
+        _tracePeriod,
         _logger
     );
 
@@ -161,6 +165,9 @@ int lidarshooter::DeviceRuntime::updateTraceInViewer()
 
     // Convert the traced cloud in PointCloud2 format to local PointXYZ copy
     cloudConverter->to<lidarshooter::XYZIRPoint, pcl::PointXYZ>(_traceCloud);
+    
+    // Debugging information
+    _logger->debug("Runtime number of trace cloud points: {}", _traceCloud->width * _traceCloud->height);
 
     // Add it to the viewer as e.g. lidar_0000_trace
     if (_viewer->updatePointCloud<pcl::PointXYZ>(_traceCloud, cloudName) == false)
@@ -264,9 +271,14 @@ bool lidarshooter::DeviceRuntime::isTraceThreadRunning()
     return _traceThreadRunning.load();
 }
 
-void lidarshooter::DeviceRuntime::addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh)
+void lidarshooter::DeviceRuntime::addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh)
 {
-    _meshProjector->addMeshToScene(_mesh);
+    _meshProjector->addMeshToScene(_meshName, _mesh);
+}
+
+void lidarshooter::DeviceRuntime::deleteMeshFromScene(const std::string& _meshName)
+{
+    _meshProjector->deleteMeshFromScene(_meshName);
 }
 
 void lidarshooter::DeviceRuntime::setCloudPublishState(bool _shouldPublishCloud)

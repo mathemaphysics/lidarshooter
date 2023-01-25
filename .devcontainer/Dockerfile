@@ -15,7 +15,7 @@ RUN apt-get -y update \
 	libstd-srvs-dev ros-std-srvs python3-std-srvs libroslib-dev python3-roslib \
 	python3-rostest librostest-dev ros-geometry-msgs libjsoncpp-dev libpoco-dev \
 	ros-pcl-msgs libpcl-msgs-dev libpcl-conversions-dev rosbash libusb-1.0-0-dev \
-	libspdlog-dev libfmt-dev
+	libspdlog-dev libfmt-dev python3-pcl-msgs
 
 RUN apt-get -y update \
 	&& apt-get -y install qtbase5-dev qtbase5-dev-tools libqwt-qt5-dev libqwt-headers
@@ -24,6 +24,10 @@ RUN apt-get -y update \
 WORKDIR /usr/src
 RUN wget https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x86_64.linux.tar.gz \
 	&& tar xvf embree-3.13.4.x86_64.linux.tar.gz
+
+# Add a testing layer
+RUN apt-get -y update \
+	&& apt-get -y install libgtest-dev
 
 ENV DEVUSER=${DEVUSER}
 RUN adduser --uid 1000 --disabled-password --gecos "" ${DEVUSER} \

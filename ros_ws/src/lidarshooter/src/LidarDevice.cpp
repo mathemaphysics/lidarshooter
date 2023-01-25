@@ -184,6 +184,9 @@ int lidarshooter::LidarDevice::nextRay(RayHitType& _ray, int *_valid)
 
 int lidarshooter::LidarDevice::nextRay1(RTCRayHit& _ray, int *_valid)
 {
+    // Lock
+    _rayMutex.lock();
+
     // Fill out the ray/hit details
     float preChi = _channels.vertical[_verticalIndex]; // Chi is angle above horizontal; theta is angle down from vertical (z-axis)
     float prePhi = _channels.horizontal.range.begin + _channels.horizontal.step * static_cast<float>(_horizontalIndex);
@@ -203,15 +206,23 @@ int lidarshooter::LidarDevice::nextRay1(RTCRayHit& _ray, int *_valid)
     resetRayHit(_ray);
 
     // Next ray
-    return advanceRayIndex();
+    int nextState = advanceRayIndex();
+
+    // Allow another call
+    _rayMutex.unlock();
+
+    return nextState;
 }
 
 int lidarshooter::LidarDevice::nextRay4(RTCRayHit4& _ray, int *_valid)
 {
+    // Lock
+    _rayMutex.lock();
+
     // Invalidate vector indexes
     for (int i = 0; i < 4; ++i)
         _valid[i] = 0;
-//#pragma omp for
+
     for (int idx = 0; idx < 4; ++idx)
     {
         // Fill out the ray/hit details
@@ -238,8 +249,16 @@ int lidarshooter::LidarDevice::nextRay4(RTCRayHit4& _ray, int *_valid)
         // Next ray
         int done = advanceRayIndex();
         if (done == 1)
+        {
+            // Allow another call
+            _rayMutex.unlock();
+
             return done;
+        }
     }
+
+    // Allow another call
+    _rayMutex.unlock();
 
     // Signal there's more left
     return 0;
@@ -247,10 +266,13 @@ int lidarshooter::LidarDevice::nextRay4(RTCRayHit4& _ray, int *_valid)
 
 int lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray, int *_valid)
 {
+    // Lock
+    _rayMutex.lock();
+
     // Invalidate vector indexes
     for (int i = 0; i < 8; ++i)
         _valid[i] = 0;
-//#pragma omp for
+
     for (int idx = 0; idx < 8; ++idx)
     {
         // Fill out the ray/hit details
@@ -277,8 +299,16 @@ int lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray, int *_valid)
         // Next ray
         int done = advanceRayIndex();
         if (done == 1)
+        {
+            // Allow another call
+            _rayMutex.unlock();
+
             return done;
+        }
     }
+
+    // Allow another call
+    _rayMutex.unlock();
 
     // Signal there's more left
     return 0;
@@ -286,10 +316,13 @@ int lidarshooter::LidarDevice::nextRay8(RTCRayHit8& _ray, int *_valid)
 
 int lidarshooter::LidarDevice::nextRay16(RTCRayHit16& _ray, int *_valid)
 {
+    // Lock
+    _rayMutex.lock();
+
     // Invalidate vector indexes
     for (int i = 0; i < 16; ++i)
         _valid[i] = 0;
-//#pragma omp for
+
     for (int idx = 0; idx < 16; ++idx)
     {
         // Fill out the ray/hit details
@@ -316,8 +349,16 @@ int lidarshooter::LidarDevice::nextRay16(RTCRayHit16& _ray, int *_valid)
         // Next ray
         int done = advanceRayIndex();
         if (done == 1)
+        {
+            // Allow another call
+            _rayMutex.unlock();
+
             return done;
+        }
     }
+
+    // Allow another call
+    _rayMutex.unlock();
 
     // Signal there's more left
     return 0;

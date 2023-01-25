@@ -78,7 +78,8 @@ public slots:
     void addSensorRow(std::string _device, std::string _path);
     void deleteSensorRow(QString _tag);
     void setMeshRow(int _row, std::string _name, std::string _path);
-    void deleteMeshRow(int _row);
+    void addMeshRow(std::string _meshName, std::string _path);
+    void deleteMeshRow(QString _tag);
     void emitSensorToggled(QString _sensorUid, bool _toggled);
 
 private:

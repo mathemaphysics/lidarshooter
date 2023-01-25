@@ -6,49 +6,47 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/PCLPointCloud2.h>
+#include <pcl/PolygonMesh.h>
 
 #include <memory>
 
 namespace lidarshooter
 {
 
-class CloudTransformer : public std::enable_shared_from_this<CloudTransformer>
+class MeshTransformer : public std::enable_shared_from_this<MeshTransformer>
 {
 public:
-	using Ptr = std::shared_ptr<CloudTransformer>;
-	using ConstPtr = std::shared_ptr<CloudTransformer const>;
-
-	~CloudTransformer() = default;
+	~MeshTransformer() = default;
 
 	/**
 	 * @brief Construct a new Cloud Transformer object
 	 * 
-	 * @param __cloud Cloud to transform in \c PCLPointCloud2 format
+	 * @param __mesh Mesh containing the cloud to transform in \c PCLPointCloud2 format
 	 * @param __transform An \c Affine3f containing the full rotation and translation
 	 * @param __config The  \c LidarDevice containing the global transform
-	 * @return CloudTransformer::Ptr Shared pointer to the created transformer
+	 * @return MeshTransformer::Ptr Shared pointer to the created transformer
 	 */
-	static CloudTransformer::Ptr create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
+	static std::shared_ptr<lidarshooter::MeshTransformer> create(pcl::PolygonMesh::Ptr __mesh, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
 
 	/**
 	 * @brief Construct a new Cloud Transformer object
 	 * 
-	 * @param __cloud Cloud to transform
+	 * @param __mesh Cloud to transform
 	 * @param __translation A \c Vector3f containing the translation
 	 * @param __rotation A \c Vector3f containing the Euler angles
 	 * @param __config  The \c LidarDevice containing the global transform
-	 * @return CloudTransformer::Ptr Shared pointer to the created transformer
+	 * @return MeshTransformer::Ptr Shared pointer to the created transformer
 	 */
-	static CloudTransformer::Ptr create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
+	static std::shared_ptr<lidarshooter::MeshTransformer> create(pcl::PolygonMesh::Ptr __mesh, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
 
 	/**
 	 * @brief Construct a new Cloud Transformer object
 	 * 
 	 * @param __transform An \c Affine3f containing the full rotation and translation
 	 * @param __config  The \c LidarDevice containing the global transform
-	 * @return CloudTransformer::Ptr Shared pointer to the created transformer
+	 * @return MeshTransformer::Ptr Shared pointer to the created transformer
 	 */
-	static CloudTransformer::Ptr create(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
+	static std::shared_ptr<lidarshooter::MeshTransformer> create(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
 
 	/**
 	 * @brief Construct a new Cloud Transformer object
@@ -56,23 +54,23 @@ public:
 	 * @param __translation A \c Vector3f containing the translation
 	 * @param __rotation A \c Vector3f containing the Euler angles
 	 * @param __config The \c LidarDevice containing the global transform
-	 * @return CloudTransformer::Ptr Shared pointer to the created transformer
+	 * @return MeshTransformer::Ptr Shared pointer to the created transformer
 	 */
-	static CloudTransformer::Ptr create(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
+	static std::shared_ptr<lidarshooter::MeshTransformer> create(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
 
 	/**
 	 * @brief Get the Ptr object
 	 * 
-	 * @return CloudTransformer::Ptr Shared pointer to the object itself
+	 * @return std::shared_ptr<lidarshooter::MeshTransformer> Shared pointer to the object itself
 	 */
-	CloudTransformer::Ptr getPtr();
+	std::shared_ptr<lidarshooter::MeshTransformer> getPtr();
 
 	/**
 	 * @brief Set the cloud we want to apply a transform to (inplace)
 	 * 
-	 * @param __cloud Shared pointer to the cloud to keep internally to transform
+	 * @param __mesh Shared pointer to the cloud to keep internally to transform
 	 */
-	void setPointCloud(pcl::PCLPointCloud2::Ptr __cloud);
+	void setPointCloud(pcl::PolygonMesh::Ptr __mesh);
 
 	/**
 	 * @brief Apply the stored transform to the target cloud
@@ -80,10 +78,10 @@ public:
 	void applyTransform();
 
 	/**
-	 * @brief Transform the cloud and put it into a buffer
+	 * @brief Transforms the input mesh and puts result in buffer
 	 * 
-	 * @param _vertices Vertex storage buffer output
-	 * @param _elements Elements storage buffer output
+	 * @param _vertices Vertex destination buffer space
+	 * @param _elements Element destination buffer space
 	 */
 	void transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
 
@@ -93,33 +91,37 @@ public:
 	void applyInverseTransform();
 
 	/**
-	 * @brief Inverse transform the cloud and put it into a buffer
+	 * @brief Inverse transforms the input mesh and puts results in buffer
 	 * 
-	 * @param _vertices Vertex storage buffer output
-	 * @param _elements Elements storage buffer output
+	 * @param _vertices Vertex destination buffer space
+	 * @param _elements Elements destination buffer space
 	 */
 	void inverseTransformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
+
+    // Make it faster to specify a shared_ptr
+    using Ptr = std::shared_ptr< ::lidarshooter::MeshTransformer>;
+    using ConstPtr = std::shared_ptr<const ::lidarshooter::MeshTransformer>;
 
 private:
 	// Private constructors
 	/**
 	 * @brief Construct a new Cloud Transformer object
 	 * 
-	 * @param __cloud Cloud to transform in \c PCLPointCloud2 format
+	 * @param __mesh Mesh containing the cloud to transform in \c PCLPointCloud2 format
 	 * @param __transform An \c Affine3f containing the full rotation and translation
 	 * @param __config The  \c LidarDevice containing the global transform
 	 */
-	CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
+	MeshTransformer(pcl::PolygonMesh::Ptr __mesh, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
 
 	/**
 	 * @brief Construct a new Cloud Transformer object
 	 * 
-	 * @param __cloud Cloud to transform
+	 * @param __mesh Mesh containing the cloud to transform
 	 * @param __translation A \c Vector3f containing the translation
 	 * @param __rotation A \c Vector3f containing the Euler angles
 	 * @param __config  The \c LidarDevice containing the global transform
 	 */
-	CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
+	MeshTransformer(pcl::PolygonMesh::Ptr __mesh, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
 
 	/**
 	 * @brief Construct a new Cloud Transformer object
@@ -127,7 +129,7 @@ private:
 	 * @param __transform An \c Affine3f containing the full rotation and translation
 	 * @param __config  The \c LidarDevice containing the global transform
 	 */
-	CloudTransformer(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
+	MeshTransformer(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config);
 	
 	/**
 	 * @brief Construct a new Cloud Transformer object
@@ -136,11 +138,11 @@ private:
 	 * @param __rotation A \c Vector3f containing the Euler angles
 	 * @param __config The \c LidarDevice containing the global transform
 	 */
-	CloudTransformer(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
+	MeshTransformer(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config);
 
 	// Private variables
 	std::shared_ptr<const LidarDevice> _config;
-	pcl::PCLPointCloud2::Ptr _cloud;
+	pcl::PolygonMesh::Ptr _mesh;
 	Eigen::Vector3f _translation;
 	Eigen::Vector3f _rotation;
 	Eigen::Affine3f _transform;
@@ -159,6 +161,14 @@ private:
 	 * @param _transform The particular \c Affine3d from which to return the parameters
 	 */
 	void componentsFromTransform(const Eigen::Affine3f& _transform);
+
+	/**
+	 * @brief Copy elements into the given elements buffer
+	 * 
+	 * @param _geometryType \c RTCGeometryType for this geometry
+	 * @param _elements Pointer to the elements storage space
+	 */
+	void copyElementsIntoBuffer(RTCGeometryType _geometryType, unsigned int* _elements);
 };
 
 }

@@ -14,5 +14,6 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <run_depend>geometry_msgs</run_depend>
+  <run_depend>lidarshooter</run_depend>
   <run_depend>rospy</run_depend>
 </package>

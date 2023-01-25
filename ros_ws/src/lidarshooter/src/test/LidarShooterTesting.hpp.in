@@ -1,0 +1,2 @@
+#pragma once
+#define LIDARSHOOTER_TESTING_DATA_DIR "@CMAKE_SOURCE_DIR@/../../"

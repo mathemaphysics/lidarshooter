@@ -31,9 +31,9 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "objtracker");
 
     // Set up the logger
-    auto logger = spdlog::get(APPLICATION_NAME);
+    auto logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
     if (logger == nullptr)
-        logger = spdlog::stdout_color_mt(APPLICATION_NAME);
+        logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
 
     // Publisher node needs to be global; no namespace
     ros::NodeHandle nodeHandle("~");

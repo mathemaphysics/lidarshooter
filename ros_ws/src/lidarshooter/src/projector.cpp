@@ -24,9 +24,9 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "sensoruid");
 
     // Set up the logger
-    auto logger = spdlog::get(APPLICATION_NAME);
+    auto logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
     if (logger == nullptr)
-        logger = spdlog::stdout_color_mt(APPLICATION_NAME);
+        logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
 
     // Start up the mesh projector
     logger->info("Starting up LiDARShooter");

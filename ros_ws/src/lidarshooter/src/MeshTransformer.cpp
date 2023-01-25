@@ -1,90 +1,92 @@
-#include "CloudTransformer.hpp"
+#include "MeshTransformer.hpp"
 #include "Exceptions.hpp"
 
 #include <Eigen/Dense>
+
+#include <embree3/rtcore.h>
 
 #include <memory>
 #include <thread>
 #include <chrono>
 
-lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+std::shared_ptr<lidarshooter::MeshTransformer> lidarshooter::MeshTransformer::create(pcl::PolygonMesh::Ptr __mesh, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
 {
     // Set the cloud pointer rather than inplace creation?
-    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__cloud, __transform, __config));
+    return std::shared_ptr<lidarshooter::MeshTransformer>(new lidarshooter::MeshTransformer(__mesh, __transform, __config));
 }
 
-lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+std::shared_ptr<lidarshooter::MeshTransformer> lidarshooter::MeshTransformer::create(pcl::PolygonMesh::Ptr __mesh, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
 {
-    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__cloud,  __translation,  __rotation, __config));
+    return std::shared_ptr<lidarshooter::MeshTransformer>(new lidarshooter::MeshTransformer(__mesh,  __translation,  __rotation, __config));
 }
 
-lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+std::shared_ptr<lidarshooter::MeshTransformer> lidarshooter::MeshTransformer::create(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
 {
     // Fill in the missing _translation and _rotation vectors
-    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__transform, __config));
+    return std::shared_ptr<lidarshooter::MeshTransformer>(new lidarshooter::MeshTransformer(__transform, __config));
 }
 
-lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::create(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+std::shared_ptr<lidarshooter::MeshTransformer> lidarshooter::MeshTransformer::create(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
 {
-    return lidarshooter::CloudTransformer::Ptr(new lidarshooter::CloudTransformer(__translation, __rotation, __config));
+    return std::shared_ptr<lidarshooter::MeshTransformer>(new lidarshooter::MeshTransformer(__translation, __rotation, __config));
 }
 
-lidarshooter::CloudTransformer::Ptr lidarshooter::CloudTransformer::getPtr()
+std::shared_ptr<lidarshooter::MeshTransformer> lidarshooter::MeshTransformer::getPtr()
 {
     return shared_from_this();
 }
 
-lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::MeshTransformer::MeshTransformer(pcl::PolygonMesh::Ptr __mesh, const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
     : _transform(__transform), _config(__config)
 {
     // Set the cloud pointer rather than inplace creation?
-    _cloud = __cloud;
+    _mesh = __mesh;
 
     // Fill in the missing _translation and _rotation vectors
     componentsFromTransform(__transform);
 }
 
-lidarshooter::CloudTransformer::CloudTransformer(pcl::PCLPointCloud2::Ptr __cloud, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::MeshTransformer::MeshTransformer(pcl::PolygonMesh::Ptr __mesh, const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
     : _translation(__translation), _rotation(__rotation), _config(__config)
 {
     // Set the cloud pointer rather than inplace creation?
-    _cloud = __cloud;
+    _mesh = __mesh;
 
     // Fill in the missing Affine3f in _transform
     transformFromComponents(__translation, __rotation);
 }
 
-lidarshooter::CloudTransformer::CloudTransformer(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::MeshTransformer::MeshTransformer(const Eigen::Affine3f& __transform, std::shared_ptr<const LidarDevice> __config)
     : _transform(__transform), _config(__config)
 {
     // Fill in the missing _translation and _rotation vectors
     componentsFromTransform(__transform);
 }
 
-lidarshooter::CloudTransformer::CloudTransformer(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
+lidarshooter::MeshTransformer::MeshTransformer(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation, std::shared_ptr<const LidarDevice> __config)
     : _translation(__translation), _rotation(__rotation), _config(__config)
 {
     transformFromComponents(_translation, _rotation);
 }
 
-void lidarshooter::CloudTransformer::setPointCloud(pcl::PCLPointCloud2::Ptr __cloud)
+void lidarshooter::MeshTransformer::setPointCloud(pcl::PolygonMesh::Ptr __mesh)
 {
-    _cloud = __cloud;
+    _mesh = __mesh;
 }
 
-void lidarshooter::CloudTransformer::applyTransform()
+void lidarshooter::MeshTransformer::applyTransform()
 {
-    if (_cloud == nullptr)
+    if (_mesh == nullptr)
     {
-        throw(CloudNotSetException(
+        throw(MeshNotSetException(
             __FILE__,
-            "No cloud data to operate on",
+            "No mesh data to operate on",
             2
         ));
     }
 
     // TODO: This should be threaded
-    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numTotalPoints = _mesh->cloud.width * _mesh->cloud.height;
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int startPointIndex = 0;
 
@@ -103,7 +105,7 @@ void lidarshooter::CloudTransformer::applyTransform()
                 for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
                 {
                     // No mutex required since we're accessing different locations
-                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
+                    auto rawData = _mesh->cloud.data.data() + jdx * _mesh->cloud.point_step;
 
                     // TODO: Generalize this to what will likely be different point types
                     float px, py, pz;
@@ -137,19 +139,22 @@ void lidarshooter::CloudTransformer::applyTransform()
         threadItr->join();
 }
 
-void lidarshooter::CloudTransformer::transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements)
+void lidarshooter::MeshTransformer::transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements)
 {
-    if (_cloud == nullptr)
+    if (_mesh == nullptr)
     {
-        throw(CloudNotSetException(
+        throw(MeshNotSetException(
             __FILE__,
-            "No cloud data to operate on",
+            "No mesh data to operate on",
             2
         ));
     }
 
+    // TODO: Copy the elements only once; add a bool _elementsAdded variables
+    copyElementsIntoBuffer(_geometryType, _elements);
+
     // TODO: This should be threaded
-    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numTotalPoints = _mesh->cloud.width * _mesh->cloud.height;
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int startPointIndex = 0;
 
@@ -168,7 +173,7 @@ void lidarshooter::CloudTransformer::transformIntoBuffer(RTCGeometryType _geomet
                 for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
                 {
                     // No mutex required since we're accessing different locations
-                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
+                    auto rawData = _mesh->cloud.data.data() + jdx * _mesh->cloud.point_step;
 
                     // TODO: Generalize this to what will likely be different point types
                     float px, py, pz;
@@ -181,8 +186,8 @@ void lidarshooter::CloudTransformer::transformIntoBuffer(RTCGeometryType _geomet
                     // Apply the affine transformation and then transf
                     ptrans = _transform * ptrans;
                     _config->originToSensor(ptrans);
-
-                    // Linear position update here
+                
+                    // Put it into the buffer
                     _vertices[3 * jdx + 0] = ptrans.x();
                     _vertices[3 * jdx + 1] = ptrans.y();
                     _vertices[3 * jdx + 2] = ptrans.z();
@@ -199,19 +204,19 @@ void lidarshooter::CloudTransformer::transformIntoBuffer(RTCGeometryType _geomet
         threadItr->join();
 }
 
-void lidarshooter::CloudTransformer::applyInverseTransform()
+void lidarshooter::MeshTransformer::applyInverseTransform()
 {
-    if (_cloud == nullptr)
+    if (_mesh == nullptr)
     {
-        throw(CloudNotSetException(
+        throw(MeshNotSetException(
             __FILE__,
-            "No cloud data to operate on",
+            "No mesh data to operate on",
             2
         ));
     }
 
     // TODO: This should be threaded
-    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numTotalPoints = _mesh->cloud.width * _mesh->cloud.height;
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int startPointIndex = 0;
 
@@ -230,7 +235,7 @@ void lidarshooter::CloudTransformer::applyInverseTransform()
                 for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
                 {
                     // No mutex required since we're accessing different locations
-                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
+                    auto rawData = _mesh->cloud.data.data() + jdx * _mesh->cloud.point_step;
 
                     // TODO: Generalize this to what will likely be different point types
                     float px, py, pz;
@@ -264,19 +269,22 @@ void lidarshooter::CloudTransformer::applyInverseTransform()
         threadItr->join();
 }
 
-void lidarshooter::CloudTransformer::inverseTransformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements)
+void lidarshooter::MeshTransformer::inverseTransformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements)
 {
-    if (_cloud == nullptr)
+    if (_mesh == nullptr)
     {
-        throw(CloudNotSetException(
+        throw(MeshNotSetException(
             __FILE__,
-            "No cloud data to operate on",
+            "No mesh data to operate on",
             2
         ));
     }
 
+    // TODO: Copy the elements only once; add a bool _elementsAdded variables
+    copyElementsIntoBuffer(_geometryType, _elements);
+
     // TODO: This should be threaded
-    unsigned int numTotalPoints = _cloud->width * _cloud->height;
+    unsigned int numTotalPoints = _mesh->cloud.width * _mesh->cloud.height;
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int startPointIndex = 0;
 
@@ -295,7 +303,7 @@ void lidarshooter::CloudTransformer::inverseTransformIntoBuffer(RTCGeometryType 
                 for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
                 {
                     // No mutex required since we're accessing different locations
-                    auto rawData = _cloud->data.data() + jdx * _cloud->point_step;
+                    auto rawData = _mesh->cloud.data.data() + jdx * _mesh->cloud.point_step;
 
                     // TODO: Generalize this to what will likely be different point types
                     float px, py, pz;
@@ -326,7 +334,7 @@ void lidarshooter::CloudTransformer::inverseTransformIntoBuffer(RTCGeometryType 
         threadItr->join();
 }
 
-void lidarshooter::CloudTransformer::transformFromComponents(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation)
+void lidarshooter::MeshTransformer::transformFromComponents(const Eigen::Vector3f& __translation, const Eigen::Vector3f& __rotation)
 {
     // Generate the transformation from the translation and rotation
     Eigen::Translation3f translation(__translation);
@@ -338,9 +346,77 @@ void lidarshooter::CloudTransformer::transformFromComponents(const Eigen::Vector
     _transform = translation * zRotation * yRotation * xRotation;
 }
 
-void lidarshooter::CloudTransformer::componentsFromTransform(const Eigen::Affine3f &__transform)
+void lidarshooter::MeshTransformer::componentsFromTransform(const Eigen::Affine3f &__transform)
 {
     // Invert to fill in the translation and rotation
     _translation = __transform.translation();
     _rotation = __transform.rotation().eulerAngles(0, 1, 2);
+}
+
+void lidarshooter::MeshTransformer::copyElementsIntoBuffer(RTCGeometryType _geometryType, unsigned int* _elements)
+{
+    // Cannot do anything if mesh isn't set
+    if (_mesh == nullptr)
+    {
+        throw(MeshNotSetException(
+            __FILE__,
+            "No mesh data to operate on",
+            2
+        ));
+    }
+
+    // Make sure we have the correct geometry type
+    std::size_t idx = 0;
+    switch(_geometryType)
+    {
+        case RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE:
+            if (_mesh->polygons[0].vertices.size() != 3)
+                throw(BadGeometryException(
+                    __FILE__,
+                    "Geometry does not match element vertex count",
+                    1,
+                    _geometryType
+                ));
+
+            // First set the elements once
+            for (auto poly : _mesh->polygons)
+            {
+                _elements[3 * idx + 0] = poly.vertices[0];
+                _elements[3 * idx + 1] = poly.vertices[1];
+                _elements[3 * idx + 2] = poly.vertices[2];
+                ++idx;
+            }
+
+            break;
+        case RTCGeometryType::RTC_GEOMETRY_TYPE_QUAD:
+            if (_mesh->polygons[0].vertices.size() != 4)
+                throw(BadGeometryException(
+                    __FILE__,
+                    "Geometry does not match element vertex count",
+                    2,
+                    _geometryType
+                ));
+
+            // First set the elements once
+            for (auto poly : _mesh->polygons)
+            {
+                _elements[4 * idx + 0] = poly.vertices[0];
+                _elements[4 * idx + 1] = poly.vertices[1];
+                _elements[4 * idx + 2] = poly.vertices[2];
+                _elements[4 * idx + 3] = poly.vertices[3];
+                ++idx;
+            }
+
+            break;
+        default:
+            if (_mesh->polygons[0].vertices.size() != 4)
+                throw(BadGeometryException(
+                    __FILE__,
+                    "Geometry is unimplemented at the moment",
+                    3,
+                    _geometryType
+                ));
+            break;
+    }
+
 }

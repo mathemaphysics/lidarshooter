@@ -66,6 +66,7 @@ private slots:
 public slots:
     // Let's use a new naming scheme without the "slot" prefix; update them gradually
     void deleteSensor(QString);
+    void deleteMesh(QString);
     void updatePublishCloud(QString, bool);
     void slotRenderWindow();
 
@@ -117,6 +118,7 @@ private:
     // Starting and stopping projector and ROS
     const std::string addSensor(const std::string& _fileName);
     void deleteSensor(const std::string& _sensorUid);
+    void deleteMesh(const std::string& _meshName);
     bool initializeROSThread();
     bool shutdownROSThread();
 

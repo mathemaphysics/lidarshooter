@@ -112,23 +112,35 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
 
     // Check file exists
     auto meshPath = std::filesystem::path(meshFile.toStdString());
-    if (!std::filesystem::exists(meshPath))
+    if (meshPath.extension().string() != ".stl")
+    {
+        loggerTop->error("File {} is not in STL format", meshPath.string());
+        return;
+    }
+    else if (!std::filesystem::exists(meshPath))
     {
         loggerTop->error("File {} does not exist", meshPath.string());
         return;
     }
 
     // If file exists then go forward
-    auto meshName = fmt::format("mesh{}", meshMap.size() + 1);
+    auto meshName = meshPath.stem().string(); // Use base of file name as mesh tag
+    if (meshMap.find(meshName) != meshMap.end())
+    {
+        loggerTop->error("A mesh with the mesh key {} is already loaded; rename it", meshName);
+        loggerTop->error("Mesh keys are simply the name of the file without its extension");
+        return;
+    }
+
     meshMap[meshName] = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
-    sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
+    sensorsDialog->addMeshRow(meshName, meshFile.toStdString());
     pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
     //viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
     viewer->resetCamera();
 
     // Set the mesh for each
     for (auto& [uid, runtime] : runtimeMap)
-        runtime.addMeshToScene(meshMap[meshName]);
+        runtime.addMeshToScene(meshName, meshMap[meshName]);
 }
 
 void MainWindow::slotLogPoseTranslation()
@@ -175,12 +187,23 @@ void MainWindow::deleteSensor(QString _sensorUid)
     // Set up the sensor for delete
     deleteSensor(_sensorUid.toStdString());
     
-    // Function deleteSensor does not erase the runtime or config
-    runtimeMap.erase(_sensorUid.toStdString());
-    deviceConfigMap.erase(_sensorUid.toStdString());
+    // Other function deleteSensor does not erase the runtime or config
+    auto runtimeIterator = runtimeMap.find(_sensorUid.toStdString());
+    if (runtimeIterator == runtimeMap.end())
+        loggerTop->warn("Failed to find runtime {} during delete", _sensorUid.toStdString());
+    else
+    {
+        runtimeMap.erase(runtimeIterator); // No need to unlockCloudMutex; it's gone
+        deviceConfigMap.erase(_sensorUid.toStdString());
 
-    // TODO: Change this to debug
-    loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
+        // TODO: Change this to debug
+        loggerTop->info("Removed device {} from the key map", _sensorUid.toStdString());
+    }
+}
+
+void MainWindow::deleteMesh(QString _meshName)
+{
+    deleteMesh(_meshName.toStdString());
 }
 
 void MainWindow::updatePublishCloud(QString _sensorUid, bool _shouldPublishCloud)
@@ -234,7 +257,7 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
             loggerTop->warn("Could not insert runtime for sensor UID {}", devicePointer->getSensorUid());
         else
             for (auto& [name, mesh] : meshMap)
-                result.first->second.addMeshToScene(mesh);
+                result.first->second.addMeshToScene(name, mesh);
     }
 
     // Add the actual line in the sensors list
@@ -250,7 +273,13 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
         loggerTop->warn("No device runtime for UID {} found", _sensorUid);
     else
     {
+        // Stop the thread that copies traced data over to viewer first
         runtimePointer->second.stopTraceThread();
+        
+        // Stop publishing before deleting
+        runtimePointer->second.setCloudPublishState(false);
+
+        // Try to delete the trace from the viewer
         if (runtimePointer->second.deleteTraceFromViewer() == 0)
             loggerTop->info("Removed trace of mesh from sensor UID {}", _sensorUid);
         
@@ -260,6 +289,16 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
 
     // Only removes the row in the sensorsDialog
     sensorsDialog->deleteSensorRow(QString(_sensorUid.c_str()));
+}
+
+void MainWindow::deleteMesh(const std::string& _meshName)
+{
+    // Iterate through all device runtimes and remove
+    for (auto& [name, runtime] : runtimeMap)
+    {
+        runtime.deleteMeshFromScene(_meshName);
+    }
+    meshMap.erase(_meshName);
 }
 
 bool MainWindow::initializeROSThread()

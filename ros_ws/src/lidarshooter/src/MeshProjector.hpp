@@ -25,6 +25,9 @@
 #include <embree3/rtcore.h>
 #include <spdlog/spdlog.h>
 
+#include <lidarshooter/NamedPolygonMesh.h>
+#include <lidarshooter/NamedTwist.h>
+
 #include <cstdint>
 #include <cmath>
 #include <vector>
@@ -35,18 +38,22 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <map>
+#include <tuple>
 
 #include "IntBytes.hpp"
 #include "FloatBytes.hpp"
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
+#include "TraceData.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
 namespace lidarshooter
 {
+
 class MeshProjector
 {
 public:
@@ -101,6 +108,13 @@ public:
      * @param _mesh Mesh of type \c pcl_msgs::PolygonMesh::ConstPtr
      */
     void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
+    
+    /**
+     * @brief ROS receiving callback function handling incoming meshes in \c _trackObjects
+     * 
+     * @param _mesh The key -> mesh pair
+     */
+    void multiMeshCallback(const lidarshooter::NamedPolygonMesh::ConstPtr& _mesh);
 
     /**
      * @brief Set the internal mesh
@@ -111,7 +125,14 @@ public:
      * 
      * @param _mesh Mesh to be copied into the internal mesh state
      */
-    void addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
+    void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh);
+
+    /**
+     * @brief Delete a mesh and its friends inside the \c MeshProjector
+     * 
+     * @param _meshName Name of the mesh to delete
+     */
+    void deleteMeshFromScene(const std::string& _meshName);
 
     /**
      * @brief Get a shared pointer to the current traced cloud
@@ -142,13 +163,13 @@ public:
      * is no update to the mesh that produced the last trace.
      */
     void traceMeshWrapper();
-
+    
     /**
-     * @brief Updates the present velocity of the mesh
+     * @brief All tagged joystick message can go here
      * 
-     * @param _vel Twist message from the joystick
+     * @param _vel The name/twist message combination message
      */
-    void joystickCallback(const geometry_msgs::Twist::ConstPtr& _vel);
+    void multiJoystickCallback(const lidarshooter::NamedTwist::ConstPtr& _vel);
 
     /**
      * @brief Publishes the currently buffered traced cloud
@@ -188,37 +209,18 @@ private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
     std::string _sensorUid; // This *should* match _config._device.sensorUid
-    const std::string _applicationName = APPLICATION_NAME;
+    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
     std::shared_ptr<spdlog::logger> _logger;
 
     // Device with everyone you need to know about your scanner
     std::shared_ptr<LidarDevice> _config;
 
-    // Storage of actual geometries for Embree
-    float *_objectVertices;
-    unsigned *_objectTriangles;
-    float *_groundVertices;
-    unsigned *_groundQuadrilaterals;
-
-    // Object and ground buffer allocation size
-    long _objectVerticesBufferSize;
-    long _objectElementsBufferSize;
-    long _groundVerticesBufferSize;
-    long _groundElementsBufferSize;
-    RTCBuffer _objectVerticesBuffer;
-    RTCBuffer _objectElementsBuffer;
-    RTCBuffer _groundVerticesBuffer;
-    RTCBuffer _groundElementsBuffer;
-
     // Messages in class format
-    pcl::PolygonMesh _trackObject; // This needs to become a map/deque/vector
+    std::map<const std::string, pcl::PolygonMesh::Ptr> _trackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
 
-    // Raytracing items
-    RTCDevice _device;
-    RTCScene _scene;
-    RTCGeometry _objectGeometry;
-    RTCGeometry _groundGeometry;
+    // NEW
+    TraceData::Ptr _traceData;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;
@@ -233,117 +235,130 @@ private:
     std::mutex _cloudMutex;
     ros::NodeHandle _nodeHandle;
     ros::Publisher _cloudPublisher;
-    ros::Subscriber _meshSubscriber;
-    std::mutex _meshMutex;
-    ros::Subscriber _joystickSubscriber;
-    std::mutex _joystickMutex;
+    ros::Subscriber _multiMeshSubscriber;
+    std::mutex _meshMapsMutex;
+    std::map<const std::string, std::mutex> _meshMutexes;
+    ros::Subscriber _multiJoystickSubscriber;
+    std::map<const std::string, std::mutex> _joystickMutexes;
 
     // Current net state of the mesh
-    Eigen::Vector3f _linearDisplacement; // The cumulative linear displacement since instantiation
-    Eigen::Vector3f _angularDisplacement; // The cumulative angular displacement since instantiation
+    std::map<const std::string, Eigen::Vector3f> _linearDisplacements;
+    std::map<const std::string, Eigen::Vector3f> _angularDisplacements;
 
     /**
-     * @brief Transforms a joystick signal to global coordinates
+     * @brief Transforms a joystick signal for specified mesh key to global coordinates
      * 
      * When the joystick says move 1 unit forward along the y-axis, we want it
-     * to move 1 unit forward along the \c _trackObject 's frame of reference
+     * to move 1 unit forward along the \c _trackObjects 's frame of reference
      * rotated to its current configuration, i.e. the new y-axis given by
-     * rotating the \c _displacement by \c _angularDisplacement , which is the
+     * rotating the \c _displacement by \c _angularDisplacements , which is the
      * current mesh orientation. So when you say "go forward", it moves in the
      * direction the object is facing, and not along the fixed global y-axis.
      * 
-     * @param _displacement Vector to move along relative to global coordinate system
-     * @return Eigen::Vector3f Displacement to apply to the mesh
+     * @param _meshName The whose coordinate system to whom we wish to transform
+     * @param _displacement The displacement vector to be transformed
+     * @return Eigen::Vector3f The resulting transformed displacement
      */
-    inline Eigen::Vector3f transformToGlobal(Eigen::Vector3f _displacement);
+    inline Eigen::Vector3f transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement);
 
     /**
-     * @brief Draws the ground into the \c _scene geometry
-     */
-    void updateGround();
-
-    /**
-     * @brief Draws the traced mesh into the \c _scene geometry
-     * 
-     * @param frameIndex Which frame we're currently in (possibly irrelevant now)
-     */
-    void updateMeshPolygons(int frameIndex);
-
-    /**
-     * @brief Perform raytracing on \c _currentState
+     * @brief Perform raytracing to produce a new \c _currentState
      */
     void traceMesh();
 
-#define GET_MESH_INTERSECT_BASE getMeshIntersect
-#define GET_MESH_INTERSECT(__valid, __rayhit) GLUE(GET_MESH_INTERSECT_BASE, RAY_PACKET_SIZE)(__valid, __rayhit)
+    /**
+     * @brief Method for locking the trace cloud mutex
+     */
+    inline void lockCloudMutex()
+    {
+        _cloudMutex.lock();
+    }
 
     /**
-     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectRAY_PACKET_SIZE
+     * @brief Method for unlocking the trace cloud mutex
+     */
+    inline void unlockCloudMutex()
+    {
+        _cloudMutex.unlock();
+    }
+
+    /**
+     * @brief Method for locking the mesh mutex
+     */
+    inline void lockMeshMutex(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        _meshMutexes[_meshName].lock();
+        _meshMapsMutex.unlock();
+    }
+
+    /**
+     * @brief Method for unlocking the mesh mutex
+     */
+    inline void unlockMeshMutex(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        _meshMutexes[_meshName].unlock();
+        _meshMapsMutex.unlock();
+    }
+
+    /**
+     * @brief Method for locking the joystick mutex for \c _meshName
      * 
-     * Ray packet size generalization function; this will automatically
-     * select which ray packet size to use based on the system preprocessor
+     * @param _meshName Name of mesh whose mutex we want to lock
      */
-    void getMeshIntersect(int *_valid, RayHitType *_rayhit);
+    inline void lockJoystickMutex(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        _joystickMutexes[_meshName].lock();
+        _meshMapsMutex.unlock();
+    }
 
     /**
-     * @brief Get the intersection of a single ray with the \c _scene
+     * @brief Method for unlocking the joystick mutex for \c _meshName
      * 
-     * @param ox Origin x coordinate
-     * @param oy Origin y coordinate
-     * @param oz Origin z coordinate
-     * @param dx Normalized ray vector x coordinate
-     * @param dy Normalized ray vector y coordinate
-     * @param dz Normalized ray vector z coordinate
-     * @param rayhit Input/output ray/hit structure
+     * @param _meshName Name of mesh whose mutex we want to unlock
      */
-    void getMeshIntersect1(float ox, float oy, float oz, float dx, float dy, float dz, RTCRayHit *rayhit);
+    inline void unlockJoystickMutex(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        _joystickMutexes[_meshName].unlock();
+        _meshMapsMutex.unlock();
+    }
 
     /**
-     * @brief Get the intersection of a packet of 4 rays with the \c _scene
+     * @brief Atomic get for linear displacement
      * 
-     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
-     *                  where -1 indicates do compute its intersection and 0 don't
-     * @param rayhit The input/output ray hit data structure
-     */
-    void getMeshIntersect4(const int *validRays, RTCRayHit4 *rayhit);
-
-    /**
-     * @brief Get the intersection of a packet of 8 rays with the \c _scene
+     * We're doing things this way because emplace/insert can be happening in
+     * another thread; we need the \c _meshMapsMutex locked and forcing all
+     * inserts needed for \c addMeshToScene to complete before access. It seems
+     * complicated and messy but that's because we allow dynamic changes to
+     * most of the data members.
      * 
-     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
-     *                  where -1 indicates do compute its intersection and 0 don't
-     * @param rayhit The input/output ray hit data structure
+     * @param _meshName Mesh name key into each mesh-related map
+     * @return Eigen::Vector3f& Reference to the linear displacement in the object
      */
-    void getMeshIntersect8(const int *validRays, RTCRayHit8 *rayhit);
+    inline Eigen::Vector3f& getLinearDisplacement(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        auto& displacement = _linearDisplacements[_meshName];
+        _meshMapsMutex.unlock();
+        return displacement;
+    }
 
     /**
-     * @brief Get the intersection of a packet of 16 rays with the \c _scene
+     * @brief Atomic get of the angular displacement (see above)
      * 
-     * @param validRays Vector indicating with -1 or 0 which rays to compute or not
-     *                  where -1 indicates do compute its intersection and 0 don't
-     * @param rayhit The input/output ray hit data structure
+     * @param _meshName Mesh name key into each mesh-related map
+     * @return Eigen::Vector3f& Reference to the angular displacement in the object
      */
-    void getMeshIntersect16(const int *validRays, RTCRayHit16 *rayhit);
-
-    /**
-     * @brief Set up object geometry buffers
-     */
-    void setupObjectGeometryBuffers(int _numVertices, int _numElements);
-    
-    /**
-     * @brief Set up ground geometry buffers
-     */
-    void setupGroundGeometryBuffers(int _numVertices, int _numElements);
-
-    /**
-     * @brief Clean up object geometry buffers
-     */
-    void releaseObjectGeometryBuffers();
-
-    /**
-     * @brief Clean up ground geometry buffers
-     */
-    void releaseGroundGeometryBuffers();
+    inline Eigen::Vector3f& getAngularDisplacement(const std::string& _meshName)
+    {
+        _meshMapsMutex.lock();
+        auto& displacement = _angularDisplacements[_meshName];
+        _meshMapsMutex.unlock();
+        return displacement;
+    }
 };
 
 }

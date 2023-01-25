@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <mutex>
 
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointField.h>
@@ -27,10 +28,11 @@
 #include <Eigen/Dense>
 
 #define NEXT_RAY_BASE nextRay
-#define NEXT_RAY(__rayhit, __valid) GLUE(NEXT_RAY_BASE, RAY_PACKET_SIZE)(__rayhit, __valid)
+#define NEXT_RAY(__rayhit, __valid) LIDARSHOOTER_GLUE(NEXT_RAY_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__rayhit, __valid)
 
 namespace lidarshooter
 {
+
 /**
  * @brief Class that builds a header for our specific sensor's cloud
  * 
@@ -42,6 +44,10 @@ namespace lidarshooter
 class LidarDevice
 {
 public:
+	// TODO: For later when LidarDevice has a factory create
+    //using Ptr = std::shared_ptr<LidarDevice>;
+    //using ConstPtr = std::shared_ptr<LidarDevice const>;
+
     /**
      * @brief Construct a new LidarDevice
      * 
@@ -138,7 +144,7 @@ public:
      * @brief Abstraction of the \c nextRayNN functions
      * 
      * This function decides which \c nextRayNN to call based on what the
-     * value of \c RAY_PACKET_SIZE is. Note also that \c RayHitType is a
+     * value of \c LIDARSHOOTER_RAY_PACKET_SIZE is. Note also that \c RayHitType is a
      * \c typedef which depends on the packet size as well.
      * 
      * @param _ray Ray or packet of rays to trace
@@ -151,7 +157,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      *
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 1.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 1.
      *  
      * @param _ray A single ray from the device
      * @param _valid Ignored for a single ray
@@ -163,7 +169,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 4.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 4.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 4; 0 means don't compute, -1 means compute
@@ -175,7 +181,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 8.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 8.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 8; 0 means don't compute, -1 means compute
@@ -187,7 +193,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c RAY_PACKET_SIZE = 16.
+     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 16.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 16; 0 means don't compute, -1 means compute
@@ -245,7 +251,7 @@ private:
     /**
      * @brief Name of the application to use as global logger reference
      */
-    const std::string _applicationName = APPLICATION_NAME;
+    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
 
     /**
      * @brief Folder into which output files are written when needed
@@ -264,7 +270,16 @@ private:
      */
     unsigned int _verticalIndex;
     unsigned int _horizontalIndex;
-    
+
+    /**
+     * @brief Mutex making the \c nextRayXX functions atomic
+     * 
+     * This is the mutex that makes calling the \c nextRayXX functions
+     * thread-safe; multiple threads calling \c nextRay8 at the same time will
+     * mangle the state without this mutex.
+     */
+    std::mutex _rayMutex;
+
     /**
      * @brief UID/node name reference for this LiDAR device in SENSR API
      * 
@@ -381,4 +396,5 @@ private:
      */
     int advanceRayIndex();
 };
+
 }

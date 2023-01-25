@@ -39,33 +39,118 @@ public:
         const std::string& _fileName,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         std::shared_ptr<spdlog::logger> __logger = nullptr,
-        QObject* _parent = nullptr
+        QObject* _parent = nullptr,
+        ros::Duration _publishPeriod = ros::Duration(0.1),
+        ros::Duration _tracePeriod = ros::Duration(0.1)
     );
     DeviceRuntime(
         std::shared_ptr<LidarDevice> _deviceConfig,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         std::shared_ptr<spdlog::logger> __logger = nullptr,
-        QObject* _parent = nullptr
+        QObject* _parent = nullptr,
+        ros::Duration _publishPeriod = ros::Duration(0.1),
+        ros::Duration _tracePeriod = ros::Duration(0.1)
     );
     ~DeviceRuntime();
 
     // Getters
+    /**
+     * @brief Get the DeviceConfig object
+     * 
+     * @return std::shared_ptr<LidarDevice> The device config object
+     */
     std::shared_ptr<LidarDevice> getDeviceConfig();
+
+    /**
+     * @brief Get the MeshProjector object
+     * 
+     * @return std::shared_ptr<MeshProjector> The mesh projector object
+     */
     std::shared_ptr<MeshProjector> getMeshProjector();
+
+    /**
+     * @brief Get the temporary trace cloud space
+     * 
+     * @return pcl::PCLPointCloud2::Ptr Pointer to temporary trace cloud
+     */
     pcl::PCLPointCloud2::Ptr getTempTraceCloud();
+    
+    /**
+     * @brief Get the trace cloud space
+     * 
+     * @return pcl::PointCloud<pcl::PointXYZ>::Ptr Pointer to trace cloud
+     */
     pcl::PointCloud<pcl::PointXYZ>::Ptr getTraceCloud();
+    
+    /**
+     * @brief Adds traced cloud to the viewer
+     * 
+     * @return int Success returns 0, otherwise < 0
+     */
     int addTraceToViewer();
+
+    /**
+     * @brief Updates the trace cloud in the viewer
+     * 
+     * @return int Success returns 0, otherwise < 0
+     */
     int updateTraceInViewer();
+
+    /**
+     * @brief Deletes the trace cloud from the viewer
+     * 
+     * @return int Success returns 0, otherwise < 0
+     */
     int deleteTraceFromViewer();
+
+    /**
+     * @brief Starts thread responsible for tracing the scene
+     * 
+     * @return int Success returns 0, otherwise < 0
+     */
     int startTraceThread();
+
+    /**
+     * @brief Stops the thread responsible for tracing the scene
+     * 
+     * @return int Success returns 0, otherwise < 0
+     */
     int stopTraceThread();
+
+    /**
+     * @brief Determines whether trace thread is running
+     * 
+     * @return true Thread is running
+     * @return false Thread is not running
+     */
     bool isTraceThreadRunning();
     
     // Pass through functions to _meshProjector
-    void addMeshToScene(const pcl::PolygonMesh::ConstPtr& _mesh);
+    /**
+     * @brief Adds a mesh to the device to trace
+     * 
+     * @param _mesh Pointer to the mesh to add
+     */
+    void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh);
+
+    /**
+     * @brief Delete a mesh from inside the mesh projector
+     * 
+     * @param _meshName Mesh name key to delete
+     */
+    void deleteMeshFromScene(const std::string& _meshName);
+
+    /**
+     * @brief Turns the publication of trace cloud on and off
+     * 
+     * @param _shouldPublishCloud True means publish, false means do not
+     */
     void setCloudPublishState(bool _shouldPublishCloud);
 
 signals:
+    /**
+     * @brief Signal indicating that the cloud was updated in the view
+     */
     void traceCloudUpdated();
 
 public slots:

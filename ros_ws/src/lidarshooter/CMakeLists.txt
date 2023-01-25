@@ -19,6 +19,7 @@ include(FetchContent)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   std_msgs
   sensor_msgs
   geometry_msgs
@@ -30,11 +31,17 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
     StringWithHeader.msg
+    NamedPolygonMesh.msg
+    NamedTwist.msg
+    NamedTwistStamped.msg
 )
 
 generate_messages(
   DEPENDENCIES
     std_msgs
+    geometry_msgs
+    pcl_msgs
+    geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -226,20 +233,13 @@ endif(ENABLE_OPENACC)
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_lidarshooter.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-## Qt5 targets setup here
+###########################
+## LiDARShooter Frontend ##
+###########################
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOUIC ON)
@@ -267,6 +267,7 @@ set(PROJECT_SOURCES
         src/sensorsdialog.h
         src/sensorsdialog.cpp
         src/sensorsdialog.ui
+        src/DeviceRuntime.cpp
         src/${TS_FILES}
 )
 
@@ -315,18 +316,26 @@ endif()
 
 add_dependencies(LiDARShooterGUI ${catkin_EXPORTED_TARGETS})
 
-#add_executable(projector src/projector.cpp)
-#target_compile_features(projector PUBLIC cxx_std_17)
-#target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-#target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-#target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
-#add_dependencies(projector ${catkin_EXPORTED_TARGETS})
+######################
+## LiDARShooter CLI ##
+######################
 
-#add_executable(objtracker src/objtracker.cpp)
-#target_compile_features(objtracker PUBLIC cxx_std_17)
-#target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-#target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt Poco::Net)
-#add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
+add_executable(projector src/projector.cpp)
+target_compile_features(projector PUBLIC cxx_std_17)
+target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
+target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
+add_dependencies(projector ${catkin_EXPORTED_TARGETS})
+
+add_executable(objtracker src/objtracker.cpp)
+target_compile_features(objtracker PUBLIC cxx_std_17)
+target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt Poco::Net)
+add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
+
+##########################
+## LiDARShooter Library ##
+##########################
 
 add_library(lidarshooter
     src/IntBytes.cpp
@@ -336,8 +345,9 @@ add_library(lidarshooter
     src/LidarDevice.cpp
     src/MeshProjector.cpp
     src/CloudTransformer.cpp
+    src/MeshTransformer.cpp
     src/CloudConverter.cpp
-    src/DeviceRuntime.cpp)
+    src/TraceData.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
     target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
@@ -349,3 +359,16 @@ if (ENABLE_OPENACC)
     target_link_libraries(lidarshooter OpenACC::OpenACC_CXX)
 endif (ENABLE_OPENACC)
 add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
+
+#############
+## Testing ##
+#############
+
+configure_file(src/test/LidarShooterTesting.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/test/LidarShooterTesting.hpp)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
+
+# Add gtest based cpp test target and link libraries
+catkin_add_gtest(TraceData_test src/test/TraceData_test.cpp)
+if(TARGET TraceData_test)
+  target_link_libraries(TraceData_test lidarshooter)
+endif()
