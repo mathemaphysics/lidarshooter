@@ -364,6 +364,9 @@ add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
 ## Testing ##
 #############
 
+configure_file(src/test/LidarShooterTesting.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/test/LidarShooterTesting.hpp)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
+
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(TraceData_test src/test/TraceData_test.cpp)
 if(TARGET TraceData_test)

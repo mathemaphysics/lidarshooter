@@ -20,6 +20,10 @@
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
 
+#include <filesystem>
+
+#include "LidarShooterTesting.hpp"
+
 namespace
 {
 
@@ -34,18 +38,18 @@ protected:
         // Load the mesh for reference
         // TODO: See the note below; the same goes here
         meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
+        auto meshPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
         pcl::io::loadPolygonFileSTL(
-            "/workspaces/lidarshooter/mesh/ben.stl",
+            //"/workspaces/lidarshooter/mesh/ben.stl",
+            (meshPath / "mesh/ben.stl").string(),
             *meshData
         );
 
         // Make the LidarDevice
-        // TODO: Need a configure_file() in CMakeLists.txt for this file because
-        // I don't know where the ROS tests are run from and we can't use
-        // absolute file locations for obvious reasons; but this works from
-        // within the development container right now.
+        // TODO: Move the configure_file output file to better place
+        auto sensorPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
         sensorConfig = std::make_shared<lidarshooter::LidarDevice>(
-            "/workspaces/lidarshooter/config/hesai-pandar-XT-32-lidar_0000.json"
+            (sensorPath / "config/hesai-pandar-XT-32-lidar_0000.json").string()
         );
 
         // Make tracer; default to create internal trace cloud storage
