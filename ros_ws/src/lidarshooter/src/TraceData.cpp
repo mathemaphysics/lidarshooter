@@ -254,6 +254,8 @@ int lidarshooter::TraceData::removeGeometry(const std::string& _meshName)
         _elements.erase(_meshName);
         _elementCounts.erase(_meshName);
         
+        commitScene();
+
         // Make sure it all worked before decrementing count
         _geometryCount = _geometryCount - 1;
 

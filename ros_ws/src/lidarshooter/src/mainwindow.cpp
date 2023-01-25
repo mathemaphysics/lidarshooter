@@ -121,7 +121,8 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
     // If file exists then go forward
     auto meshName = fmt::format("mesh{}", meshMap.size() + 1);
     meshMap[meshName] = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
-    sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
+    //sensorsDialog->setMeshRow(0, meshName, meshFile.toStdString());
+    sensorsDialog->addMeshRow(meshName, meshFile.toStdString());
     pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
     //viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
     viewer->resetCamera();
@@ -189,13 +190,9 @@ void MainWindow::deleteSensor(QString _sensorUid)
     }
 }
 
-void MainWindow::deleteMesh(const std::string& _meshName)
+void MainWindow::deleteMesh(QString _meshName)
 {
-    // Iterate through all device runtimes and remove
-    for (auto& [name, runtime] : runtimeMap)
-    {
-        auto meshProjector = runtime.getMeshProjector();
-    }
+    deleteMesh(_meshName.toStdString());
 }
 
 void MainWindow::updatePublishCloud(QString _sensorUid, bool _shouldPublishCloud)
@@ -281,6 +278,15 @@ void MainWindow::deleteSensor(const std::string& _sensorUid)
 
     // Only removes the row in the sensorsDialog
     sensorsDialog->deleteSensorRow(QString(_sensorUid.c_str()));
+}
+
+void MainWindow::deleteMesh(const std::string& _meshName)
+{
+    // Iterate through all device runtimes and remove
+    for (auto& [name, runtime] : runtimeMap)
+    {
+        runtime.deleteMeshFromScene(_meshName);
+    }
 }
 
 bool MainWindow::initializeROSThread()

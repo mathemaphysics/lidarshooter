@@ -134,6 +134,13 @@ public:
     void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh);
 
     /**
+     * @brief Delete a mesh from inside the mesh projector
+     * 
+     * @param _meshName Mesh name key to delete
+     */
+    void deleteMeshFromScene(const std::string& _meshName);
+
+    /**
      * @brief Turns the publication of trace cloud on and off
      * 
      * @param _shouldPublishCloud True means publish, false means do not

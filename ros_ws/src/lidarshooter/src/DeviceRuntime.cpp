@@ -276,6 +276,11 @@ void lidarshooter::DeviceRuntime::addMeshToScene(const std::string& _meshName, c
     _meshProjector->addMeshToScene(_meshName, _mesh);
 }
 
+void lidarshooter::DeviceRuntime::deleteMeshFromScene(const std::string& _meshName)
+{
+    _meshProjector->deleteMeshFromScene(_meshName);
+}
+
 void lidarshooter::DeviceRuntime::setCloudPublishState(bool _shouldPublishCloud)
 {
     _meshProjector->setCloudPublishState(_shouldPublishCloud);

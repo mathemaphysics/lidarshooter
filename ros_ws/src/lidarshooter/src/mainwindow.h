@@ -66,6 +66,7 @@ private slots:
 public slots:
     // Let's use a new naming scheme without the "slot" prefix; update them gradually
     void deleteSensor(QString);
+    void deleteMesh(QString);
     void updatePublishCloud(QString, bool);
     void slotRenderWindow();
 

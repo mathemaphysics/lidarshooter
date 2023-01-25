@@ -128,6 +128,13 @@ public:
     void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh);
 
     /**
+     * @brief Delete a mesh and its friends inside the \c MeshProjector
+     * 
+     * @param _meshName Name of the mesh to delete
+     */
+    void deleteMeshFromScene(const std::string& _meshName);
+
+    /**
      * @brief Get a shared pointer to the current traced cloud
      * 
      * Important: Remember that this shared pointer points at a cloud which is asynchronously

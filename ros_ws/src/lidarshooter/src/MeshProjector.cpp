@@ -300,7 +300,6 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
     // Emplace new copy of _mesh into _trackObjects
     _trackObjects.emplace(
         _meshName,
-        //pcl::PolygonMesh::Ptr(new pcl::PolygonMesh(*_mesh)) // Make a copy
         _mesh // Make a copy
     );
 
@@ -341,6 +340,29 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
     // Indicate the mesh was updated so we get a retrace
     _meshWasUpdated.store(true);
     _meshWasUpdatedPublic.store(true);
+    _meshMapsMutex.unlock();
+}
+
+void lidarshooter::MeshProjector::deleteMeshFromScene(const std::string &_meshName)
+{
+    // Don't unlock it again; this mesh is going away
+    _meshMapsMutex.lock();
+
+    // Remove all items associated with _meshName
+    _meshMutexes.erase(_meshName);
+    _joystickMutexes.erase(_meshName);
+    _linearDisplacements.erase(_meshName);
+    _angularDisplacements.erase(_meshName);
+
+    // Remove the geometry from _traceData
+    _traceData->removeGeometry(_meshName);
+    _trackObjects.erase(_meshName);
+
+    // Signal that there were changes to the mesh
+    _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
+
+    // Release the mesh maps back to common use
     _meshMapsMutex.unlock();
 }
 
@@ -452,26 +474,26 @@ void lidarshooter::MeshProjector::traceMesh()
     for (auto& [name, mesh] : _trackObjects)
     {
         // Make sure this mesh doesn't change during read
-        _meshMutexes[name].lock();
+        lockMeshMutex(name);
 
         // Copy vertex and elemet data from mesh into buffers
         _traceData->updateGeometry(
             name,
-            _linearDisplacements[name],
-            _angularDisplacements[name],
-            mesh
+            getLinearDisplacement(name),
+            getAngularDisplacement(name),
+            mesh // This is a reference
         );
 
         // Debugging information
         _logger->debug("Updated {} with {} points and {} elements", name, mesh->cloud.width * mesh->cloud.height, mesh->polygons.size());
 
         // Release just this mesh
-        _meshMutexes[name].unlock();
+        unlockMeshMutex(name);
     }
     _traceData->commitScene();
-    _cloudMutex.lock(); // Locks _currentState
+    lockCloudMutex(); // Locks _currentState
     _traceData->traceScene(++_frameIndex);
-    _cloudMutex.unlock(); // Unlocks _currentState
+    unlockCloudMutex();
 
     _logger->debug("Trace cloud has {} points in it", _traceData->getTraceCloud()->width * _traceData->getTraceCloud()->height);
 
