@@ -333,7 +333,8 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
     );
     _angularDisplacements[_meshName].setZero();
 
-    // Ado the geometry
+    // Add the geometry
+    // TODO: Presence of RTCGeometryType is implementation-specific; generalize it
     int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->cloud.width * _mesh->cloud.height, _mesh->polygons.size());
     _logger->debug("Added geometric ID {}", geomId);
 

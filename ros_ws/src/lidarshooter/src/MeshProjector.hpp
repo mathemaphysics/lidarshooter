@@ -283,7 +283,7 @@ private:
     }
 
     /**
-     * @brief Method for locking the mesh mutex
+     * @brief Atomic method for locking the mesh mutex
      */
     inline void lockMeshMutex(const std::string& _meshName)
     {
@@ -293,7 +293,7 @@ private:
     }
 
     /**
-     * @brief Method for unlocking the mesh mutex
+     * @brief Atomic method for unlocking the mesh mutex
      */
     inline void unlockMeshMutex(const std::string& _meshName)
     {
@@ -303,7 +303,7 @@ private:
     }
 
     /**
-     * @brief Method for locking the joystick mutex for \c _meshName
+     * @brief Atomic method for locking the joystick mutex for \c _meshName
      * 
      * @param _meshName Name of mesh whose mutex we want to lock
      */
@@ -315,7 +315,7 @@ private:
     }
 
     /**
-     * @brief Method for unlocking the joystick mutex for \c _meshName
+     * @brief Atomic method for unlocking the joystick mutex for \c _meshName
      * 
      * @param _meshName Name of mesh whose mutex we want to unlock
      */
