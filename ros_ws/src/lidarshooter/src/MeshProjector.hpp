@@ -219,7 +219,7 @@ private:
     std::map<const std::string, pcl::PolygonMesh::Ptr> _trackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
 
-    // NEW
+    // TraceData is the abstracted raytracing backend
     TraceData::Ptr _traceData;
 
     // ROS, timing, and mutex variables for events
