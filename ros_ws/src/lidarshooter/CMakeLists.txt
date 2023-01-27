@@ -365,11 +365,16 @@ add_dependencies(lidarshooter ${catkin_EXPORTED_TARGETS})
 ## Testing ##
 #############
 
+# Configure the locations of data files
 configure_file(src/test/LidarShooterTesting.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/test/LidarShooterTesting.hpp)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(TraceData_test src/test/TraceData_test.cpp)
+catkin_add_gtest(AffineMesh_test src/test/AffineMesh_test.cpp)
 if(TARGET TraceData_test)
   target_link_libraries(TraceData_test lidarshooter)
+endif()
+if(TARGET AffineMesh_test)
+  target_link_libraries(AffineMesh_test lidarshooter)
 endif()
