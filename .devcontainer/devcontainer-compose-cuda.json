@@ -1,8 +1,8 @@
 {
     "name": "LiDARShooter Development",
     "dockerComposeFile": [
-        "docker-compose.yml",
-        "ubuntu/docker-compose-ubuntu.yml"
+        "docker-compose-cuda.yml",
+        "ubuntu/docker-compose-ubuntu-cuda.yml"
     ],
     "runServices": [
         "devcontainer"
