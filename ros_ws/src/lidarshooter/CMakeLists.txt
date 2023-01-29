@@ -347,6 +347,7 @@ add_library(lidarshooter
     src/CloudTransformer.cpp
     src/MeshTransformer.cpp
     src/CloudConverter.cpp
+    src/ITracer.cpp
     src/EmbreeTracer.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
