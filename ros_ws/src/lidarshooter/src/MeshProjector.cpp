@@ -70,7 +70,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
     
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config, _currentState);
+    _traceData = EmbreeTracer::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -143,7 +143,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
 
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config, _currentState);
+    _traceData = EmbreeTracer::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -213,7 +213,7 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
 
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config, _currentState);
+    _traceData = EmbreeTracer::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;

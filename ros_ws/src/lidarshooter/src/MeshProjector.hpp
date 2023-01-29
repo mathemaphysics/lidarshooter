@@ -46,7 +46,7 @@
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
-#include "TraceData.hpp"
+#include "EmbreeTracer.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -220,7 +220,7 @@ private:
     sensor_msgs::PointCloud2::Ptr _currentState;
 
     // NEW
-    TraceData::Ptr _traceData;
+    EmbreeTracer::Ptr _traceData;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;

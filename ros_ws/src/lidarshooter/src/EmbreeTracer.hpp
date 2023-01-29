@@ -1,7 +1,7 @@
 /**
- * @file TraceData.hpp
+ * @file EmbreeTracer.hpp
  * @author Ryan P. Daly (rdaly@herzog.com)
- * @brief TraceData class is an implementation of a tracer
+ * @brief EmbreeTracer class is an implementation of a tracer
  * @version 0.1
  * @date 2023-01-20
  * 
@@ -35,28 +35,28 @@
 namespace lidarshooter
 {
 
-class TraceData : public std::enable_shared_from_this<TraceData>
+class EmbreeTracer : public std::enable_shared_from_this<EmbreeTracer>
 {
 public:
-	using Ptr = std::shared_ptr<TraceData>;
-	using ConstPtr = std::shared_ptr<TraceData const>;
+	using Ptr = std::shared_ptr<EmbreeTracer>;
+	using ConstPtr = std::shared_ptr<EmbreeTracer const>;
 
 	/**
-	 * @brief Factory shared pointer creator for \c TraceData
+	 * @brief Factory shared pointer creator for \c EmbreeTracer
 	 * 
-	 * @return TraceData::Ptr Your new shared \c TraceData
+	 * @return EmbreeTracer::Ptr Your new shared \c EmbreeTracer
 	 */
-	static TraceData::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+	static EmbreeTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 
 	/**
 	 * @brief Get a shared pointer to this object
 	 * 
-	 * @return std::shared_ptr<TraceData> A pointer to the object
+	 * @return std::shared_ptr<EmbreeTracer> A pointer to the object
 	 */
-	TraceData::Ptr getPtr();
+	EmbreeTracer::Ptr getPtr();
 
 	// Still need to clean up
-	~TraceData();
+	~EmbreeTracer();
 
 	/**
 	 * @brief Get the device object
@@ -243,8 +243,8 @@ public:
 		return 0;
 	}
 
-#define TRACEDATA_GET_MESH_INTERSECT_BASE getMeshIntersect
-#define TRACEDATA_GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(TRACEDATA_GET_MESH_INTERSECT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__valid, __rayhit)
+#define EMBREETRACER_GET_MESH_INTERSECT_BASE getMeshIntersect
+#define EMBREETRACER_GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(EMBREETRACER_GET_MESH_INTERSECT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__valid, __rayhit)
 
     /**
      * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_RAY_PACKET_SIZE
@@ -296,7 +296,7 @@ public:
 
 private:
 	// Private constructor for factory production of shared_ptr
-	TraceData(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+	EmbreeTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 
 	// TODO: Figure out if these should even be in here
 	RTCDevice _device;
