@@ -21,11 +21,10 @@
 namespace lidarshooter
 {
 
-class ITracer : public std::enable_shared_from_this<ITracer>
+class ITracer
 {
 public:
-    static std::shared_ptr<ITracer> create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
-    std::shared_ptr<ITracer> getPtr();
+    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
     virtual ~ITracer();
 
     // Get the RTCGeometry type from the mesh itself; or don't generalize it
@@ -37,10 +36,18 @@ public:
 
 	virtual int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh);
 
-	virtual int traceScene(std::uint32_t _franeIndex);
+	virtual int traceScene(std::uint32_t _frameIndex);
 
 private:
-    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+
+	// Sensor configuration for the affine transformation
+	std::shared_ptr<LidarDevice> _config;
+ 
+    // Track the number of geometries added
+    long _geometryCount;
+
+	// The trace cloud itself
+	sensor_msgs::PointCloud2::Ptr _traceCloud;
 };
 
 }

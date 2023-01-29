@@ -1,13 +1,18 @@
 #include "ITracer.hpp"
 
-std::shared_ptr<lidarshooter::ITracer> lidarshooter::ITracer::create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
+lidarshooter::ITracer::ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
+    : _config(_sensorConfig)
 {
-    return std::shared_ptr<ITracer>(new ITracer(_sensorConfig, _traceStorage));
-}
+    // If input _traceStorage == nullptr, create space; else take given pointer
+    if (_traceStorage == nullptr)
+        _traceCloud = sensor_msgs::PointCloud2::Ptr(new sensor_msgs::PointCloud2());
+    else
+       _traceCloud = _traceStorage;
+    _traceCloud->width = 0;
+    _traceCloud->height = 0;
 
-std::shared_ptr<lidarshooter::ITracer> lidarshooter::ITracer::getPtr()
-{
-    return shared_from_this();
+    // Number of geometries added to the scene
+    _geometryCount = 0;
 }
 
 lidarshooter::ITracer::~ITracer()
@@ -40,13 +45,8 @@ int lidarshooter::ITracer::updateGeometry(const std::string& _meshName, Eigen::V
     return 0;
 }
 
-int lidarshooter::ITracer::traceScene(std::uint32_t _franeIndex)
+int lidarshooter::ITracer::traceScene(std::uint32_t _frameIndex)
 {
 
     return 0;
-}
-
-lidarshooter::ITracer::ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
-{
-
 }

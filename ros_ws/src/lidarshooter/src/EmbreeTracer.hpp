@@ -151,7 +151,7 @@ public:
 	 * 
 	 * @return int Returns 0 if all went well, < 0 otherwise
 	 */
-	int traceScene(std::uint32_t _franeIndex);
+	int traceScene(std::uint32_t _frameIndex);
 
 	/**
 	 * @brief Get the vertex count
