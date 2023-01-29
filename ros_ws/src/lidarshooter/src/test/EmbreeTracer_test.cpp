@@ -40,7 +40,6 @@ protected:
         meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
         auto meshPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
         pcl::io::loadPolygonFileSTL(
-            //"/workspaces/lidarshooter/mesh/ben.stl",
             (meshPath / "mesh/ben.stl").string(),
             *meshData
         );

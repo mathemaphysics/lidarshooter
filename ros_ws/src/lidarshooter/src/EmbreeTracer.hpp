@@ -21,6 +21,7 @@
 #include <mutex>
 
 #include <embree3/rtcore.h>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/vtk_io.h>
