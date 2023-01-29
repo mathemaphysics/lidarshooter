@@ -24,7 +24,7 @@ namespace lidarshooter
 class ITracer : public std::enable_shared_from_this<ITracer>
 {
 public:
-    virtual std::shared_ptr<ITracer> create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+    static std::shared_ptr<ITracer> create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
     std::shared_ptr<ITracer> getPtr();
     virtual ~ITracer();
 
@@ -40,7 +40,7 @@ public:
 	virtual int traceScene(std::uint32_t _franeIndex);
 
 private:
-    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage);
+    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 };
 
 }
