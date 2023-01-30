@@ -32,11 +32,12 @@
 #include <Eigen/Geometry>
 
 #include "LidarDevice.hpp"
+#include "ITracer.hpp"
 
 namespace lidarshooter
 {
 
-class EmbreeTracer : public std::enable_shared_from_this<EmbreeTracer>
+class EmbreeTracer : public ITracer, public std::enable_shared_from_this<EmbreeTracer>
 {
 public:
 	using Ptr = std::shared_ptr<EmbreeTracer>;
@@ -72,13 +73,6 @@ public:
 	 * @return RTCScene Scene to be traced
 	 */
 	RTCScene getScene();
-
-	/**
-	 * @brief Get the number of geometries added
-	 * 
-	 * @return long Number of geometries currently registered
-	 */
-	long getGeometryCount() const;
 
 	/**
 	 * @brief Get the Geometry Id object
@@ -202,20 +196,6 @@ public:
 	RTCBuffer getElementBuffer(const std::string& _meshName);
 
 	/**
-	 * @brief Returns a const shared pointer to the trace cloud
-	 * 
-	 * @return sensor_msgs::PointCloud2::ConstPtr Pointer to the traced cloud
-	 */
-	sensor_msgs::PointCloud2::ConstPtr getTraceCloud() const;
-
-	/**
-	 * @brief Set the location for the class to write the trace cloud
-	 * 
-	 * @param _traceStorage Trace cloud output pointer
-	 */
-	void setTraceCloud(sensor_msgs::PointCloud2::Ptr _traceStorage);
-
-	/**
 	 * @brief Commits any changes to geometries within
 	 * 
 	 * @param _meshName Key name for the associated geometry
@@ -303,12 +283,6 @@ private:
 	RTCDevice _device;
 	RTCScene _scene;
 
-	// Sensor configuration for the affine transformation
-	std::shared_ptr<LidarDevice> _config;
-
-	// Keep a total for easy reference
-	long _geometryCount;
-
 	// Vertex storage space and accounting
 	std::map<const std::string, long> _vertexCounts;
 	std::map<const std::string, float*> _vertices;
@@ -323,9 +297,6 @@ private:
 	std::map<const std::string, RTCGeometry> _geometries;
 	std::map<const std::string, unsigned int> _geometryIds;
 	std::map<const std::string, RTCGeometryType> _geometryTypes;
-
-	// The trace cloud itself
-	sensor_msgs::PointCloud2::Ptr _traceCloud;
 };
 
 }

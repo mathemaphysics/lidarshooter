@@ -50,3 +50,33 @@ int lidarshooter::ITracer::traceScene(std::uint32_t _frameIndex)
 
     return 0;
 }
+
+long lidarshooter::ITracer::getGeometryCount() const
+{
+    return _geometryCount;
+}
+
+sensor_msgs::PointCloud2::Ptr lidarshooter::ITracer::getTraceCloud()
+{
+    return _traceCloud;
+}
+
+void lidarshooter::ITracer::setTraceCloud(sensor_msgs::PointCloud2::Ptr _traceStorage)
+{
+    _traceCloud = _traceStorage;
+}
+
+std::shared_ptr<lidarshooter::LidarDevice> lidarshooter::ITracer::getSensorConfig()
+{
+    return _config;
+}
+
+void lidarshooter::ITracer::setSensorConfig(std::shared_ptr<LidarDevice> __config)
+{
+    _config = __config;
+}
+
+void lidarshooter::ITracer::setGeometryCount(long _count)
+{
+    _geometryCount = _count;
+}

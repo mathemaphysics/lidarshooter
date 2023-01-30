@@ -62,7 +62,7 @@ lidarshooter::EmbreeTracer::~EmbreeTracer()
         rtcReleaseGeometry(geometry);
 
     // Just for completeness
-    _geometryCount = 0;
+    setGeometryCount(0);
 
     // Maybe not needed; just in case
     rtcReleaseScene(_scene);
@@ -77,11 +77,6 @@ RTCDevice lidarshooter::EmbreeTracer::getDevice()
 RTCScene lidarshooter::EmbreeTracer::getScene()
 {
     return _scene;
-}
-
-long lidarshooter::EmbreeTracer::getGeometryCount() const
-{
-    return _geometryCount;
 }
 
 int lidarshooter::EmbreeTracer::getGeometryId(const std::string& _meshName) const
@@ -216,7 +211,7 @@ int lidarshooter::EmbreeTracer::addGeometry(const std::string& _meshName, enum R
     _geometryTypes.emplace(_meshName, _geometryType);
 
     // Don't increment geometry count until after successfully added
-    _geometryCount = _geometryCount + 1;
+    setGeometryCount(getGeometryCount() + 1);
 
     // All probably went well
     return static_cast<int>(geomId); // Cast because it could be -1 if error
@@ -257,7 +252,7 @@ int lidarshooter::EmbreeTracer::removeGeometry(const std::string& _meshName)
         commitScene();
 
         // Make sure it all worked before decrementing count
-        _geometryCount = _geometryCount - 1;
+        setGeometryCount(getGeometryCount() - 1);
 
         // Assume success since we didn't throw down
         return idDeleted;
@@ -267,7 +262,7 @@ int lidarshooter::EmbreeTracer::removeGeometry(const std::string& _meshName)
 int lidarshooter::EmbreeTracer::updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh)
 {
     // Now update the internal buffers to align with the mesh passed in
-    auto meshTransformer = MeshTransformer::create(_mesh, _transform, _config);
+    auto meshTransformer = MeshTransformer::create(_mesh, _transform, getSensorConfig());
     meshTransformer->transformIntoBuffer(
         getGeometryType(_meshName),
         getVertices(_meshName),
@@ -281,7 +276,7 @@ int lidarshooter::EmbreeTracer::updateGeometry(const std::string& _meshName, Eig
 int lidarshooter::EmbreeTracer::updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh)
 {
     // Now update the internal buffers to align with the mesh passed in
-    auto meshTransformer = MeshTransformer::create(_mesh, _translation, _rotation, _config);
+    auto meshTransformer = MeshTransformer::create(_mesh, _translation, _rotation, getSensorConfig());
     meshTransformer->transformIntoBuffer(
         getGeometryType(_meshName),
         getVertices(_meshName),
@@ -294,12 +289,12 @@ int lidarshooter::EmbreeTracer::updateGeometry(const std::string& _meshName, Eig
 
 int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
 {
-    _config->initMessage(_traceCloud, ++_frameIndex);
-    _traceCloud->data.clear();
-    _config->reset();
+    getSensorConfig()->initMessage(getTraceCloud(), ++_frameIndex);
+    getTraceCloud()->data.clear();
+    getSensorConfig()->reset();
 
     // Count the total iterations because the limits are needed for threading
-    unsigned int numTotalRays = _config->getTotalRays();
+    unsigned int numTotalRays = getSensorConfig()->getTotalRays();
     unsigned int numIterations = numTotalRays / LIDARSHOOTER_RAY_PACKET_SIZE + (numTotalRays % LIDARSHOOTER_RAY_PACKET_SIZE > 0 ? 1 : 0);
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
@@ -327,7 +322,7 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
                     RayHitType rayhitn;
 
                     // Fill up the next ray in the buffer
-                    rayState = this->_config->nextRay(rayhitn, validRays);
+                    rayState = this->getSensorConfig()->nextRay(rayhitn, validRays);
                     for (int idx = 0; idx < LIDARSHOOTER_RAY_PACKET_SIZE; ++idx)
                         rayRings[idx] = 0;
 
@@ -344,7 +339,7 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
                                 64.0, rayRings[ri]
                             );
                             sharedCloudMutex.lock();
-                            cloudBytes.addToCloud(this->_traceCloud);
+                            cloudBytes.addToCloud(this->getTraceCloud());
                             totalPointCount.store(totalPointCount.load() + 1);
                             sharedCloudMutex.unlock();
                         }
@@ -358,7 +353,7 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
         th->join();
 
     // Set the point count to the value that made it back from tracing
-    _traceCloud->width = totalPointCount.load();
+    getTraceCloud()->width = totalPointCount.load();
 
     return 0;
 }
@@ -435,16 +430,6 @@ RTCBuffer lidarshooter::EmbreeTracer::getElementBuffer(const std::string& _meshN
     return bufferIterator->second;
 }
 
-sensor_msgs::PointCloud2::ConstPtr lidarshooter::EmbreeTracer::getTraceCloud() const
-{
-    return _traceCloud;
-}
-
-void lidarshooter::EmbreeTracer::setTraceCloud(sensor_msgs::PointCloud2::Ptr _traceStorage)
-{
-    _traceCloud = _traceStorage;
-}
-
 void lidarshooter::EmbreeTracer::getMeshIntersect(int *_valid, RayHitType *_rayhit)
 {
     EMBREETRACER_GET_MESH_INTERSECT(_valid, _rayhit);
@@ -490,19 +475,5 @@ void lidarshooter::EmbreeTracer::getMeshIntersect16(const int *validRays, RTCRay
 lidarshooter::EmbreeTracer::EmbreeTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
     : _device(rtcNewDevice(nullptr)),
       _scene(rtcNewScene(_device)),
-      _config(_sensorConfig)
-{
-    // Make sure the std::shared_ptr<LidarDevice> copy constructor increments
-    // the reference counter and doesn't make a copy
-    
-    // If input _traceStorage == nullptr, create space; else take given pointer
-    if (_traceStorage == nullptr)
-        _traceCloud = sensor_msgs::PointCloud2::Ptr(new sensor_msgs::PointCloud2());
-    else
-       _traceCloud = _traceStorage;
-    _traceCloud->width = 0;
-    _traceCloud->height = 0;
-
-    // Number of geometries added to the scene
-    _geometryCount = 0;
-}
+      ITracer(_sensorConfig, _traceStorage)
+{}
