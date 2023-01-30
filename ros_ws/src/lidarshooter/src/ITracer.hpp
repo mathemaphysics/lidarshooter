@@ -25,9 +25,9 @@ class ITracer
 {
 public:
     ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
-    virtual ~ITracer();
+    virtual ~ITracer() = default;
 
-    // Get the RTCGeometry type from the mesh itself; or don't generalize it
+    // TODO: Get the RTCGeometry type from the mesh itself; or don't generalize it
 	/**
 	 * @brief Adds a new geometry to the scene
 	 * 
@@ -38,7 +38,7 @@ public:
 	 * @return true Successfully added the geometry
 	 * @return false Failed to add the geometry
 	 */
-	virtual int addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
+	virtual int addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements) = 0;
 
 	/**
 	 * @brief Remove the geometry from the \c _scene
@@ -47,7 +47,7 @@ public:
 	 * @return int Returns -1 if error, otherwise cast as \c unsigned \c int
 	 * 		   to get the deleted geometry ID
 	 */
-	virtual int removeGeometry(const std::string& _meshName);
+	virtual int removeGeometry(const std::string& _meshName) = 0;
 
 	/**
 	 * @brief Update the points and elements via a \c PolygonMesh
@@ -57,7 +57,7 @@ public:
 	 * @param _mesh Mesh containing points to use to update the internal scene
 	 * @return int Returns 0 if all went well, < 0 otherwise
 	 */
-	virtual int updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh);
+	virtual int updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh) = 0;
 
 	/**
 	 * @brief Update the points and elements via a \c PolygonMesh
@@ -68,14 +68,14 @@ public:
 	 * @param _mesh Mesh containing points to use to update the internal scene
 	 * @return int Returns 0 if all went well, < 0 otherwise
 	 */
-	virtual int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh);
+	virtual int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh) = 0;
 
 	/**
 	 * @brief Traces the scene and puts the result in \c _traceCloud
 	 * 
 	 * @return int Returns 0 if all went well, < 0 otherwise
 	 */
-	virtual int traceScene(std::uint32_t _frameIndex);
+	virtual int traceScene(std::uint32_t _frameIndex) = 0;
 
 	/**
 	 * @brief Get the number of geometries added
