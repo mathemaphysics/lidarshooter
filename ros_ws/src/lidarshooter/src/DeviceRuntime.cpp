@@ -1,6 +1,7 @@
 #include "DeviceRuntime.hpp"
 #include "CloudTransformer.hpp"
 #include "CloudConverter.hpp"
+#include "AffineMesh.hpp"
 
 #include <fmt/format.h>
 #include <Eigen/Dense>
@@ -271,7 +272,7 @@ bool lidarshooter::DeviceRuntime::isTraceThreadRunning()
     return _traceThreadRunning.load();
 }
 
-void lidarshooter::DeviceRuntime::addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh)
+void lidarshooter::DeviceRuntime::addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh)
 {
     _meshProjector->addMeshToScene(_meshName, _mesh);
 }

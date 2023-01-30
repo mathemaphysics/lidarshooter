@@ -264,8 +264,8 @@ void lidarshooter::MeshProjector::shutdown()
 void lidarshooter::MeshProjector::multiMeshCallback(const lidarshooter::NamedPolygonMeshConstPtr& _mesh)
 {
     // Reject any mesh with a non-existent key
-    auto meshIterator = _trackObjects.find(_mesh->name);
-    if (meshIterator == _trackObjects.end())
+    auto meshIterator = _affineTrackObjects.find(_mesh->name);
+    if (meshIterator == _affineTrackObjects.end())
     {
         _logger->warn("Received a frame for {} (key does not exist)", _mesh->name);
         return;
@@ -279,9 +279,9 @@ void lidarshooter::MeshProjector::multiMeshCallback(const lidarshooter::NamedPol
     _meshMutexes[_mesh->name].lock();
     _meshMapsMutex.unlock();
 
-    pcl_conversions::toPCL(_mesh->mesh, *(_trackObjects[_mesh->name]));
-    _logger->debug("Points in tracked object      : {}", _trackObjects[_mesh->name]->cloud.width * _trackObjects[_mesh->name]->cloud.height);
-    _logger->debug("Triangles in tracked object   : {}", _trackObjects[_mesh->name]->polygons.size());
+    pcl_conversions::toPCL(_mesh->mesh, *(_affineTrackObjects[_mesh->name]->getMesh()));
+    _logger->debug("Points in tracked object      : {}", _affineTrackObjects[_mesh->name]->getMesh()->cloud.width * _affineTrackObjects[_mesh->name]->getMesh()->cloud.height);
+    _logger->debug("Triangles in tracked object   : {}", _affineTrackObjects[_mesh->name]->getMesh()->polygons.size());
 
     // Admit that we changed the mesh and it needs to be retraced
     _meshWasUpdated.store(true);
@@ -289,16 +289,13 @@ void lidarshooter::MeshProjector::multiMeshCallback(const lidarshooter::NamedPol
     _meshMutexes[_mesh->name].unlock();
 }
 
-// Important: This is only for initializing the mesh; you shouldn't use this
-// function to make updates to the pointcloud geometry when rigid body rotations
-// and translations are all you've done.
-void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh)
+void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh)
 {
     // Single mutex for changes to any mesh map item; atomic add of all
     _meshMapsMutex.lock(); // Block access until all maps are updated
 
-    // Emplace new copy of _mesh into _trackObjects
-    _trackObjects.emplace(
+    // Emplace new copy of _mesh into _affineTrackObjects
+    _affineTrackObjects.emplace(
         _meshName,
         _mesh // Make a copy
     );
@@ -317,25 +314,9 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
         std::forward_as_tuple() // Create mutex with no arguments
     );
 
-    // Initialize to zero linear displacement
-    _linearDisplacements.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(_meshName),
-        std::forward_as_tuple()
-    );
-    _linearDisplacements[_meshName].setZero();
-
-    // Initialize to zero angular displacement
-    _angularDisplacements.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(_meshName),
-        std::forward_as_tuple()
-    );
-    _angularDisplacements[_meshName].setZero();
-
     // Add the geometry
     // TODO: Presence of RTCGeometryType is implementation-specific; generalize it
-    int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->cloud.width * _mesh->cloud.height, _mesh->polygons.size());
+    int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->getMesh()->cloud.width * _mesh->getMesh()->cloud.height, _mesh->getMesh()->polygons.size());
     _logger->debug("Added geometric ID {}", geomId);
 
     // Indicate the mesh was updated so we get a retrace
@@ -352,12 +333,10 @@ void lidarshooter::MeshProjector::deleteMeshFromScene(const std::string &_meshNa
     // Remove all items associated with _meshName
     _meshMutexes.erase(_meshName);
     _joystickMutexes.erase(_meshName);
-    _linearDisplacements.erase(_meshName);
-    _angularDisplacements.erase(_meshName);
 
     // Remove the geometry from _traceData
     _traceData->removeGeometry(_meshName);
-    _trackObjects.erase(_meshName);
+    _affineTrackObjects.erase(_meshName);
 
     // Signal that there were changes to the mesh
     _meshWasUpdated.store(true);
@@ -387,7 +366,8 @@ void lidarshooter::MeshProjector::traceMeshWrapper()
     if (_meshWasUpdated.load() == true)
     {
         // Update _currentState
-        traceMesh();
+        //traceMesh();
+        traceAffineMesh();
 
         // Turn off mesh updated flag
         _meshWasUpdated.store(false);
@@ -410,8 +390,10 @@ void lidarshooter::MeshProjector::multiJoystickCallback(const lidarshooter::Name
 
     // Update the linear total linear and angular displacement
     lockJoystickMutex(_vel->name);
-    getLinearDisplacement(_vel->name) += globalDisplacement;
-    getAngularDisplacement(_vel->name) += Eigen::Vector3f(_vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
+
+    // For the AffineMesh case
+    _affineTrackObjects[_vel->name]->getLinearDisplacement() += globalDisplacement;
+    _affineTrackObjects[_vel->name]->getAngularDisplacement() += Eigen::Vector3f(_vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
 
     // Hint to the tracer that it needs to run again
     _meshWasUpdated.store(true); // TODO: Don't update when the signal is (0, 0, 0, 0, 0, 0)
@@ -462,17 +444,17 @@ bool lidarshooter::MeshProjector::cloudWasUpdated()
 inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement)
 {
     // Just for an Affine3f transform using an empty translation
-    Eigen::AngleAxisf xRotation(_angularDisplacements[_meshName].x(), Eigen::Vector3f::UnitX());
-    Eigen::AngleAxisf yRotation(_angularDisplacements[_meshName].y(), Eigen::Vector3f::UnitY());
-    Eigen::AngleAxisf zRotation(_angularDisplacements[_meshName].z(), Eigen::Vector3f::UnitZ());
+    Eigen::AngleAxisf xRotation(_affineTrackObjects[_meshName]->getAngularDisplacementConst().x(), Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf yRotation(_affineTrackObjects[_meshName]->getAngularDisplacementConst().y(), Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf zRotation(_affineTrackObjects[_meshName]->getAngularDisplacementConst().z(), Eigen::Vector3f::UnitZ());
     Eigen::Affine3f localRotation = Eigen::Translation3f(Eigen::Vector3f::Zero()) * zRotation * yRotation * xRotation;
     Eigen::Vector3f localDisplacement = localRotation * _displacement;
     return localDisplacement;
 }
 
-void lidarshooter::MeshProjector::traceMesh()
+void lidarshooter::MeshProjector::traceAffineMesh()
 {
-    for (auto& [name, mesh] : _trackObjects)
+    for (auto& [name, mesh] : _affineTrackObjects)
     {
         // Make sure this mesh doesn't change during read
         lockMeshMutex(name);
@@ -480,13 +462,13 @@ void lidarshooter::MeshProjector::traceMesh()
         // Copy vertex and elemet data from mesh into buffers
         _traceData->updateGeometry(
             name,
-            getLinearDisplacement(name),
-            getAngularDisplacement(name),
-            mesh // This is a reference
+            mesh->getLinearDisplacementConst(),
+            mesh->getAngularDisplacementConst(),
+            mesh->getMesh() // This is a reference
         );
 
         // Debugging information
-        _logger->debug("Updated {} with {} points and {} elements", name, mesh->cloud.width * mesh->cloud.height, mesh->polygons.size());
+        _logger->debug("Updated {} with {} points and {} elements", name, mesh->getMesh()->cloud.width * mesh->getMesh()->cloud.height, mesh->getMesh()->polygons.size());
 
         // Release just this mesh
         unlockMeshMutex(name);

@@ -47,6 +47,7 @@
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
 #include "TraceData.hpp"
+#include "AffineMesh.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -115,6 +116,20 @@ public:
      * @param _mesh The key -> mesh pair
      */
     void multiMeshCallback(const lidarshooter::NamedPolygonMesh::ConstPtr& _mesh);
+    
+    /**
+     * @brief Add a mesh to the device's scene
+     * 
+     * This function takes an \c AffineMesh i.e. an object containing a \c
+     * pcl::PolygonMesh::Ptr and two \c Eigen::Vector3f representing an affine
+     * transportation serving as the orientation of the mesh in the
+     * scnenVector3f representing an affine transportation serving as the
+     * orientation of the mesh in the scnene.
+     * 
+     * @param _meshName Key to represent this mesh in the system
+     * @param _mesh The \c AffineMesh to add with this key
+     */
+    void addMeshToScene(const std::string& _meshName, const AffineMesh::Ptr& _mesh);
 
     /**
      * @brief Set the internal mesh
@@ -216,7 +231,7 @@ private:
     std::shared_ptr<LidarDevice> _config;
 
     // Messages in class format
-    std::map<const std::string, pcl::PolygonMesh::Ptr> _trackObjects; // Remove _trackObject (singular) when finished
+    std::map<const std::string, lidarshooter::AffineMesh::Ptr> _affineTrackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
 
     // TraceData is the abstracted raytracing backend
@@ -241,10 +256,6 @@ private:
     ros::Subscriber _multiJoystickSubscriber;
     std::map<const std::string, std::mutex> _joystickMutexes;
 
-    // Current net state of the mesh
-    std::map<const std::string, Eigen::Vector3f> _linearDisplacements;
-    std::map<const std::string, Eigen::Vector3f> _angularDisplacements;
-
     /**
      * @brief Transforms a joystick signal for specified mesh key to global coordinates
      * 
@@ -260,6 +271,12 @@ private:
      * @return Eigen::Vector3f The resulting transformed displacement
      */
     inline Eigen::Vector3f transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement);
+
+    /**
+     * @brief Perform raytracing on the \c AffineMesh collection to produce a
+     * new \c _currentState
+     */
+    void traceAffineMesh();
 
     /**
      * @brief Perform raytracing to produce a new \c _currentState
@@ -324,40 +341,6 @@ private:
         _meshMapsMutex.lock();
         _joystickMutexes[_meshName].unlock();
         _meshMapsMutex.unlock();
-    }
-
-    /**
-     * @brief Atomic get for linear displacement
-     * 
-     * We're doing things this way because emplace/insert can be happening in
-     * another thread; we need the \c _meshMapsMutex locked and forcing all
-     * inserts needed for \c addMeshToScene to complete before access. It seems
-     * complicated and messy but that's because we allow dynamic changes to
-     * most of the data members.
-     * 
-     * @param _meshName Mesh name key into each mesh-related map
-     * @return Eigen::Vector3f& Reference to the linear displacement in the object
-     */
-    inline Eigen::Vector3f& getLinearDisplacement(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        auto& displacement = _linearDisplacements[_meshName];
-        _meshMapsMutex.unlock();
-        return displacement;
-    }
-
-    /**
-     * @brief Atomic get of the angular displacement (see above)
-     * 
-     * @param _meshName Mesh name key into each mesh-related map
-     * @return Eigen::Vector3f& Reference to the angular displacement in the object
-     */
-    inline Eigen::Vector3f& getAngularDisplacement(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        auto& displacement = _angularDisplacements[_meshName];
-        _meshMapsMutex.unlock();
-        return displacement;
     }
 };
 

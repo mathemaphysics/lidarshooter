@@ -124,15 +124,15 @@ public:
      * @return false Thread is not running
      */
     bool isTraceThreadRunning();
-    
-    // Pass through functions to _meshProjector
-    /**
-     * @brief Adds a mesh to the device to trace
-     * 
-     * @param _mesh Pointer to the mesh to add
-     */
-    void addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh);
 
+    /**
+     * @brief Adds an \c AffineMesh to the scene
+     * 
+     * @param _meshName Key representing the \c AffineMesh
+     * @param _mesh The \c AffineMesh reference itself
+     */
+    void addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh);
+    
     /**
      * @brief Delete a mesh from inside the mesh projector
      * 
