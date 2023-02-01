@@ -46,7 +46,7 @@ protected:
             *meshData
         );
 
-        affineMesh = new lidarshooter::AffineMesh(meshData);
+        affineMesh = lidarshooter::AffineMesh::create(meshData);
     }
 
     void TearDown() override
@@ -55,7 +55,7 @@ protected:
     }
 
     pcl::PolygonMesh::Ptr meshData;
-    lidarshooter::AffineMesh* affineMesh;
+    lidarshooter::AffineMesh::Ptr affineMesh;
 };
 
 TEST_F(AffineMeshTest, DisplacementResetNoFail)
