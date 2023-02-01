@@ -347,8 +347,9 @@ add_library(lidarshooter
     src/CloudTransformer.cpp
     src/MeshTransformer.cpp
     src/CloudConverter.cpp
-    src/TraceData.cpp
-    src/AffineMesh.cpp)
+    src/AffineMesh.cpp
+    src/ITracer.cpp
+    src/EmbreeTracer.cpp)
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
     target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
@@ -370,10 +371,10 @@ configure_file(src/test/LidarShooterTesting.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/t
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 
 # Add gtest based cpp test target and link libraries
-catkin_add_gtest(TraceData_test src/test/TraceData_test.cpp)
 catkin_add_gtest(AffineMesh_test src/test/AffineMesh_test.cpp)
-if(TARGET TraceData_test)
-  target_link_libraries(TraceData_test lidarshooter)
+catkin_add_gtest(EmbreeTracer_test src/test/EmbreeTracer_test.cpp)
+if(TARGET EmbreeTracer_test)
+  target_link_libraries(EmbreeTracer_test lidarshooter)
 endif()
 if(TARGET AffineMesh_test)
   target_link_libraries(AffineMesh_test lidarshooter)

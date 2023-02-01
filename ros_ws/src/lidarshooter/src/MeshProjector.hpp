@@ -46,8 +46,8 @@
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
-#include "TraceData.hpp"
 #include "AffineMesh.hpp"
+#include "EmbreeTracer.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -234,8 +234,8 @@ private:
     std::map<const std::string, lidarshooter::AffineMesh::Ptr> _affineTrackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
 
-    // TraceData is the abstracted raytracing backend
-    TraceData::Ptr _traceData;
+    // EmbreeTracer is an ITracer, the abstracted raytracing backend
+    EmbreeTracer::Ptr _traceData;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;

@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile-cuda
+      args:
+        DEVUSER: devuser
+    user: devuser
+    environment:
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - ROS_IP=${ROS_IP}
+      - ROS_MASTER_URI=${ROS_MASTER_URI}
+      - QT_AUTO_SCREEN_SCALE_FACTOR=${QT_AUTO_SCREEN_SCALE_FACTOR}
+    command: "sleep infinity"
+    volumes:
+      - ..:/workspaces/lidarshooter

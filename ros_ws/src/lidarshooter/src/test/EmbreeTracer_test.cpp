@@ -1,7 +1,7 @@
 /**
- * @file TraceData_test.cpp
+ * @file EmbreeTracer_test.cpp
  * @author Ryan P. Daly (rdaly@herzog.com)
- * @brief Unit tests related to the TraceData class
+ * @brief Unit tests related to the EmbreeTracer class
  * @version 0.1
  * @date 2023-01-22
  * 
@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../TraceData.hpp"
+#include "../EmbreeTracer.hpp"
 #include "../LidarDevice.hpp"
 
 #include <pcl/point_cloud.h>
@@ -27,7 +27,7 @@
 namespace
 {
 
-class TraceDataTest : public ::testing::Test
+class EmbreeTracer : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -40,7 +40,6 @@ protected:
         meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
         auto meshPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
         pcl::io::loadPolygonFileSTL(
-            //"/workspaces/lidarshooter/mesh/ben.stl",
             (meshPath / "mesh/ben.stl").string(),
             *meshData
         );
@@ -53,9 +52,9 @@ protected:
         );
 
         // Make tracer; default to create internal trace cloud storage
-        traceData = lidarshooter::TraceData::create(sensorConfig);
+        embreeTracer = lidarshooter::EmbreeTracer::create(sensorConfig);
         geometryIdAdded = static_cast<unsigned int>(
-            traceData->addGeometry(
+            embreeTracer->addGeometry(
                 "mesh",
                 RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
                 meshData->cloud.width * meshData->cloud.height,
@@ -66,72 +65,72 @@ protected:
 
     void TearDown() override
     {
-        traceData.reset();
+        embreeTracer.reset();
         sensorConfig.reset();
         meshData.reset();
     }
 
     pcl::PolygonMesh::Ptr meshData;
     std::shared_ptr<lidarshooter::LidarDevice> sensorConfig;
-    lidarshooter::TraceData::Ptr traceData;
+    lidarshooter::EmbreeTracer::Ptr embreeTracer;
     unsigned int geometryIdAdded;
 };
 
-TEST_F(TraceDataTest, NoDeviceError)
+TEST_F(EmbreeTracer, NoDeviceError)
 {
     // Make sure geometry and buffer creation doesn't fail or complain
-    RTCError error = rtcGetDeviceError(traceData->getDevice());
+    RTCError error = rtcGetDeviceError(embreeTracer->getDevice());
     EXPECT_EQ(error, RTC_ERROR_NONE);
 }
 
-TEST_F(TraceDataTest, VertexElementCounts)
+TEST_F(EmbreeTracer, VertexElementCounts)
 {
     // Check that the number of vertices and elements is right
-    EXPECT_EQ(traceData->getVertexCount("mesh"), 2823l);
-    EXPECT_EQ(traceData->getElementCount("mesh"), 5489l);
+    EXPECT_EQ(embreeTracer->getVertexCount("mesh"), 2823l);
+    EXPECT_EQ(embreeTracer->getElementCount("mesh"), 5489l);
 }
 
-TEST_F(TraceDataTest, GeometryTotalCount)
+TEST_F(EmbreeTracer, GeometryTotalCount)
 {
     // Make sure we have only one
-    EXPECT_EQ(traceData->getGeometryCount(), 1);
+    EXPECT_EQ(embreeTracer->getGeometryCount(), 1);
 }
 
-TEST_F(TraceDataTest, AddGeometryId)
+TEST_F(EmbreeTracer, AddGeometryId)
 {
     // Internal map and returned IDs should match
-    unsigned int idStored = static_cast<unsigned int>(traceData->getGeometryId("mesh"));
+    unsigned int idStored = static_cast<unsigned int>(embreeTracer->getGeometryId("mesh"));
     EXPECT_EQ(geometryIdAdded, idStored);
 }
 
-TEST_F(TraceDataTest, DeleteGeometryId)
+TEST_F(EmbreeTracer, DeleteGeometryId)
 {
     // Have to call getGeometryId before deleting; won't exist after
-    unsigned int actualGeomId = static_cast<unsigned int>(traceData->getGeometryId("mesh"));
-    unsigned int idDeleted = static_cast<unsigned int>(traceData->removeGeometry("mesh"));
+    unsigned int actualGeomId = static_cast<unsigned int>(embreeTracer->getGeometryId("mesh"));
+    unsigned int idDeleted = static_cast<unsigned int>(embreeTracer->removeGeometry("mesh"));
 
     // Make sure the geometry it claims it deleted was the right one; consistency check
     EXPECT_EQ(idDeleted, actualGeomId);
 }
 
-TEST_F(TraceDataTest, GeometryType)
+TEST_F(EmbreeTracer, GeometryType)
 {
-    RTCGeometryType geometryType = traceData->getGeometryType("mesh");
+    RTCGeometryType geometryType = embreeTracer->getGeometryType("mesh");
     EXPECT_EQ(geometryType, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE);
 }
 
-TEST_F(TraceDataTest, TraceSceneCloud)
+TEST_F(EmbreeTracer, TraceSceneCloud)
 {
     // Must call this to initialize ros::Time for LidarDevice::initMessage
     ros::Time::init();
     EXPECT_NO_FATAL_FAILURE(
-        traceData->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
+        embreeTracer->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
     );
-    traceData->commitScene();
+    embreeTracer->commitScene();
     EXPECT_NO_FATAL_FAILURE(
-        traceData->traceScene(0)
+        embreeTracer->traceScene(0)
     );
-    auto cloud = traceData->getTraceCloud();
+    auto cloud = embreeTracer->getTraceCloud();
     EXPECT_EQ(cloud->width * cloud->height, 235);
 }
 

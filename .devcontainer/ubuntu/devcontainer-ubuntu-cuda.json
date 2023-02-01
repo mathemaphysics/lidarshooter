@@ -6,7 +6,7 @@
 		"dockerfile": "Dockerfile-cuda",
 		"args": { "DEVUSER": "devuser" }
 	},
-	"runArgs": ["--network=host", "--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"], //["--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
+	"runArgs": ["--network=host", "--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": {},
@@ -59,6 +59,7 @@
 	"remoteUser": "devuser",
 
 	"remoteEnv": {
+		"NVIDIA_DRIVER_CAPABILITIES": "all",
 		"DISPLAY": "${localEnv:DISPLAY}",
 		"XAUTHORITY": "/home/devuser/.Xauthority",
 		"ROS_IP": "${localEnv:ROS_IP}",
