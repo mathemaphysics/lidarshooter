@@ -248,7 +248,7 @@ private:
     ros::Duration _tracePeriod;
     ros::Timer _traceTimer;
     std::mutex _cloudMutex;
-    ros::NodeHandle _nodeHandle;
+    ros::NodeHandlePtr _nodeHandle;
     ros::Publisher _cloudPublisher;
     ros::Subscriber _multiMeshSubscriber;
     std::mutex _meshMapsMutex;

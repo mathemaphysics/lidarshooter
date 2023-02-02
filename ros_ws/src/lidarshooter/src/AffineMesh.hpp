@@ -17,6 +17,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
+#include <ros/ros.h>
+
 #include <mutex>
 #include <memory>
 
@@ -54,6 +56,10 @@ private:
 	pcl::PolygonMesh::Ptr _mesh;
 	Eigen::Vector3f _linearDisplacement;
 	Eigen::Vector3f _angularDisplacement;
+	
+	// Subscription to the joystick topic
+	ros::NodeHandlePtr _nodeHandle;
+	ros::Subscriber _multiJoystickSubscriber;
 };
 
 }
