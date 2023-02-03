@@ -80,10 +80,7 @@ lidarshooter::AffineMesh::AffineMesh(ros::NodeHandlePtr __nodeHandle)
     : _mesh(new pcl::PolygonMesh())
 {
     // Set up the node handle if needed
-    if (__nodeHandle == nullptr)
-        _nodeHandle.reset(new ros::NodeHandle("~"));
-    else
-        _nodeHandle = __nodeHandle;
+    _nodeHandle = __nodeHandle;
 
     // Zero out the initial displacement
     resetLinearDisplacement();
@@ -94,10 +91,7 @@ lidarshooter::AffineMesh::AffineMesh(pcl::PolygonMesh::Ptr __mesh, ros::NodeHand
     : _mesh(__mesh)
 {
     // Set up the node handle if needed
-    if (__nodeHandle == nullptr)
-        _nodeHandle.reset(new ros::NodeHandle("~"));
-    else
-        _nodeHandle = __nodeHandle;
+    _nodeHandle = __nodeHandle;
 
     // Zero out the initial displacement
     resetLinearDisplacement();
