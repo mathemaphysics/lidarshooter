@@ -50,8 +50,8 @@ public:
 	void resetAngularDisplacement();
 
 private:
-	AffineMesh();
-	AffineMesh(pcl::PolygonMesh::Ptr __mesh);
+	AffineMesh(ros::NodeHandlePtr __nodeHandle = nullptr);
+	AffineMesh(pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle = nullptr);
 
 	pcl::PolygonMesh::Ptr _mesh;
 	Eigen::Vector3f _linearDisplacement;
