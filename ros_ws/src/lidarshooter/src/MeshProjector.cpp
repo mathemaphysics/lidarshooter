@@ -291,6 +291,11 @@ void lidarshooter::MeshProjector::multiMeshCallback(const lidarshooter::NamedPol
 
 void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh)
 {
+    // Set the node handle to allow _mesh to subscribe to the joystick
+    _mesh->setNodeHandle(_nodeHandle);
+    _mesh->subscribe("");
+    _mesh->advertise();
+
     // Single mutex for changes to any mesh map item; atomic add of all
     _meshMapsMutex.lock(); // Block access until all maps are updated
 

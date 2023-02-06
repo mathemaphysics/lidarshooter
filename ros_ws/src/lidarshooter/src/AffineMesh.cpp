@@ -11,6 +11,9 @@
 
 #include "AffineMesh.hpp"
 
+#include <lidarshooter/NamedTwist.h>
+#include <lidarshooter/NamedTwistStamped.h>
+
 lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create()
 {
     return AffineMesh::Ptr(new AffineMesh());
@@ -24,6 +27,21 @@ lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create(pcl::PolygonMesh:
 lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::getPtr()
 {
     return shared_from_this();
+}
+
+void lidarshooter::AffineMesh::setNodeHandle(ros::NodeHandlePtr __nodeHandle)
+{
+    _nodeHandle = __nodeHandle;
+}
+
+void lidarshooter::AffineMesh::subscribe(const std::string& _topic)
+{
+
+}
+
+void lidarshooter::AffineMesh::advertise()
+{
+
 }
 
 pcl::PolygonMesh::Ptr& lidarshooter::AffineMesh::getMesh()

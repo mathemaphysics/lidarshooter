@@ -36,6 +36,10 @@ public:
 	AffineMesh::Ptr getPtr();
 	~AffineMesh() = default;
 
+	void setNodeHandle(ros::NodeHandlePtr __nodeHandle);
+	void subscribe(const std::string& _topic);
+	void advertise();
+
 	pcl::PolygonMesh::Ptr& getMesh();
 	Eigen::Vector3f& getLinearDisplacement();
 	Eigen::Vector3f getLinearDisplacementConst() const;
@@ -60,6 +64,9 @@ private:
 	// Subscription to the joystick topic
 	ros::NodeHandlePtr _nodeHandle;
 	ros::Subscriber _multiJoystickSubscriber;
+	bool _isSubscribed;
+	ros::Publisher _affineMeshPublisher;
+	bool _isPublished;
 };
 
 }
