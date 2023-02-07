@@ -132,7 +132,7 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
         return;
     }
 
-    affineMeshMap[meshName] = lidarshooter::AffineMesh::create();
+    affineMeshMap[meshName] = lidarshooter::AffineMesh::create(meshName);
     sensorsDialog->addMeshRow(meshName, meshFile.toStdString());
     pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(affineMeshMap[meshName]->getMesh()));
     //viewer->addPolygonMesh(*(affineMeshMap[meshName]->getMesh()), meshFile.toStdString());

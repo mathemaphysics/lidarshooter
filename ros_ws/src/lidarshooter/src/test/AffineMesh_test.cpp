@@ -46,7 +46,7 @@ protected:
             *meshData
         );
 
-        affineMesh = lidarshooter::AffineMesh::create(meshData);
+        affineMesh = lidarshooter::AffineMesh::create("mesh", meshData);
     }
 
     void TearDown() override

@@ -11,17 +11,14 @@
 
 #include "AffineMesh.hpp"
 
-#include <lidarshooter/NamedTwist.h>
-#include <lidarshooter/NamedTwistStamped.h>
-
-lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create()
+lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create(const std::string& __name, ros::NodeHandlePtr __nodeHandle, std::shared_ptr<spdlog::logger> __logger)
 {
-    return AffineMesh::Ptr(new AffineMesh());
+    return AffineMesh::Ptr(new AffineMesh(__name, __nodeHandle, __logger));
 }
 
-lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create(pcl::PolygonMesh::Ptr __mesh)
+lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create(const std::string& __name, pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle, std::shared_ptr<spdlog::logger> __logger)
 {
-    return AffineMesh::Ptr(new AffineMesh(__mesh));
+    return AffineMesh::Ptr(new AffineMesh(__name, __mesh, __nodeHandle, __logger));
 }
 
 lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::getPtr()
@@ -34,9 +31,58 @@ void lidarshooter::AffineMesh::setNodeHandle(ros::NodeHandlePtr __nodeHandle)
     _nodeHandle = __nodeHandle;
 }
 
+void lidarshooter::AffineMesh::joystickCallback(const geometry_msgs::TwistConstPtr& _vel)
+{
+    // TODO: Move this into its own function and replace everywhere
+    Eigen::Vector3f globalDisplacement = transformToGlobal(Eigen::Vector3f(_vel->linear.x, _vel->linear.y, _vel->linear.z));
+    
+    // Output actual displacement applied after rotation to local coordinates
+    // TODO: Set both of these info() calls to debug() as soon as settled
+    _logger->debug("Joystick signal: {}, {}, {}, {}, {}, {}",
+                  _vel->linear.x, _vel->linear.y, _vel->linear.z,
+                  _vel->angular.x, _vel->angular.y, _vel->angular.z);
+    _logger->debug("Global displacement: {}, {}, {}, {}, {}, {}",
+                  globalDisplacement.x(), globalDisplacement.y(), globalDisplacement.z(),
+                  _vel->angular.x, _vel->angular.y, _vel->angular.z);
+
+    // For the AffineMesh case
+    getLinearDisplacement() += globalDisplacement;
+    getAngularDisplacement() += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
+}
+
+void lidarshooter::AffineMesh::multiJoystickCallback(const lidarshooter::NamedTwistConstPtr& _vel)
+{
+    // If _vel->name isn't _name then ignore it
+    if (_vel->name != _name)
+        return;
+
+    // TODO: Move this into its own function and replace everywhere
+    Eigen::Vector3f globalDisplacement = transformToGlobal(Eigen::Vector3f(_vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z));
+    
+    // Output actual displacement applied after rotation to local coordinates
+    // TODO: Set both of these info() calls to debug() as soon as settled
+    _logger->debug("Joystick signal: {}, {}, {}, {}, {}, {}",
+                  _vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z,
+                  _vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
+    _logger->debug("Global displacement: {}, {}, {}, {}, {}, {}",
+                  globalDisplacement.x(), globalDisplacement.y(), globalDisplacement.z(),
+                  _vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
+
+    // For the AffineMesh case
+    getLinearDisplacement() += globalDisplacement;
+    getAngularDisplacement() += Eigen::Vector3f(_vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
+}
+
 void lidarshooter::AffineMesh::subscribe(const std::string& _topic)
 {
+    if (_nodeHandle == nullptr)
+    {
+        _logger->error("Cannot subscribe using a null node handle; set it or create a new one");
+        return;
+    }
 
+    // Subscribe this object to the joystick topic
+    _nodeHandle->subscribe<lidarshooter::NamedTwist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::multiJoystickCallback, this);
 }
 
 void lidarshooter::AffineMesh::advertise()
@@ -94,9 +140,12 @@ void lidarshooter::AffineMesh::resetAngularDisplacement()
     _angularDisplacement.setZero();
 }
 
-lidarshooter::AffineMesh::AffineMesh(ros::NodeHandlePtr __nodeHandle)
-    : _mesh(new pcl::PolygonMesh())
+lidarshooter::AffineMesh::AffineMesh(const std::string& __name, ros::NodeHandlePtr __nodeHandle, std::shared_ptr<spdlog::logger> __logger)
+    : _mesh(new pcl::PolygonMesh()), _name(__name)
 {
+    // Setup the logger
+    setupLogger(__logger);
+
     // Set up the node handle if needed
     _nodeHandle = __nodeHandle;
 
@@ -105,13 +154,39 @@ lidarshooter::AffineMesh::AffineMesh(ros::NodeHandlePtr __nodeHandle)
     resetAngularDisplacement();
 }
 
-lidarshooter::AffineMesh::AffineMesh(pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle)
-    : _mesh(__mesh)
+lidarshooter::AffineMesh::AffineMesh(const std::string& __name, pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle, std::shared_ptr<spdlog::logger> __logger)
+    : _mesh(__mesh), _name(__name)
 {
+    // Setup the logger
+    setupLogger(__logger);
+
     // Set up the node handle if needed
     _nodeHandle = __nodeHandle;
 
     // Zero out the initial displacement
     resetLinearDisplacement();
     resetAngularDisplacement();
+}
+
+Eigen::Vector3f lidarshooter::AffineMesh::transformToGlobal(Eigen::Vector3f _displacement)
+{
+    // Just for an Affine3f transform using an empty translation
+    Eigen::AngleAxisf xRotation(getAngularDisplacementConst().x(), Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf yRotation(getAngularDisplacementConst().y(), Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf zRotation(getAngularDisplacementConst().z(), Eigen::Vector3f::UnitZ());
+    Eigen::Affine3f localRotation = Eigen::Translation3f(Eigen::Vector3f::Zero()) * zRotation * yRotation * xRotation;
+    Eigen::Vector3f localDisplacement = localRotation * _displacement;
+    return localDisplacement;
+}
+
+void lidarshooter::AffineMesh::setupLogger(std::shared_ptr<spdlog::logger> __logger)
+{
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get(_applicationName);
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt(_applicationName);
+    }
+    else
+        _logger = __logger;
 }

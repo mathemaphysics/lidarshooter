@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "LidarShooter.hpp"
+
 #include <pcl/point_cloud.h>
 #include <pcl/PolygonMesh.h>
 
@@ -18,8 +20,17 @@
 #include <Eigen/Geometry>
 
 #include <ros/ros.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
+#include <lidarshooter/NamedTwist.h>
+#include <lidarshooter/NamedTwistStamped.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
+
+#include <string>
 #include <mutex>
+#include <atomic>
 #include <memory>
 
 namespace lidarshooter
@@ -31,12 +42,14 @@ public:
 	using Ptr = std::shared_ptr<AffineMesh>;
 	using ConstPtr = std::shared_ptr<AffineMesh const>;
 
-	static AffineMesh::Ptr create();
-	static AffineMesh::Ptr create(pcl::PolygonMesh::Ptr __mesh);
+	static AffineMesh::Ptr create(const std::string& __name, ros::NodeHandlePtr __nodeHandle = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
+	static AffineMesh::Ptr create(const std::string& __name, pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
 	AffineMesh::Ptr getPtr();
 	~AffineMesh() = default;
 
 	void setNodeHandle(ros::NodeHandlePtr __nodeHandle);
+	void joystickCallback(const geometry_msgs::TwistConstPtr& _vel);
+	void multiJoystickCallback(const lidarshooter::NamedTwistConstPtr& _vel);
 	void subscribe(const std::string& _topic);
 	void advertise();
 
@@ -54,9 +67,12 @@ public:
 	void resetAngularDisplacement();
 
 private:
-	AffineMesh(ros::NodeHandlePtr __nodeHandle = nullptr);
-	AffineMesh(pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle = nullptr);
+	AffineMesh(const std::string& __name, ros::NodeHandlePtr __nodeHandle = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
+	AffineMesh(const std::string& __name, pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
+	Eigen::Vector3f transformToGlobal(Eigen::Vector3f _displacement);
+	void setupLogger(std::shared_ptr<spdlog::logger> __logger);
 
+	const std::string _name;
 	pcl::PolygonMesh::Ptr _mesh;
 	Eigen::Vector3f _linearDisplacement;
 	Eigen::Vector3f _angularDisplacement;
@@ -67,6 +83,10 @@ private:
 	bool _isSubscribed;
 	ros::Publisher _affineMeshPublisher;
 	bool _isPublished;
+
+	// Logger
+    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
+	std::shared_ptr<spdlog::logger> _logger;
 };
 
 }
