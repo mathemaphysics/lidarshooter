@@ -82,6 +82,18 @@ void lidarshooter::AffineMesh::subscribe(const std::string& _topic)
     }
 
     // Subscribe this object to the joystick topic
+    _nodeHandle->subscribe<geometry_msgs::Twist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
+}
+
+void lidarshooter::AffineMesh::subscribeMulti(const std::string& _topic)
+{
+    if (_nodeHandle == nullptr)
+    {
+        _logger->error("Cannot subscribe using a null node handle; set it or create a new one");
+        return;
+    }
+
+    // Subscribe this object to the joystick topic
     _nodeHandle->subscribe<lidarshooter::NamedTwist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::multiJoystickCallback, this);
 }
 

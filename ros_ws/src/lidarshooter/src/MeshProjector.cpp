@@ -25,6 +25,8 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include <fmt/format.h>
+
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
@@ -293,7 +295,7 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
 {
     // Set the node handle to allow _mesh to subscribe to the joystick
     _mesh->setNodeHandle(_nodeHandle);
-    _mesh->subscribe("");
+    _mesh->subscribe(fmt::format("/joystick/{}", _meshName));
     _mesh->advertise();
 
     // Single mutex for changes to any mesh map item; atomic add of all
