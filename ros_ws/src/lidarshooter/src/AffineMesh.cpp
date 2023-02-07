@@ -94,7 +94,7 @@ void lidarshooter::AffineMesh::subscribeMulti(const std::string& _topic)
     }
 
     // Subscribe this object to the joystick topic
-    _nodeHandle->subscribe<lidarshooter::NamedTwist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::multiJoystickCallback, this);
+    _joystickSubscriber = _nodeHandle->subscribe<lidarshooter::NamedTwist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::multiJoystickCallback, this);
 }
 
 void lidarshooter::AffineMesh::advertise()
