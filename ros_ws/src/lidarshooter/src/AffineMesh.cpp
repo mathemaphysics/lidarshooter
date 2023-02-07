@@ -50,29 +50,6 @@ void lidarshooter::AffineMesh::joystickCallback(const geometry_msgs::TwistConstP
     getAngularDisplacement() += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
 }
 
-void lidarshooter::AffineMesh::multiJoystickCallback(const lidarshooter::NamedTwistConstPtr& _vel)
-{
-    // If _vel->name isn't _name then ignore it
-    if (_vel->name != _name)
-        return;
-
-    // TODO: Move this into its own function and replace everywhere
-    Eigen::Vector3f globalDisplacement = transformToGlobal(Eigen::Vector3f(_vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z));
-    
-    // Output actual displacement applied after rotation to local coordinates
-    // TODO: Set both of these info() calls to debug() as soon as settled
-    _logger->debug("Joystick signal: {}, {}, {}, {}, {}, {}",
-                  _vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z,
-                  _vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
-    _logger->debug("Global displacement: {}, {}, {}, {}, {}, {}",
-                  globalDisplacement.x(), globalDisplacement.y(), globalDisplacement.z(),
-                  _vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
-
-    // For the AffineMesh case
-    getLinearDisplacement() += globalDisplacement;
-    getAngularDisplacement() += Eigen::Vector3f(_vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
-}
-
 void lidarshooter::AffineMesh::subscribe(const std::string& _topic)
 {
     if (_nodeHandle == nullptr)
@@ -83,18 +60,6 @@ void lidarshooter::AffineMesh::subscribe(const std::string& _topic)
 
     // Subscribe this object to the joystick topic
     _joystickSubscriber = _nodeHandle->subscribe<geometry_msgs::Twist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
-}
-
-void lidarshooter::AffineMesh::subscribeMulti(const std::string& _topic)
-{
-    if (_nodeHandle == nullptr)
-    {
-        _logger->error("Cannot subscribe using a null node handle; set it or create a new one");
-        return;
-    }
-
-    // Subscribe this object to the joystick topic
-    _multiJoystickSubscriber = _nodeHandle->subscribe<lidarshooter::NamedTwist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::multiJoystickCallback, this);
 }
 
 void lidarshooter::AffineMesh::advertise()

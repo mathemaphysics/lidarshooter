@@ -49,9 +49,7 @@ public:
 
 	void setNodeHandle(ros::NodeHandlePtr __nodeHandle);
 	void joystickCallback(const geometry_msgs::TwistConstPtr& _vel);
-	void multiJoystickCallback(const lidarshooter::NamedTwistConstPtr& _vel);
 	void subscribe(const std::string& _topic);
-	void subscribeMulti(const std::string& _topic);
 	void advertise();
 
 	pcl::PolygonMesh::Ptr& getMesh();
