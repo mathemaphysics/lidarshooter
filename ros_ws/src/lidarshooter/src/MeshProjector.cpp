@@ -263,9 +263,10 @@ void lidarshooter::MeshProjector::shutdown()
     _nodeHandle->shutdown();
 }
 
-void lidarshooter::MeshProjector::affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMesh::ConstPtr& _mesh)
+void lidarshooter::MeshProjector::affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMeshMessage::ConstPtr& _mesh)
 {
-    // This
+    // This should convert the incoming AffineMeshMessage into an AffineMesh
+    // without an initialized _nodeHandle
 }
 
 void lidarshooter::MeshProjector::multiMeshCallback(const lidarshooter::NamedPolygonMeshConstPtr& _mesh)

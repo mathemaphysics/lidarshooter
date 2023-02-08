@@ -27,6 +27,7 @@
 
 #include <lidarshooter/NamedPolygonMesh.h>
 #include <lidarshooter/NamedTwist.h>
+#include <lidarshooter/AffineMeshMessage.h>
 
 #include <cstdint>
 #include <cmath>
@@ -97,7 +98,16 @@ public:
      */
     void shutdown();
 
-    void affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMesh::ConstPtr& _mesh);
+    /**
+     * @brief Callback for receiving an \c AffineMeshMessage
+     * 
+     * This function must be used with \c std::bind to pass a \c _meshName
+     * to the function to exist as a subscription for a specific mesh.
+     * 
+     * @param _meshName Name of the mesh; the mesh key
+     * @param _mesh The \c AffineMeshMessage space to receive
+     */
+    void affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMeshMessage::ConstPtr& _mesh);
     
     /**
      * @brief ROS receiving callback function handling incoming meshes in \c _trackObjects
