@@ -79,6 +79,11 @@ pcl::PolygonMesh::Ptr& lidarshooter::AffineMesh::getMesh()
     return _mesh;
 }
 
+const pcl::PolygonMesh::ConstPtr& lidarshooter::AffineMesh::getMeshConst() const
+{
+    return _mesh;
+}
+
 Eigen::Vector3f& lidarshooter::AffineMesh::getLinearDisplacement()
 {
     return _linearDisplacement;

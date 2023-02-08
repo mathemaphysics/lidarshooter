@@ -52,6 +52,7 @@ public:
 	void advertise();
 
 	pcl::PolygonMesh::Ptr& getMesh();
+	const pcl::PolygonMesh::ConstPtr& getMeshConst() const;
 	Eigen::Vector3f& getLinearDisplacement();
 	Eigen::Vector3f getLinearDisplacementConst() const;
 	Eigen::Vector3f& getAngularDisplacement();
