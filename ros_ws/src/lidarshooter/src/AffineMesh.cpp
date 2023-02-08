@@ -71,7 +71,7 @@ void lidarshooter::AffineMesh::advertise()
     }
 
     // Advertise this object
-    //_affineMeshPublisher = _nodeHandle->advertise<lidarshooter::AffineMesh>(fmt::format("/meshes/all/{}", _name), LIDARSHOOTER_AFFINEMESH_SUB_QUEUE_SIZE);
+    _affineMeshPublisher = _nodeHandle->advertise<lidarshooter::AffineMeshMessage>(fmt::format("/meshes/all/{}", _name), LIDARSHOOTER_AFFINEMESH_SUB_QUEUE_SIZE);
 }
 
 pcl::PolygonMesh::Ptr& lidarshooter::AffineMesh::getMesh()
@@ -79,7 +79,7 @@ pcl::PolygonMesh::Ptr& lidarshooter::AffineMesh::getMesh()
     return _mesh;
 }
 
-const pcl::PolygonMesh::ConstPtr& lidarshooter::AffineMesh::getMeshConst() const
+const pcl::PolygonMesh::ConstPtr lidarshooter::AffineMesh::getMeshConst() const
 {
     return _mesh;
 }

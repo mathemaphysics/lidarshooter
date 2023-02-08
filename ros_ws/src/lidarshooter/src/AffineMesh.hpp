@@ -23,7 +23,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-#include <lidarshooter/NamedPolygonMesh.h>
+#include <lidarshooter/AffineMeshMessage.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TwistStamped.h>
 
@@ -52,7 +52,7 @@ public:
 	void advertise();
 
 	pcl::PolygonMesh::Ptr& getMesh();
-	const pcl::PolygonMesh::ConstPtr& getMeshConst() const;
+	const pcl::PolygonMesh::ConstPtr getMeshConst() const;
 	Eigen::Vector3f& getLinearDisplacement();
 	Eigen::Vector3f getLinearDisplacementConst() const;
 	Eigen::Vector3f& getAngularDisplacement();

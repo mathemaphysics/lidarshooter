@@ -34,6 +34,7 @@ add_message_files(
     NamedPolygonMesh.msg
     NamedTwist.msg
     NamedTwistStamped.msg
+    AffineMeshMessage.msg
 )
 
 generate_messages(
