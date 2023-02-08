@@ -23,8 +23,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-#include <lidarshooter/NamedTwist.h>
-#include <lidarshooter/NamedTwistStamped.h>
+#include <lidarshooter/NamedPolygonMesh.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TwistStamped.h>
 
@@ -49,7 +48,7 @@ public:
 
 	void setNodeHandle(ros::NodeHandlePtr __nodeHandle);
 	void joystickCallback(const geometry_msgs::TwistConstPtr& _vel);
-	void subscribe(const std::string& _topic);
+	void subscribe();
 	void advertise();
 
 	pcl::PolygonMesh::Ptr& getMesh();
@@ -79,7 +78,6 @@ private:
 	// Subscription to the joystick topic
 	ros::NodeHandlePtr _nodeHandle;
 	ros::Subscriber _joystickSubscriber;
-	ros::Subscriber _multiJoystickSubscriber;
 	bool _isSubscribed;
 	ros::Publisher _affineMeshPublisher;
 	bool _isPublished;

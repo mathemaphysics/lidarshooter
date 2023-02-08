@@ -42,6 +42,8 @@ namespace lidarshooter
  */
 #define LIDARSHOOTER_MESH_SUB_QUEUE_SIZE 20
 #define LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE 100
+#define LIDARSHOOTER_POINTCLOUD_SUB_QUEUE_SIZE 20
+#define LIDARSHOOTER_AFFINEMESH_SUB_QUEUE_SIZE 20
 
 /**
  * @brief Embree shaerd geometry buffers require padding for SIMD ops

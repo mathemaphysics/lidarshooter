@@ -93,7 +93,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Create the pubsub situation; in this constructor cloud advertises on /[namespace]/pandar
-    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>("pandar", 20); // TODO: Make this queue size and "pandar" parameters
+    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>("pandar", LIDARSHOOTER_POINTCLOUD_SUB_QUEUE_SIZE); // TODO: Make this queue size and "pandar" parameters
     _multiJoystickSubscriber = _nodeHandle->subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
     _publishTimer = _nodeHandle->createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
     _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
@@ -166,7 +166,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Create the pubsub situation
-    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
+    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), LIDARSHOOTER_POINTCLOUD_SUB_QUEUE_SIZE);
     _multiMeshSubscriber = _nodeHandle->subscribe<lidarshooter::NamedPolygonMesh>("/objtracker/all/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::multiMeshCallback, this);
     _multiJoystickSubscriber = _nodeHandle->subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
     _publishTimer = _nodeHandle->createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
@@ -236,7 +236,7 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Create the pubsub situation
-    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
+    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), LIDARSHOOTER_POINTCLOUD_SUB_QUEUE_SIZE);
     _multiMeshSubscriber = _nodeHandle->subscribe<lidarshooter::NamedPolygonMesh>("/objtracker/all/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::multiMeshCallback, this);
     _multiJoystickSubscriber = _nodeHandle->subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
     _publishTimer = _nodeHandle->createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
@@ -261,6 +261,11 @@ void lidarshooter::MeshProjector::shutdown()
 {
     // Now sure if we need to shut down the node manually
     _nodeHandle->shutdown();
+}
+
+void lidarshooter::MeshProjector::affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMesh::ConstPtr& _mesh)
+{
+    // This
 }
 
 void lidarshooter::MeshProjector::multiMeshCallback(const lidarshooter::NamedPolygonMeshConstPtr& _mesh)
@@ -295,8 +300,10 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
 {
     // Set the node handle to allow _mesh to subscribe to the joystick
     _mesh->setNodeHandle(_nodeHandle);
-    _mesh->subscribe(fmt::format("/joystick/{}", _meshName));
+    _mesh->subscribe();
     _mesh->advertise();
+
+    // Put new subscription using std::bind and the callback here
 
     // Single mutex for changes to any mesh map item; atomic add of all
     _meshMapsMutex.lock(); // Block access until all maps are updated

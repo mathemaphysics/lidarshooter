@@ -97,18 +97,7 @@ public:
      */
     void shutdown();
 
-    /**
-     * @brief ROS receiving callback function handling incoming mesh
-     * 
-     * This function is called by ROS every time it receives a message from the
-     * \c /objtracker node to which it subscribes. When it is received, it is painted
-     * into an Embree \c RTCScene and an explicit ground is finally added. After this
-     * the intersection of each ray from a \c LidarDevice is calculated and sent to
-     * the \c lidar_XXXX node to which it corresponds.
-     * 
-     * @param _mesh Mesh of type \c pcl_msgs::PolygonMesh::ConstPtr
-     */
-    void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
+    void affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMesh::ConstPtr& _mesh);
     
     /**
      * @brief ROS receiving callback function handling incoming meshes in \c _trackObjects

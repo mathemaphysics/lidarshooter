@@ -50,7 +50,7 @@ void lidarshooter::AffineMesh::joystickCallback(const geometry_msgs::TwistConstP
     getAngularDisplacement() += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
 }
 
-void lidarshooter::AffineMesh::subscribe(const std::string& _topic)
+void lidarshooter::AffineMesh::subscribe()
 {
     if (_nodeHandle == nullptr)
     {
@@ -59,12 +59,19 @@ void lidarshooter::AffineMesh::subscribe(const std::string& _topic)
     }
 
     // Subscribe this object to the joystick topic
-    _joystickSubscriber = _nodeHandle->subscribe<geometry_msgs::Twist>(_topic, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
+    _joystickSubscriber = _nodeHandle->subscribe<geometry_msgs::Twist>(_name, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
 }
 
 void lidarshooter::AffineMesh::advertise()
 {
+    if (_nodeHandle == nullptr)
+    {
+        _logger->error("Cannot advertise using a null node handle; set it or create a new one");
+        return;
+    }
 
+    // Advertise this object
+    //_affineMeshPublisher = _nodeHandle->advertise<lidarshooter::AffineMesh>(fmt::format("/meshes/all/{}", _name), LIDARSHOOTER_AFFINEMESH_SUB_QUEUE_SIZE);
 }
 
 pcl::PolygonMesh::Ptr& lidarshooter::AffineMesh::getMesh()
