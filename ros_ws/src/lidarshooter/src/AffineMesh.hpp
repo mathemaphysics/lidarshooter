@@ -44,7 +44,7 @@ public:
 	static AffineMesh::Ptr create(const std::string& __name, ros::NodeHandlePtr __nodeHandle = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
 	static AffineMesh::Ptr create(const std::string& __name, pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle = nullptr, std::shared_ptr<spdlog::logger> __logger = nullptr);
 	AffineMesh::Ptr getPtr();
-	~AffineMesh() = default;
+	~AffineMesh();
 
 	ros::NodeHandlePtr& getNodeHandle();
 	void setNodeHandle(ros::NodeHandlePtr __nodeHandle);

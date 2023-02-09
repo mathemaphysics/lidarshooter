@@ -26,6 +26,11 @@ lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::getPtr()
     return shared_from_this();
 }
 
+lidarshooter::AffineMesh::~AffineMesh()
+{
+    cleanupNodeHandle();
+}
+
 ros::NodeHandlePtr& lidarshooter::AffineMesh::getNodeHandle()
 {
     return _nodeHandle;
