@@ -188,16 +188,7 @@ lidarshooter::AffineMesh::AffineMesh(const std::string& __name, ros::NodeHandleP
     setupLogger(__logger);
 
     // Initialize if the node handle is good
-    if (__nodeHandle == nullptr)
-    {
-        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
-        _logger->info("AffineMesh: Creating node handle: {}", _nodeHandle->getNamespace());
-    }
-    else
-    {
-        _nodeHandle = __nodeHandle;
-        _logger->info("AffineMesh: Using supplied node handle: {}", _nodeHandle->getNamespace());
-    }
+    _nodeHandle = __nodeHandle;
 
     // Subscribe et al.
     initNodeHandle();
@@ -217,16 +208,7 @@ lidarshooter::AffineMesh::AffineMesh(const std::string& __name, pcl::PolygonMesh
     setupLogger(__logger);
 
     // Initialize if the node handle is good
-    if (__nodeHandle == nullptr)
-    {
-        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
-        _logger->info("AffineMesh: Creating node handle: {}", _nodeHandle->getNamespace());
-    }
-    else
-    {
-        _nodeHandle = __nodeHandle;
-        _logger->info("AffineMesh: Using supplied node handle: {}", _nodeHandle->getNamespace());
-    }
+    _nodeHandle = __nodeHandle;
 
     // Subscribe et al.
     initNodeHandle();

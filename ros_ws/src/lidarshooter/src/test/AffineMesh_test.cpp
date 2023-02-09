@@ -18,6 +18,7 @@
 #include <pcl/PolygonMesh.h>
 #include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
+#include <ros/ros.h>
 
 #include <spdlog/spdlog.h>
 
