@@ -301,11 +301,8 @@ void lidarshooter::MeshProjector::affineMeshCallback(const std::string& _meshNam
 // TODO: Immediately: Remove the AffineMesh::Ptr itself as an argument from here; it isn't needed; we just need the dimensions since
 void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh)
 {
-    // Set the node handle to allow _mesh to subscribe to the joystick
-    _mesh->initNodeHandle(_nodeHandle);
-
     // Subscribe to the mesh topic
-    addAffineMeshSubscription(fmt::format("/meshes/all/{}", _meshName), _meshName);
+    subscribeAffineMesh(fmt::format("/meshes/all/{}", _meshName), _meshName);
 
     // Add the geometry
     // TODO: Presence of RTCGeometryType is implementation-specific; generalize
@@ -397,7 +394,7 @@ bool lidarshooter::MeshProjector::cloudWasUpdated()
         return false;
 }
 
-void lidarshooter::MeshProjector::addAffineMeshSubscription(const std::string& _topic, const std::string& _meshName)
+void lidarshooter::MeshProjector::subscribeAffineMesh(const std::string& _topic, const std::string& _meshName)
 {
     // Subscribe to the new mesh advertisement
     _affineMeshSubscriberMap.emplace(

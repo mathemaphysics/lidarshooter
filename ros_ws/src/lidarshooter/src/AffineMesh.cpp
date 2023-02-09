@@ -33,7 +33,20 @@ ros::NodeHandlePtr& lidarshooter::AffineMesh::getNodeHandle()
 
 void lidarshooter::AffineMesh::setNodeHandle(ros::NodeHandlePtr __nodeHandle)
 {
+    // If the current node is subscribed close it
+    if (_isSubscribed)
+        unsubscribe();
+
+    // If the current node is advertising close it
+    if (_isPublished)
+        unadvertise();
+
+    // Now safe to set the node pointer
     _nodeHandle = __nodeHandle;
+
+    // Subscribe and advertise on the new node
+    subscribe();
+    advertise();
 }
 
 void lidarshooter::AffineMesh::joystickCallback(const geometry_msgs::TwistConstPtr& _vel)
@@ -60,11 +73,19 @@ void lidarshooter::AffineMesh::subscribe()
     if (_nodeHandle == nullptr)
     {
         _logger->error("Cannot subscribe using a null node handle; set it or create a new one");
+        _isSubscribed = false;
         return;
     }
 
     // Subscribe this object to the joystick topic
-    _joystickSubscriber = _nodeHandle->subscribe<geometry_msgs::Twist>(_name, LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
+    _joystickSubscriber = _nodeHandle->subscribe<geometry_msgs::Twist>(fmt::format("/joystick/all/{}", _name), LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
+    _isSubscribed = true;
+}
+
+void lidarshooter::AffineMesh::unsubscribe()
+{
+    _joystickSubscriber.shutdown();
+    _isSubscribed = false;
 }
 
 void lidarshooter::AffineMesh::advertise()
@@ -72,11 +93,31 @@ void lidarshooter::AffineMesh::advertise()
     if (_nodeHandle == nullptr)
     {
         _logger->error("Cannot advertise using a null node handle; set it or create a new one");
+        _isPublished = false;
         return;
     }
 
     // Advertise this object
     _affineMeshPublisher = _nodeHandle->advertise<lidarshooter::AffineMeshMessage>(fmt::format("/meshes/all/{}", _name), LIDARSHOOTER_AFFINEMESH_SUB_QUEUE_SIZE);
+    _isPublished = true;
+}
+
+void lidarshooter::AffineMesh::unadvertise()
+{
+    _affineMeshPublisher.shutdown();
+    _isPublished = false;
+}
+
+void lidarshooter::AffineMesh::initNodeHandle()
+{
+    subscribe();
+    advertise();
+}
+
+void lidarshooter::AffineMesh::cleanupNodeHandle()
+{
+    unsubscribe();
+    unadvertise();
 }
 
 pcl::PolygonMesh::Ptr& lidarshooter::AffineMesh::getMesh()
@@ -135,27 +176,55 @@ void lidarshooter::AffineMesh::resetAngularDisplacement()
 }
 
 lidarshooter::AffineMesh::AffineMesh(const std::string& __name, ros::NodeHandlePtr __nodeHandle, std::shared_ptr<spdlog::logger> __logger)
-    : _mesh(new pcl::PolygonMesh()), _name(__name)
+    : _mesh(new pcl::PolygonMesh()), _name(__name),
+      _isSubscribed(false), _isPublished(false)
 {
     // Setup the logger
     setupLogger(__logger);
 
-    // Set up the node handle if needed
-    _nodeHandle = __nodeHandle;
+    // Initialize if the node handle is good
+    if (__nodeHandle == nullptr)
+    {
+        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
+        _logger->info("AffineMesh: Creating node handle: {}", _nodeHandle->getNamespace());
+    }
+    else
+    {
+        _nodeHandle = __nodeHandle;
+        _logger->info("AffineMesh: Using supplied node handle: {}", _nodeHandle->getNamespace());
+    }
+
+    // Subscribe et al.
+    initNodeHandle();
 
     // Zero out the initial displacement
     resetLinearDisplacement();
     resetAngularDisplacement();
+
 }
 
 lidarshooter::AffineMesh::AffineMesh(const std::string& __name, pcl::PolygonMesh::Ptr __mesh, ros::NodeHandlePtr __nodeHandle, std::shared_ptr<spdlog::logger> __logger)
-    : _mesh(__mesh), _name(__name)
+    : _mesh(__mesh), _name(__name),
+      _isSubscribed(false), _isPublished(false)
+
 {
     // Setup the logger
     setupLogger(__logger);
 
-    // Set up the node handle if needed
-    _nodeHandle = __nodeHandle;
+    // Initialize if the node handle is good
+    if (__nodeHandle == nullptr)
+    {
+        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
+        _logger->info("AffineMesh: Creating node handle: {}", _nodeHandle->getNamespace());
+    }
+    else
+    {
+        _nodeHandle = __nodeHandle;
+        _logger->info("AffineMesh: Using supplied node handle: {}", _nodeHandle->getNamespace());
+    }
+
+    // Subscribe et al.
+    initNodeHandle();
 
     // Zero out the initial displacement
     resetLinearDisplacement();

@@ -52,14 +52,13 @@ public:
 	void joystickCallback(const geometry_msgs::TwistConstPtr& _vel);
 
 	void subscribe();
+	void unsubscribe();
 	void advertise();
+	void unadvertise();
 
-	inline void initNodeHandle(ros::NodeHandlePtr __nodeHandle)
-	{
-		setNodeHandle(__nodeHandle);
-		subscribe();
-		advertise();
-	}
+	void initNodeHandle(ros::NodeHandlePtr __nodeHandle);
+	void initNodeHandle();
+	void cleanupNodeHandle();
 
 	pcl::PolygonMesh::Ptr& getMesh();
 	const pcl::PolygonMesh::ConstPtr getMeshConst() const;

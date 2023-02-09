@@ -244,7 +244,7 @@ private:
      * @param _topic 
      * @param _meshName 
      */
-    void addAffineMeshSubscription(const std::string& _topic, const std::string& _meshName);
+    void subscribeAffineMesh(const std::string& _topic, const std::string& _meshName);
 
     /**
      * @brief Transforms a joystick signal for specified mesh key to global coordinates
