@@ -68,6 +68,9 @@ MainWindow::MainWindow(QWidget *parent)
     ros::init(rosArgc, rosArgv, "lidar_0000"); // TODO: Change name to something else
     if (initializeROSThread() == false)
         throw(std::runtime_error("Could not initialize ROS thread"));
+    
+    // Create the main node handle
+    nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
 }
 
 MainWindow::~MainWindow()
@@ -251,6 +254,7 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
             std::forward_as_tuple(
                 devicePointer,
                 viewer,
+                nodeHandle,
                 loggerTop,
                 this
             )

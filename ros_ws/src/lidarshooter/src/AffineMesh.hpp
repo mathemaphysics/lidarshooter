@@ -46,10 +46,20 @@ public:
 	AffineMesh::Ptr getPtr();
 	~AffineMesh() = default;
 
+	ros::NodeHandlePtr& getNodeHandle();
 	void setNodeHandle(ros::NodeHandlePtr __nodeHandle);
+	
 	void joystickCallback(const geometry_msgs::TwistConstPtr& _vel);
+
 	void subscribe();
 	void advertise();
+
+	inline void initNodeHandle(ros::NodeHandlePtr __nodeHandle)
+	{
+		setNodeHandle(__nodeHandle);
+		subscribe();
+		advertise();
+	}
 
 	pcl::PolygonMesh::Ptr& getMesh();
 	const pcl::PolygonMesh::ConstPtr getMeshConst() const;

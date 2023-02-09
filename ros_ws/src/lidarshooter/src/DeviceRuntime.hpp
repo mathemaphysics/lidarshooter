@@ -11,6 +11,7 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <ros/ros.h>
 
 #include <memory>
 #include <utility>
@@ -38,6 +39,7 @@ public:
     DeviceRuntime(
         const std::string& _fileName,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
+        ros::NodeHandlePtr __nodeHandle = nullptr,
         std::shared_ptr<spdlog::logger> __logger = nullptr,
         QObject* _parent = nullptr,
         ros::Duration _publishPeriod = ros::Duration(0.1),
@@ -46,6 +48,7 @@ public:
     DeviceRuntime(
         std::shared_ptr<LidarDevice> _deviceConfig,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
+        ros::NodeHandlePtr __nodeHandle = nullptr,
         std::shared_ptr<spdlog::logger> __logger = nullptr,
         QObject* _parent = nullptr,
         ros::Duration _publishPeriod = ros::Duration(0.1),
@@ -165,6 +168,9 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr _traceCloud;
     std::thread* _traceThread;
     std::atomic<bool> _traceThreadRunning;
+
+    // Node handle to use for queue processes
+    ros::NodeHandlePtr _nodeHandle;
 
     // The viewer to write to
     pcl::visualization::PCLVisualizer::Ptr _viewer;

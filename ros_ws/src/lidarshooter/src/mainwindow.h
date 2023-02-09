@@ -115,6 +115,7 @@ private:
     int rosArgc = 0;
     std::thread* rosThread;
     std::atomic<bool> rosThreadRunning;
+    ros::NodeHandlePtr nodeHandle;
 
     // Starting and stopping projector and ROS
     const std::string addSensor(const std::string& _fileName);
