@@ -21,6 +21,36 @@ lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create(const std::string
     return AffineMesh::Ptr(new AffineMesh(__name, __mesh, __nodeHandle, __logger));
 }
 
+lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::create(const lidarshooter::AffineMeshMessage::ConstPtr& _message, ros::NodeHandlePtr __nodeHandle, std::shared_ptr<spdlog::logger> __logger)
+{
+    // Convert message pcl_msgs::PolygonMesh to pcl::PolygonMesh
+    auto inputMesh = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
+    pcl_conversions::toPCL(_message->mesh, *inputMesh);
+
+    // Make the AffineMesh using what we have; then set the displacements
+    auto affineMesh = AffineMesh::Ptr(new AffineMesh(_message->name, inputMesh, __nodeHandle, __logger));
+
+    // Displace linear
+    affineMesh->setLinearDisplacement(
+        Eigen::Vector3f(
+            _message->displacement.linear.x,
+            _message->displacement.linear.y,
+            _message->displacement.linear.z
+        )
+    );
+
+    // Displace angular
+    affineMesh->setAngularDisplacement(
+        Eigen::Vector3f(
+            _message->displacement.angular.x,
+            _message->displacement.angular.y,
+            _message->displacement.angular.z
+        )
+    );
+
+    return affineMesh;
+}
+
 lidarshooter::AffineMesh::Ptr lidarshooter::AffineMesh::getPtr()
 {
     return shared_from_this();
@@ -54,7 +84,7 @@ void lidarshooter::AffineMesh::setNodeHandle(ros::NodeHandlePtr __nodeHandle)
     advertise();
 }
 
-lidarshooter::AffineMeshMessagePtr lidarshooter::AffineMesh::buildMessage()
+lidarshooter::AffineMeshMessagePtr lidarshooter::AffineMesh::toAffineMeshMessage()
 {
     // Impotant: This actually allocates a message here and returns a shared_ptr
     auto message = lidarshooter::AffineMeshMessagePtr(new lidarshooter::AffineMeshMessage);
@@ -94,7 +124,7 @@ void lidarshooter::AffineMesh::joystickCallback(const geometry_msgs::TwistConstP
     getAngularDisplacement() += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
 
     // Send into the abyss
-    _affineMeshPublisher.publish(buildMessage());
+    _affineMeshPublisher.publish(toAffineMeshMessage());
 }
 
 void lidarshooter::AffineMesh::subscribe()

@@ -295,7 +295,10 @@ void lidarshooter::MeshProjector::affineMeshCallback(const std::string& _meshNam
 {
     // This should convert the incoming AffineMeshMessage into an AffineMesh
     // without an initialized _nodeHandle
-    
+    auto affineMesh = lidarshooter::AffineMesh::create(_mesh, _nodeHandle, _logger);
+
+    // Now do whatever updates are needed for this mesh
+
 }
 
 // TODO: Immediately: Remove the AffineMesh::Ptr itself as an argument from here; it isn't needed; we just need the dimensions since
