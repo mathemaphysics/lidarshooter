@@ -1,6 +1,6 @@
 /**
  * @file AffineMesh.cpp
- * @author your name (you@domain.com)
+ * @author Ryan P. Daly (rdaly@herzog.com)
  * @brief 
  * @version 0.1
  * @date 2023-02-01
@@ -54,6 +54,27 @@ void lidarshooter::AffineMesh::setNodeHandle(ros::NodeHandlePtr __nodeHandle)
     advertise();
 }
 
+lidarshooter::AffineMeshMessagePtr lidarshooter::AffineMesh::buildMessage()
+{
+    // Impotant: This actually allocates a message here and returns a shared_ptr
+    auto message = lidarshooter::AffineMeshMessagePtr(new lidarshooter::AffineMeshMessage);
+
+    // Get a const ref to linear and angular for use in making the AffineMeshMessage
+    Eigen::Vector3f linear = getLinearDisplacementConst();
+    Eigen::Vector3f angular = getAngularDisplacementConst();
+
+    // TODO: Want a conversion inline function or something maybe?
+    message->displacement.linear.x = linear.x();
+    message->displacement.linear.y = linear.y();
+    message->displacement.linear.z = linear.z();
+    message->displacement.angular.x = angular.x();
+    message->displacement.angular.y = angular.y();
+    message->displacement.angular.z = angular.z();
+    pcl_conversions::fromPCL(*_mesh, message->mesh);
+
+    return message;
+}
+
 void lidarshooter::AffineMesh::joystickCallback(const geometry_msgs::TwistConstPtr& _vel)
 {
     // TODO: Move this into its own function and replace everywhere
@@ -71,6 +92,9 @@ void lidarshooter::AffineMesh::joystickCallback(const geometry_msgs::TwistConstP
     // For the AffineMesh case
     getLinearDisplacement() += globalDisplacement;
     getAngularDisplacement() += Eigen::Vector3f(_vel->angular.x, _vel->angular.y, _vel->angular.z);
+
+    // Send into the abyss
+    _affineMeshPublisher.publish(buildMessage());
 }
 
 void lidarshooter::AffineMesh::subscribe()

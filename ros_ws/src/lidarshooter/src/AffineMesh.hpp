@@ -1,6 +1,6 @@
 /**
  * @file AffineMesh.hpp
- * @author your name (you@domain.com)
+ * @author Ryan P. Daly (rdaly@herzog.com)
  * @brief 
  * @version 0.1
  * @date 2023-02-01
@@ -15,6 +15,8 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/PolygonMesh.h>
+#include <pcl_msgs/PolygonMesh.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -49,6 +51,7 @@ public:
 	ros::NodeHandlePtr& getNodeHandle();
 	void setNodeHandle(ros::NodeHandlePtr __nodeHandle);
 	
+	AffineMeshMessagePtr buildMessage();
 	void joystickCallback(const geometry_msgs::TwistConstPtr& _vel);
 
 	void subscribe();
