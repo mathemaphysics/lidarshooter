@@ -297,11 +297,31 @@ void lidarshooter::MeshProjector::affineMeshCallback(const std::string& _meshNam
     // without an initialized _nodeHandle
     auto affineMesh = lidarshooter::AffineMesh::create(_mesh, _nodeHandle, _logger);
 
-    // Now do whatever updates are needed for this mesh
+    // Now update the mesh by updating the mesh and coordinates independently via copy
+    auto affineMeshIterator = _affineTrackObjects.find(_meshName);
+    if (affineMeshIterator == _affineTrackObjects.end())
+    {
+        _logger->error("Mesh key {} does not exist; cannot update", _meshName);
+        return; // Shouldn't we just add it? But should already be there
+    }
 
+    // Now check contents of mesh
+    auto currentMesh = affineMeshIterator->second->getMesh();
+    pcl::copyPointCloud(affineMesh->getMesh()->cloud, currentMesh->cloud);
+
+    // TODO: Add a switch to the AffineMeshMessage to indicate whether it's a
+    // full update or just an update to the affine trasnformation; will add some
+    // speed
+    affineMeshIterator->second->setLinearDisplacement(affineMesh->getLinearDisplacementConst());
+    affineMeshIterator->second->setAngularDisplacement(affineMesh->getAngularDisplacementConst());
+
+    // Indicate that we just updated the affine mesh
+    _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
 }
 
-// TODO: Immediately: Remove the AffineMesh::Ptr itself as an argument from here; it isn't needed; we just need the dimensions since
+// TODO: Immediately: Remove the AffineMesh::Ptr itself as an argument from
+// here; it isn't needed; we just need the dimensions since
 void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh)
 {
     // Subscribe to the mesh topic
