@@ -137,7 +137,7 @@ void lidarshooter::AffineMesh::subscribe()
     }
 
     // Subscribe this object to the joystick topic
-    _joystickSubscriber = _nodeHandle->subscribe<geometry_msgs::Twist>(fmt::format("/joystick/all/{}", _name), LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
+    _joystickSubscriber = _nodeHandle->subscribe<geometry_msgs::Twist>(fmt::format("/joystick/all/{}/cmd_vel", _name), LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &AffineMesh::joystickCallback, this);
     _isSubscribed = true;
 }
 

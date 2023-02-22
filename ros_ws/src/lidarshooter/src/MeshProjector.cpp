@@ -327,6 +327,9 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
     // Subscribe to the mesh topic
     subscribeAffineMesh(fmt::format("/meshes/all/{}", _meshName), _meshName);
 
+    // Add it to the _affineTrackObjects
+    _affineTrackObjects[_meshName] = _mesh;
+
     // Add the geometry
     // TODO: Presence of RTCGeometryType is implementation-specific; generalize
     // it Just use the mesh itself to infer the geometry type and remove the
