@@ -20,16 +20,19 @@
 #include <mutex>
 #include <atomic>
 #include <map>
+#include <functional>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include <fmt/format.h>
+
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
-    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+lidarshooter::MeshProjector::MeshProjector(ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+    : _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _meshWasUpdated(false), _meshWasUpdatedPublic(true),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
       _shouldPublishCloud(true)
@@ -44,11 +47,23 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     else
         _logger = __logger;
 
+    // Make sure _nodeHandle is set up
+    if (__nodeHandle == nullptr)
+    {
+        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
+        _logger->info("Creating node handle: {}", _nodeHandle->getNamespace());
+    }
+    else
+    {
+        _nodeHandle = __nodeHandle;
+        _logger->info("Using supplied node handle: {}", _nodeHandle->getNamespace());
+    }
+
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
     
     // Get the sensorUid we want to run
-    std::string nodeNamespace = _nodeHandle.getNamespace();
+    std::string nodeNamespace = _nodeHandle->getNamespace();
     std::regex slashRegex("/");
     auto strippedSensorUid = std::ostringstream();
     std::regex_replace(
@@ -60,7 +75,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
 
     // Get value from the publisher node
     std::string configFile = "config.json";
-    _nodeHandle.param("configfile", configFile, configFile); // Get config file from ROS params
+    _nodeHandle->param("configfile", configFile, configFile); // Get config file from ROS params
 
     // Initializing the LiDAR device
     _logger->info("Loading config file {} specified via configfile ROS parameter", configFile);
@@ -70,7 +85,7 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
     
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config, _currentState);
+    _traceData = EmbreeTracer::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -91,10 +106,9 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Create the pubsub situation; in this constructor cloud advertises on /[namespace]/pandar
-    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>("pandar", 20); // TODO: Make this queue size and "pandar" parameters
-    _multiJoystickSubscriber = _nodeHandle.subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
-    _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
-    _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
+    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>("pandar", LIDARSHOOTER_POINTCLOUD_SUB_QUEUE_SIZE); // TODO: Make this queue size and "pandar" parameters
+    _publishTimer = _nodeHandle->createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
+    _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
     _meshWasUpdated.store(true);
@@ -105,8 +119,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::Duration __publishPeriod, ros::D
     _stateWasUpdatedPublic.store(false);
 }
 
-lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
-    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+    : _nodeHandle(new ros::NodeHandle("~")), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
       _shouldPublishCloud(true)
@@ -121,11 +135,23 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     else
         _logger = __logger;
 
+    // Make sure _nodeHandle is set up
+    if (__nodeHandle == nullptr)
+    {
+        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
+        _logger->info("Creating node handle: {}", _nodeHandle->getNamespace());
+    }
+    else
+    {
+        _nodeHandle = __nodeHandle;
+        _logger->info("Using supplied node handle: {}", _nodeHandle->getNamespace());
+    }
+
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
 
     // Get the sensorUid we want to run
-    std::string nodeNamespace = _nodeHandle.getNamespace();
+    std::string nodeNamespace = _nodeHandle->getNamespace();
     std::regex slashRegex("/");
     auto strippedSensorUid = std::ostringstream();
     std::regex_replace(
@@ -143,7 +169,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
 
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config, _currentState);
+    _traceData = EmbreeTracer::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -164,19 +190,17 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Create the pubsub situation
-    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
-    _multiMeshSubscriber = _nodeHandle.subscribe<lidarshooter::NamedPolygonMesh>("/objtracker/all/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::multiMeshCallback, this);
-    _multiJoystickSubscriber = _nodeHandle.subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
-    _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
-    _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
+    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), LIDARSHOOTER_POINTCLOUD_SUB_QUEUE_SIZE);
+    _publishTimer = _nodeHandle->createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
+    _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
     _meshWasUpdated.store(true);
     _meshWasUpdatedPublic.store(true);
 }
 
-lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
-    : _nodeHandle("~"), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+    : _nodeHandle(new ros::NodeHandle("~")), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
       _shouldPublishCloud(true)
@@ -191,11 +215,23 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     else
         _logger = __logger;
 
+    // Make sure _nodeHandle is set up
+    if (__nodeHandle == nullptr)
+    {
+        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
+        _logger->info("Creating node handle: {}", _nodeHandle->getNamespace());
+    }
+    else
+    {
+        _nodeHandle = __nodeHandle;
+        _logger->info("Using supplied node handle: {}", _nodeHandle->getNamespace());
+    }
+
     // Load file given on the command line
     _logger->info("Starting up MeshProjector");
     
     // Get the sensorUid we want to run
-    std::string nodeNamespace = _nodeHandle.getNamespace();
+    std::string nodeNamespace = _nodeHandle->getNamespace();
     std::regex slashRegex("/");
     auto strippedSensorUid = std::ostringstream();
     std::regex_replace(
@@ -213,7 +249,7 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
 
     // Setup for the contextless tracing space
-    _traceData = TraceData::create(_config, _currentState);
+    _traceData = EmbreeTracer::create(_config, _currentState);
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -234,11 +270,9 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
         _logger->warn("SensorUID in config ({}) does not match namespace ({})", _config->getSensorUid(), _sensorUid);
 
     // Create the pubsub situation
-    _cloudPublisher = _nodeHandle.advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), 20);
-    _multiMeshSubscriber = _nodeHandle.subscribe<lidarshooter::NamedPolygonMesh>("/objtracker/all/meshstate", LIDARSHOOTER_MESH_SUB_QUEUE_SIZE, &MeshProjector::multiMeshCallback, this);
-    _multiJoystickSubscriber = _nodeHandle.subscribe<lidarshooter::NamedTwist>("/joystick/all/cmd_vel", LIDARSHOOTER_JOYSTICK_SUB_QUEUE_SIZE, &MeshProjector::multiJoystickCallback, this);
-    _publishTimer = _nodeHandle.createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
-    _traceTimer = _nodeHandle.createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
+    _cloudPublisher = _nodeHandle->advertise<sensor_msgs::PointCloud2>(fmt::format("/{}/pandar", _config->getSensorUid()), LIDARSHOOTER_POINTCLOUD_SUB_QUEUE_SIZE);
+    _publishTimer = _nodeHandle->createTimer(_publishPeriod, std::bind(&MeshProjector::publishCloud, this));
+    _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
     _meshWasUpdated.store(true);
@@ -249,122 +283,74 @@ lidarshooter::MeshProjector::~MeshProjector()
 {
     // Obtain mutex locks before destruction so we don't interrupt publishing
     _cloudMutex.lock();
-    for (auto& [name, mesh] : _meshMutexes)
-        mesh.lock();
-    for (auto& [name, mesh] : _joystickMutexes)
-        mesh.lock();
 }
 
 void lidarshooter::MeshProjector::shutdown()
 {
     // Now sure if we need to shut down the node manually
-    _nodeHandle.shutdown();
+    _nodeHandle->shutdown();
 }
 
-void lidarshooter::MeshProjector::multiMeshCallback(const lidarshooter::NamedPolygonMeshConstPtr& _mesh)
+void lidarshooter::MeshProjector::affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMeshMessage::ConstPtr& _mesh)
 {
-    // Reject any mesh with a non-existent key
-    auto meshIterator = _trackObjects.find(_mesh->name);
-    if (meshIterator == _trackObjects.end())
+    // This should convert the incoming AffineMeshMessage into an AffineMesh
+    // without an initialized _nodeHandle
+    auto affineMesh = lidarshooter::AffineMesh::create(_mesh, _nodeHandle, _logger);
+
+    // Now update the mesh by updating the mesh and coordinates independently via copy
+    auto affineMeshIterator = _affineTrackObjects.find(_meshName);
+    if (affineMeshIterator == _affineTrackObjects.end())
     {
-        _logger->warn("Received a frame for {} (key does not exist)", _mesh->name);
-        return;
+        _logger->error("Mesh key {} does not exist; cannot update", _meshName);
+        return; // Shouldn't we just add it? But should already be there
     }
 
-    // Announce until unneeded
-    _logger->debug("Received a frame for {}", _mesh->name);
+    // Now check contents of mesh
+    auto currentMesh = affineMeshIterator->second->getMesh();
+    pcl::copyPointCloud(affineMesh->getMesh()->cloud, currentMesh->cloud);
 
-    // Load the objects to track
-    _meshMapsMutex.lock();
-    _meshMutexes[_mesh->name].lock();
-    _meshMapsMutex.unlock();
+    // TODO: Add a switch to the AffineMeshMessage to indicate whether it's a
+    // full update or just an update to the affine trasnformation; will add some
+    // speed
+    affineMeshIterator->second->setLinearDisplacement(affineMesh->getLinearDisplacementConst());
+    affineMeshIterator->second->setAngularDisplacement(affineMesh->getAngularDisplacementConst());
 
-    pcl_conversions::toPCL(_mesh->mesh, *(_trackObjects[_mesh->name]));
-    _logger->debug("Points in tracked object      : {}", _trackObjects[_mesh->name]->cloud.width * _trackObjects[_mesh->name]->cloud.height);
-    _logger->debug("Triangles in tracked object   : {}", _trackObjects[_mesh->name]->polygons.size());
-
-    // Admit that we changed the mesh and it needs to be retraced
+    // Indicate that we just updated the affine mesh
     _meshWasUpdated.store(true);
     _meshWasUpdatedPublic.store(true);
-    _meshMutexes[_mesh->name].unlock();
 }
 
-// Important: This is only for initializing the mesh; you shouldn't use this
-// function to make updates to the pointcloud geometry when rigid body rotations
-// and translations are all you've done.
-void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh)
+// TODO: Immediately: Remove the AffineMesh::Ptr itself as an argument from
+// here; it isn't needed; we just need the dimensions since
+void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh)
 {
-    // Single mutex for changes to any mesh map item; atomic add of all
-    _meshMapsMutex.lock(); // Block access until all maps are updated
+    // Subscribe to the mesh topic
+    subscribeAffineMesh(fmt::format("/meshes/all/{}", _meshName), _meshName);
 
-    // Emplace new copy of _mesh into _trackObjects
-    _trackObjects.emplace(
-        _meshName,
-        _mesh // Make a copy
-    );
-
-    // Emplace a new mesh mutex for each object
-    _meshMutexes.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(_meshName),
-        std::forward_as_tuple() // Create mutex with no arguments
-    );
-    
-    // Emplace a new joystick mutex for each object
-    _joystickMutexes.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(_meshName),
-        std::forward_as_tuple() // Create mutex with no arguments
-    );
-
-    // Initialize to zero linear displacement
-    _linearDisplacements.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(_meshName),
-        std::forward_as_tuple()
-    );
-    _linearDisplacements[_meshName].setZero();
-
-    // Initialize to zero angular displacement
-    _angularDisplacements.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(_meshName),
-        std::forward_as_tuple()
-    );
-    _angularDisplacements[_meshName].setZero();
+    // Add it to the _affineTrackObjects
+    _affineTrackObjects[_meshName] = _mesh;
 
     // Add the geometry
-    // TODO: Presence of RTCGeometryType is implementation-specific; generalize it
-    int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->cloud.width * _mesh->cloud.height, _mesh->polygons.size());
+    // TODO: Presence of RTCGeometryType is implementation-specific; generalize
+    // it Just use the mesh itself to infer the geometry type and remove the
+    // RTCGeometryType
+    int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->getMesh()->cloud.width * _mesh->getMesh()->cloud.height, _mesh->getMesh()->polygons.size());
     _logger->debug("Added geometric ID {}", geomId);
 
     // Indicate the mesh was updated so we get a retrace
     _meshWasUpdated.store(true);
     _meshWasUpdatedPublic.store(true);
-    _meshMapsMutex.unlock();
 }
 
 void lidarshooter::MeshProjector::deleteMeshFromScene(const std::string &_meshName)
 {
-    // Don't unlock it again; this mesh is going away
-    _meshMapsMutex.lock();
-
-    // Remove all items associated with _meshName
-    _meshMutexes.erase(_meshName);
-    _joystickMutexes.erase(_meshName);
-    _linearDisplacements.erase(_meshName);
-    _angularDisplacements.erase(_meshName);
-
     // Remove the geometry from _traceData
     _traceData->removeGeometry(_meshName);
-    _trackObjects.erase(_meshName);
+    _affineTrackObjects.erase(_meshName);
 
     // Signal that there were changes to the mesh
     _meshWasUpdated.store(true);
     _meshWasUpdatedPublic.store(true);
-
-    // Release the mesh maps back to common use
-    _meshMapsMutex.unlock();
 }
 
 sensor_msgs::PointCloud2ConstPtr lidarshooter::MeshProjector::getCurrentStatePtr() const
@@ -387,36 +373,11 @@ void lidarshooter::MeshProjector::traceMeshWrapper()
     if (_meshWasUpdated.load() == true)
     {
         // Update _currentState
-        traceMesh();
+        traceAffineMesh();
 
         // Turn off mesh updated flag
         _meshWasUpdated.store(false);
     }
-}
-
-void lidarshooter::MeshProjector::multiJoystickCallback(const lidarshooter::NamedTwist::ConstPtr& _vel)
-{
-    // TODO: Move this into its own function and replace everywhere
-    Eigen::Vector3f globalDisplacement = transformToGlobal(_vel->name, Eigen::Vector3f(_vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z));
-    
-    // Output actual displacement applied after rotation to local coordinates
-    // TODO: Set both of these info() calls to debug() as soon as settled
-    _logger->debug("Joystick signal: {}, {}, {}, {}, {}, {}",
-                  _vel->twist.linear.x, _vel->twist.linear.y, _vel->twist.linear.z,
-                  _vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
-    _logger->debug("Global displacement: {}, {}, {}, {}, {}, {}",
-                  globalDisplacement.x(), globalDisplacement.y(), globalDisplacement.z(),
-                  _vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
-
-    // Update the linear total linear and angular displacement
-    lockJoystickMutex(_vel->name);
-    getLinearDisplacement(_vel->name) += globalDisplacement;
-    getAngularDisplacement(_vel->name) += Eigen::Vector3f(_vel->twist.angular.x, _vel->twist.angular.y, _vel->twist.angular.z);
-
-    // Hint to the tracer that it needs to run again
-    _meshWasUpdated.store(true); // TODO: Don't update when the signal is (0, 0, 0, 0, 0, 0)
-    _meshWasUpdatedPublic.store(true);
-    unlockJoystickMutex(_vel->name);
 }
 
 void lidarshooter::MeshProjector::publishCloud()
@@ -459,37 +420,46 @@ bool lidarshooter::MeshProjector::cloudWasUpdated()
         return false;
 }
 
+void lidarshooter::MeshProjector::subscribeAffineMesh(const std::string& _topic, const std::string& _meshName)
+{
+    // Subscribe to the new mesh advertisement
+    _affineMeshSubscriberMap.emplace(
+        _meshName,
+        _nodeHandle->subscribe<lidarshooter::AffineMeshMessage>(
+            _topic,
+            LIDARSHOOTER_AFFINEMESH_SUB_QUEUE_SIZE,
+            [this, _meshName](const lidarshooter::AffineMeshMessage::ConstPtr& _message){
+                this->affineMeshCallback(_meshName, _message);
+            }
+        )
+    );
+}
+
 inline Eigen::Vector3f lidarshooter::MeshProjector::transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement)
 {
     // Just for an Affine3f transform using an empty translation
-    Eigen::AngleAxisf xRotation(_angularDisplacements[_meshName].x(), Eigen::Vector3f::UnitX());
-    Eigen::AngleAxisf yRotation(_angularDisplacements[_meshName].y(), Eigen::Vector3f::UnitY());
-    Eigen::AngleAxisf zRotation(_angularDisplacements[_meshName].z(), Eigen::Vector3f::UnitZ());
+    Eigen::AngleAxisf xRotation(_affineTrackObjects[_meshName]->getAngularDisplacementConst().x(), Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf yRotation(_affineTrackObjects[_meshName]->getAngularDisplacementConst().y(), Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf zRotation(_affineTrackObjects[_meshName]->getAngularDisplacementConst().z(), Eigen::Vector3f::UnitZ());
     Eigen::Affine3f localRotation = Eigen::Translation3f(Eigen::Vector3f::Zero()) * zRotation * yRotation * xRotation;
     Eigen::Vector3f localDisplacement = localRotation * _displacement;
     return localDisplacement;
 }
 
-void lidarshooter::MeshProjector::traceMesh()
+void lidarshooter::MeshProjector::traceAffineMesh()
 {
-    for (auto& [name, mesh] : _trackObjects)
+    for (auto& [name, mesh] : _affineTrackObjects)
     {
-        // Make sure this mesh doesn't change during read
-        lockMeshMutex(name);
-
         // Copy vertex and elemet data from mesh into buffers
         _traceData->updateGeometry(
             name,
-            getLinearDisplacement(name),
-            getAngularDisplacement(name),
-            mesh // This is a reference
+            mesh->getLinearDisplacementConst(),
+            mesh->getAngularDisplacementConst(),
+            mesh->getMesh() // This is a reference
         );
 
         // Debugging information
-        _logger->debug("Updated {} with {} points and {} elements", name, mesh->cloud.width * mesh->cloud.height, mesh->polygons.size());
-
-        // Release just this mesh
-        unlockMeshMutex(name);
+        _logger->debug("Updated {} with {} points and {} elements", name, mesh->getMesh()->cloud.width * mesh->getMesh()->cloud.height, mesh->getMesh()->polygons.size());
     }
     _traceData->commitScene();
     lockCloudMutex(); // Locks _currentState

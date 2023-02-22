@@ -68,6 +68,9 @@ MainWindow::MainWindow(QWidget *parent)
     ros::init(rosArgc, rosArgv, "lidar_0000"); // TODO: Change name to something else
     if (initializeROSThread() == false)
         throw(std::runtime_error("Could not initialize ROS thread"));
+    
+    // Create the main node handle
+    nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
 }
 
 MainWindow::~MainWindow()
@@ -125,22 +128,24 @@ void MainWindow::slotReceiveMeshFile(const QString _fileName)
 
     // If file exists then go forward
     auto meshName = meshPath.stem().string(); // Use base of file name as mesh tag
-    if (meshMap.find(meshName) != meshMap.end())
+    if (affineMeshMap.find(meshName) != affineMeshMap.end())
     {
         loggerTop->error("A mesh with the mesh key {} is already loaded; rename it", meshName);
         loggerTop->error("Mesh keys are simply the name of the file without its extension");
         return;
     }
 
-    meshMap[meshName] = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
+    affineMeshMap[meshName] = lidarshooter::AffineMesh::create(meshName, nodeHandle, loggerTop);
     sensorsDialog->addMeshRow(meshName, meshFile.toStdString());
-    pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(meshMap[meshName]));
-    //viewer->addPolygonMesh(*(meshMap[meshName]), meshFile.toStdString());
+    pcl::io::loadPolygonFileSTL(meshFile.toStdString(), *(affineMeshMap[meshName]->getMesh()));
+    //viewer->addPolygonMesh(*(affineMeshMap[meshName]->getMesh()), meshFile.toStdString());
     viewer->resetCamera();
 
     // Set the mesh for each
     for (auto& [uid, runtime] : runtimeMap)
-        runtime.addMeshToScene(meshName, meshMap[meshName]);
+    {
+        runtime.addMeshToScene(meshName, affineMeshMap[meshName]);
+    }
 }
 
 void MainWindow::slotLogPoseTranslation()
@@ -249,6 +254,7 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
             std::forward_as_tuple(
                 devicePointer,
                 viewer,
+                nodeHandle,
                 loggerTop,
                 this
             )
@@ -256,8 +262,10 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
         if (result.second == false)
             loggerTop->warn("Could not insert runtime for sensor UID {}", devicePointer->getSensorUid());
         else
-            for (auto& [name, mesh] : meshMap)
+        {
+            for (auto& [name, mesh] : affineMeshMap)
                 result.first->second.addMeshToScene(name, mesh);
+        }
     }
 
     // Add the actual line in the sensors list
@@ -298,7 +306,7 @@ void MainWindow::deleteMesh(const std::string& _meshName)
     {
         runtime.deleteMeshFromScene(_meshName);
     }
-    meshMap.erase(_meshName);
+    affineMeshMap.erase(_meshName);
 }
 
 bool MainWindow::initializeROSThread()

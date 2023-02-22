@@ -1,0 +1,11 @@
+version: '3.4'
+
+services:
+  devcontainer:
+    environment:
+      - DISPLAY=:1
+      - XAUTHORITY=/home/devuser/.Xauthority
+    volumes:
+      - ${HOME}/.ssh:/home/devuser/.ssh:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${LOCAL_XAUTHORITY}:/home/devuser/.Xauthority:rw

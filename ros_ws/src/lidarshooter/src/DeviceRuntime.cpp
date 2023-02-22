@@ -1,6 +1,7 @@
 #include "DeviceRuntime.hpp"
 #include "CloudTransformer.hpp"
 #include "CloudConverter.hpp"
+#include "AffineMesh.hpp"
 
 #include <fmt/format.h>
 #include <Eigen/Dense>
@@ -12,6 +13,7 @@
 lidarshooter::DeviceRuntime::DeviceRuntime(
     const std::string& _fileName,
     pcl::visualization::PCLVisualizer::Ptr __viewer,
+    ros::NodeHandlePtr __nodeHandle,
     std::shared_ptr<spdlog::logger> __logger,
     QObject* _parent,
     ros::Duration _publishPeriod,
@@ -31,6 +33,18 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     else
         _logger = __logger;
 
+    // Make sure _nodeHandle is set up
+    if (__nodeHandle == nullptr)
+    {
+        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
+        _logger->info("DeviceRuntime: Creating node handle: {}", _nodeHandle->getNamespace());
+    }
+    else
+    {
+        _nodeHandle = __nodeHandle;
+        _logger->info("DeviceRuntime: Using supplied node handle: {}", _nodeHandle->getNamespace());
+    }
+
     // Allocate space for the device
     _deviceConfig = std::make_shared<lidarshooter::LidarDevice>(
         _fileName,
@@ -40,6 +54,7 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     // Allocate space for mesh projector
     _meshProjector = std::make_shared<lidarshooter::MeshProjector>(
         _deviceConfig,
+        _nodeHandle,
         _publishPeriod, // TODO: Should be taken as argument from constructor
         _tracePeriod, // TODO: Should be taken as argument from constructor
         _logger
@@ -61,6 +76,7 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
 lidarshooter::DeviceRuntime::DeviceRuntime(
     std::shared_ptr<lidarshooter::LidarDevice> __deviceConfig,
     pcl::visualization::PCLVisualizer::Ptr __viewer,
+    ros::NodeHandlePtr __nodeHandle,
     std::shared_ptr<spdlog::logger> __logger,
     QObject* _parent,
     ros::Duration _publishPeriod,
@@ -80,12 +96,25 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     else
         _logger = __logger;
 
+    // Make sure _nodeHandle is set up
+    if (__nodeHandle == nullptr)
+    {
+        _nodeHandle = ros::NodeHandlePtr(new ros::NodeHandle("~"));
+        _logger->info("DeviceRuntime: Creating node handle: {}", _nodeHandle->getNamespace());
+    }
+    else
+    {
+        _nodeHandle = __nodeHandle;
+        _logger->info("DeviceRuntime: Using supplied node handle: {}", _nodeHandle->getNamespace());
+    }
+
     // Allocate space for the device
     _deviceConfig = __deviceConfig;
     
     // Allocate space for mesh projector
     _meshProjector = std::make_shared<lidarshooter::MeshProjector>(
         _deviceConfig,
+        _nodeHandle,
         _publishPeriod,
         _tracePeriod,
         _logger
@@ -271,7 +300,7 @@ bool lidarshooter::DeviceRuntime::isTraceThreadRunning()
     return _traceThreadRunning.load();
 }
 
-void lidarshooter::DeviceRuntime::addMeshToScene(const std::string& _meshName, const pcl::PolygonMesh::Ptr& _mesh)
+void lidarshooter::DeviceRuntime::addMeshToScene(const std::string& _meshName, const lidarshooter::AffineMesh::Ptr& _mesh)
 {
     _meshProjector->addMeshToScene(_meshName, _mesh);
 }

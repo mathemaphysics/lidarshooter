@@ -40,6 +40,7 @@
 #include "MeshProjector.hpp"
 #include "CloudConverter.hpp"
 #include "DeviceRuntime.hpp"
+#include "AffineMesh.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -105,7 +106,7 @@ private:
     QString meshFile;
 
     // Device to object maps
-    std::map<const std::string, pcl::PolygonMesh::Ptr> meshMap;
+    std::map<const std::string, lidarshooter::AffineMesh::Ptr> affineMeshMap;
     std::map<const std::string, lidarshooter::DeviceRuntime> runtimeMap;
     std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap; ///< Takes sensorUid as index
 
@@ -114,6 +115,7 @@ private:
     int rosArgc = 0;
     std::thread* rosThread;
     std::atomic<bool> rosThreadRunning;
+    ros::NodeHandlePtr nodeHandle;
 
     // Starting and stopping projector and ROS
     const std::string addSensor(const std::string& _fileName);

@@ -27,6 +27,7 @@
 
 #include <lidarshooter/NamedPolygonMesh.h>
 #include <lidarshooter/NamedTwist.h>
+#include <lidarshooter/AffineMeshMessage.h>
 
 #include <cstdint>
 #include <cmath>
@@ -46,7 +47,8 @@
 #include "XYZIRBytes.hpp"
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
-#include "TraceData.hpp"
+#include "AffineMesh.hpp"
+#include "EmbreeTracer.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -60,11 +62,12 @@ public:
     /**
      * @brief Construct a new \c MeshProjector to run in the node
      * 
+     * @param __nodeHandle 
      * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
      */
-    MeshProjector(ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+    MeshProjector(ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Construct a new \c MeshProjector to run in the node
@@ -74,7 +77,7 @@ public:
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
      */
-    MeshProjector(const std::string& _configFile, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+    MeshProjector(const std::string& _configFile, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Construct a new \c MeshProjector to run in the node
@@ -84,7 +87,7 @@ public:
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
      */
-    MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+    MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Destroy the mesh projector object
@@ -97,24 +100,29 @@ public:
     void shutdown();
 
     /**
-     * @brief ROS receiving callback function handling incoming mesh
+     * @brief Callback for receiving an \c AffineMeshMessage
      * 
-     * This function is called by ROS every time it receives a message from the
-     * \c /objtracker node to which it subscribes. When it is received, it is painted
-     * into an Embree \c RTCScene and an explicit ground is finally added. After this
-     * the intersection of each ray from a \c LidarDevice is calculated and sent to
-     * the \c lidar_XXXX node to which it corresponds.
+     * This function must be used with \c std::bind to pass a \c _meshName
+     * to the function to exist as a subscription for a specific mesh.
      * 
-     * @param _mesh Mesh of type \c pcl_msgs::PolygonMesh::ConstPtr
+     * @param _meshName Name of the mesh; the mesh key
+     * @param _mesh The \c AffineMeshMessage space to receive
      */
-    void meshCallback(const pcl_msgs::PolygonMesh::ConstPtr& _mesh);
+    void affineMeshCallback(const std::string& _meshName, const lidarshooter::AffineMeshMessage::ConstPtr& _mesh);
     
     /**
-     * @brief ROS receiving callback function handling incoming meshes in \c _trackObjects
+     * @brief Add a mesh to the device's scene
      * 
-     * @param _mesh The key -> mesh pair
+     * This function takes an \c AffineMesh i.e. an object containing a \c
+     * pcl::PolygonMesh::Ptr and two \c Eigen::Vector3f representing an affine
+     * transportation serving as the orientation of the mesh in the
+     * scnenVector3f representing an affine transportation serving as the
+     * orientation of the mesh in the scnene.
+     * 
+     * @param _meshName Key to represent this mesh in the system
+     * @param _mesh The \c AffineMesh to add with this key
      */
-    void multiMeshCallback(const lidarshooter::NamedPolygonMesh::ConstPtr& _mesh);
+    void addMeshToScene(const std::string& _meshName, const AffineMesh::Ptr& _mesh);
 
     /**
      * @brief Set the internal mesh
@@ -163,13 +171,6 @@ public:
      * is no update to the mesh that produced the last trace.
      */
     void traceMeshWrapper();
-    
-    /**
-     * @brief All tagged joystick message can go here
-     * 
-     * @param _vel The name/twist message combination message
-     */
-    void multiJoystickCallback(const lidarshooter::NamedTwist::ConstPtr& _vel);
 
     /**
      * @brief Publishes the currently buffered traced cloud
@@ -216,11 +217,11 @@ private:
     std::shared_ptr<LidarDevice> _config;
 
     // Messages in class format
-    std::map<const std::string, pcl::PolygonMesh::Ptr> _trackObjects; // Remove _trackObject (singular) when finished
+    std::map<const std::string, lidarshooter::AffineMesh::Ptr> _affineTrackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
 
-    // NEW
-    TraceData::Ptr _traceData;
+    // EmbreeTracer is an ITracer, the abstracted raytracing backend
+    EmbreeTracer::Ptr _traceData;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;
@@ -233,17 +234,17 @@ private:
     ros::Duration _tracePeriod;
     ros::Timer _traceTimer;
     std::mutex _cloudMutex;
-    ros::NodeHandle _nodeHandle;
+    ros::NodeHandlePtr _nodeHandle;
     ros::Publisher _cloudPublisher;
-    ros::Subscriber _multiMeshSubscriber;
-    std::mutex _meshMapsMutex;
-    std::map<const std::string, std::mutex> _meshMutexes;
-    ros::Subscriber _multiJoystickSubscriber;
-    std::map<const std::string, std::mutex> _joystickMutexes;
+    std::map<const std::string, ros::Subscriber> _affineMeshSubscriberMap;
 
-    // Current net state of the mesh
-    std::map<const std::string, Eigen::Vector3f> _linearDisplacements;
-    std::map<const std::string, Eigen::Vector3f> _angularDisplacements;
+    /**
+     * @brief 
+     * 
+     * @param _topic 
+     * @param _meshName 
+     */
+    void subscribeAffineMesh(const std::string& _topic, const std::string& _meshName);
 
     /**
      * @brief Transforms a joystick signal for specified mesh key to global coordinates
@@ -262,9 +263,10 @@ private:
     inline Eigen::Vector3f transformToGlobal(const std::string& _meshName, Eigen::Vector3f _displacement);
 
     /**
-     * @brief Perform raytracing to produce a new \c _currentState
+     * @brief Perform raytracing on the \c AffineMesh collection to produce a
+     * new \c _currentState
      */
-    void traceMesh();
+    void traceAffineMesh();
 
     /**
      * @brief Method for locking the trace cloud mutex
@@ -280,84 +282,6 @@ private:
     inline void unlockCloudMutex()
     {
         _cloudMutex.unlock();
-    }
-
-    /**
-     * @brief Atomic method for locking the mesh mutex
-     */
-    inline void lockMeshMutex(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        _meshMutexes[_meshName].lock();
-        _meshMapsMutex.unlock();
-    }
-
-    /**
-     * @brief Atomic method for unlocking the mesh mutex
-     */
-    inline void unlockMeshMutex(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        _meshMutexes[_meshName].unlock();
-        _meshMapsMutex.unlock();
-    }
-
-    /**
-     * @brief Atomic method for locking the joystick mutex for \c _meshName
-     * 
-     * @param _meshName Name of mesh whose mutex we want to lock
-     */
-    inline void lockJoystickMutex(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        _joystickMutexes[_meshName].lock();
-        _meshMapsMutex.unlock();
-    }
-
-    /**
-     * @brief Atomic method for unlocking the joystick mutex for \c _meshName
-     * 
-     * @param _meshName Name of mesh whose mutex we want to unlock
-     */
-    inline void unlockJoystickMutex(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        _joystickMutexes[_meshName].unlock();
-        _meshMapsMutex.unlock();
-    }
-
-    /**
-     * @brief Atomic get for linear displacement
-     * 
-     * We're doing things this way because emplace/insert can be happening in
-     * another thread; we need the \c _meshMapsMutex locked and forcing all
-     * inserts needed for \c addMeshToScene to complete before access. It seems
-     * complicated and messy but that's because we allow dynamic changes to
-     * most of the data members.
-     * 
-     * @param _meshName Mesh name key into each mesh-related map
-     * @return Eigen::Vector3f& Reference to the linear displacement in the object
-     */
-    inline Eigen::Vector3f& getLinearDisplacement(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        auto& displacement = _linearDisplacements[_meshName];
-        _meshMapsMutex.unlock();
-        return displacement;
-    }
-
-    /**
-     * @brief Atomic get of the angular displacement (see above)
-     * 
-     * @param _meshName Mesh name key into each mesh-related map
-     * @return Eigen::Vector3f& Reference to the angular displacement in the object
-     */
-    inline Eigen::Vector3f& getAngularDisplacement(const std::string& _meshName)
-    {
-        _meshMapsMutex.lock();
-        auto& displacement = _angularDisplacements[_meshName];
-        _meshMapsMutex.unlock();
-        return displacement;
     }
 };
 
