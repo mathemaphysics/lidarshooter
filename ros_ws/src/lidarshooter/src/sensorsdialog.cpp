@@ -128,6 +128,18 @@ void SensorsDialog::addSensorRow(std::string _device, std::string _path)
 
     // Link them to their actions
     auto mainWindow = dynamic_cast<MainWindow*>(parentWidget());
+    publishCheckbox->setChecked(false);
+
+    // Don't construct DeviceRuntime directly with operator[] call
+    auto runtimeIterator = mainWindow->runtimeMap.find(_device);
+    if (runtimeIterator == mainWindow->runtimeMap.end())
+        return;
+
+    // Make sure it's set to false initially even though it should be
+    runtimeIterator->second.setCloudPublishState(false);
+
+    // TODO: If we make default DeviceRuntime to not publish, this isn't needed
+
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), mainWindow, SLOT(deleteSensor(QString))); // Have to do this first because
     connect(deleteSensorButton, SIGNAL(clickedRow(QString)), this, SLOT(deleteSensorRow(QString))); // This one knows the device key and needs to be here
     connect(publishCheckbox, SIGNAL(rowToggled(QString, bool)), mainWindow, SLOT(updatePublishCloud(QString, bool)));
