@@ -6,7 +6,7 @@
 		"dockerfile": "Dockerfile-cuda",
 		"args": { "DEVUSER": "devuser" }
 	},
-	"runArgs": ["--network=host", "--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
+	"runArgs": ["--privileged", "--network=host", "--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": {},
