@@ -11,6 +11,8 @@
 
 #include "OptixTracer.hpp"
 
+#include <utility>
+
 lidarshooter::OptixTracer::Ptr lidarshooter::OptixTracer::create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage) 
 {
     return lidarshooter::OptixTracer::Ptr(new OptixTracer(_sensorConfig, _traceStorage));

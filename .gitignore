@@ -184,3 +184,6 @@ ros_ws/src/lidarshooter/build-lidarshooter*/**
 ros_ws/src/lidarshooter/build-LiDARShooterGUI*/**
 ros_ws/src/lidarshooter/src/build-lidarshooter*/**
 ros_ws/src/lidarshooter/src/build-LiDARShooterGUI*/**
+
+# Temporary for NVIDIA OptiX SDK
+NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/**
