@@ -1,6 +1,7 @@
 FROM ubuntu:22.04
 
 ARG DEVUSER devuser
+ARG DEVUID 1000
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update \
@@ -30,6 +31,6 @@ RUN apt-get -y update \
 	&& apt-get -y install libgtest-dev
 
 ENV DEVUSER=${DEVUSER}
-RUN adduser --uid 1000 --disabled-password --gecos "" ${DEVUSER} \
+RUN adduser --uid ${DEVUID} --disabled-password --gecos "" ${DEVUSER} \
     && echo "${DEVUSER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${DEVUSER}
 USER ${DEVUSER}
