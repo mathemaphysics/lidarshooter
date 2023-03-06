@@ -55,7 +55,7 @@ private:
     OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 
 	// Storage of geometry, local and device
-
+	
 };
 
 }
