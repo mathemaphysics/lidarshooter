@@ -242,8 +242,8 @@ endif(ENABLE_OPENACC)
 #############
 
 ## Get rid of this once CMake modules are installed correctly
-set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64")
-list(APPEND CMAKE_MODULE_PATH ${OptiX_INSTALL_DIR}/SDK/CMake)
+set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64" CACHE PATH "Path to OptiX installation")
+list(APPEND CMAKE_MODULE_PATH "${OptiX_INSTALL_DIR}/SDK/CMake")
 
 # Find OptiX requirements
 find_package(CUDA REQUIRED)
