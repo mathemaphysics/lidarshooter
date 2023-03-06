@@ -32,6 +32,8 @@
 #include "LidarDevice.hpp"
 #include "ITracer.hpp"
 
+#include <optix.h>
+
 namespace lidarshooter
 {
 
