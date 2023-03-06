@@ -237,6 +237,18 @@ endif(ENABLE_OPENACC)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+#############
+# OptiX SDK #
+#############
+
+set(Optix_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64")
+list(APPEND CMAKE_PREFIX_PATH ${Optix_INSTALL_DIR}/SDK/CMake)
+list(APPEND CMAKE_MODULE_PATH ${Optix_INSTALL_DIR}/SDK/CMake)
+
+include(FindCUDA)
+include(FindNVTX)
+include(FindOptiX)
+
 ###########################
 ## LiDARShooter Frontend ##
 ###########################
@@ -356,7 +368,7 @@ target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
     target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
 endif (ENABLE_OPENACC)
-target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include ${Optix_INSTALL_DIR}/include})
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
 target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
 if (ENABLE_OPENACC)
