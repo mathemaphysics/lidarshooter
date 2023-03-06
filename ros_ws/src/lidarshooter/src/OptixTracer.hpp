@@ -33,6 +33,9 @@
 #include "ITracer.hpp"
 
 #include <optix.h>
+#include <optix_function_table_definition.h>
+#include <optix_stack_size.h>
+#include <optix_stubs.h>
 
 namespace lidarshooter
 {
@@ -57,7 +60,7 @@ private:
     OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 
 	// Storage of geometry, local and device
-	
+	OptixDeviceContext _context;
 };
 
 }
