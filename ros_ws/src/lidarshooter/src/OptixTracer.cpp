@@ -56,5 +56,5 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
     : ITracer(_sensorConfig, _traceStorage)
 {
-
+    OPTIX_CHECK( optixInit() );
 }
