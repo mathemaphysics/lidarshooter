@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.17)
 project(lidarshooter VERSION 0.1 LANGUAGES CXX CUDA)
 
 include(FetchContent)
