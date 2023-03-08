@@ -64,8 +64,9 @@ private:
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
 
 	// Storage of geometry, local and device
-	OptixDeviceContext _context;
+	OptixDeviceContext _devContext;
     OptixDeviceContextOptions _options;
+	CUcontext _cuContext;
 };
 
 }
