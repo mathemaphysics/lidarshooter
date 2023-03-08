@@ -125,7 +125,6 @@ protected:
      */
     void setGeometryCount(long _count);
 
-protected:
 	// The logger
 	std::shared_ptr<spdlog::logger> _logger;
 
