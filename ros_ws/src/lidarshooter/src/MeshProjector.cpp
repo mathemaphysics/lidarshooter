@@ -40,9 +40,9 @@ lidarshooter::MeshProjector::MeshProjector(ros::NodeHandlePtr __nodeHandle, ros:
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
@@ -128,9 +128,9 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
@@ -208,9 +208,9 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;

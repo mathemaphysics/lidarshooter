@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LidarShooter.hpp"
+
 #include <string>
 #include <map>
 #include <memory>
@@ -15,6 +17,9 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "LidarDevice.hpp"
 
@@ -24,7 +29,7 @@ namespace lidarshooter
 class ITracer
 {
 public:
-    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
     virtual ~ITracer() = default;
 
     // TODO: Get the RTCGeometry type from the mesh itself; or don't generalize it
@@ -119,6 +124,10 @@ protected:
      * @param _count Number of geometries to which to set the count
      */
     void setGeometryCount(long _count);
+
+protected:
+	// The logger
+	std::shared_ptr<spdlog::logger> _logger;
 
 private:
 

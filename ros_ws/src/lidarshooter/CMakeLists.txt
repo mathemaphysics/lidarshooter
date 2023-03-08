@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.11)
 project(lidarshooter VERSION 0.1 LANGUAGES CXX)
 
 include(FetchContent)
@@ -246,7 +246,7 @@ set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x
 list(APPEND CMAKE_MODULE_PATH "${OptiX_INSTALL_DIR}/SDK/CMake")
 
 # Find OptiX requirements
-find_package(CUDA REQUIRED)
+find_package(CUDAToolkit REQUIRED)
 find_package(OptiX REQUIRED)
 
 ###########################
@@ -313,7 +313,7 @@ endif()
 
 target_compile_features(LiDARShooterGUI PUBLIC cxx_std_17)
 target_include_directories(LiDARShooterGUI PRIVATE ${PCL_INCLUDE_DIRS} /usr/include/jsoncpp /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets lidarshooter ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp fmt ${catkin_LIBRARIES})
+target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets lidarshooter CUDA::cudart ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp fmt ${catkin_LIBRARIES})
 
 set_target_properties(LiDARShooterGUI PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -337,13 +337,13 @@ add_executable(projector src/projector.cpp)
 target_compile_features(projector PUBLIC cxx_std_17)
 target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
+target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} CUDA::cudart Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
 add_dependencies(projector ${catkin_EXPORTED_TARGETS})
 
 add_executable(objtracker src/objtracker.cpp)
 target_compile_features(objtracker PUBLIC cxx_std_17)
 target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt Poco::Net)
+target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} CUDA::cudart Boost::program_options spdlog::spdlog fmt Poco::Net)
 add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
 
 ##########################
@@ -368,9 +368,9 @@ target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
     target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
 endif (ENABLE_OPENACC)
-target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include ${CUDA_INCLUDE_DIRS} ${OptiX_INCLUDE} ${OptiX_INCLUDE}/../SDK ${OptiX_INCLUDE}/../SDK/support)
+target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include ${OptiX_INCLUDE} ${OptiX_INCLUDE}/../SDK ${OptiX_INCLUDE}/../SDK/support)
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
+target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} CUDA::cudart Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
 if (ENABLE_OPENACC)
     target_link_libraries(lidarshooter OpenACC::OpenACC_CXX)
 endif (ENABLE_OPENACC)

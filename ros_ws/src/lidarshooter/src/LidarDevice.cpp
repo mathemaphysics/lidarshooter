@@ -54,9 +54,9 @@ lidarshooter::LidarDevice::LidarDevice(std::shared_ptr<spdlog::logger> __logger)
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
@@ -67,9 +67,9 @@ lidarshooter::LidarDevice::LidarDevice(const std::string& _config, std::shared_p
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
@@ -83,9 +83,9 @@ lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::st
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;

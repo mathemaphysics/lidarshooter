@@ -249,11 +249,6 @@ public:
 
 private:
     /**
-     * @brief Name of the application to use as global logger reference
-     */
-    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
-
-    /**
      * @brief Folder into which output files are written when needed
      * 
      * For example, when running \c roslaunch \c lidarshooter \c lidarshooter.launch

@@ -53,8 +53,20 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     return 0;
 }
 
-lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
-    : ITracer(_sensorConfig, _traceStorage)
+void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
 {
-    OPTIX_CHECK( optixInit() );
+    // Log output to default location
+    spdlog::get(LIDARSHOOTER_APPLICATION_NAME)->log(static_cast<spdlog::level::level_enum>(_level), std::string(_message));
+}
+
+lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
+    : ITracer(_sensorConfig, _traceStorage),
+      _options{}
+{
+    CUDA_CHECK(cudaFree(0));
+    OPTIX_CHECK(optixInit());
+
+    // Set up options here
+    _options.logCallbackFunction = &optixLoggerCallback;
+    _options.logCallbackLevel = 4;
 }

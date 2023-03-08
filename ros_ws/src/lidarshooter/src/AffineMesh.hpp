@@ -97,7 +97,6 @@ private:
 	bool _isPublished;
 
 	// Logger
-    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
 	std::shared_ptr<spdlog::logger> _logger;
 };
 

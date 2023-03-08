@@ -210,7 +210,6 @@ private:
     // Setting the publish frequency
     std::uint32_t _frameIndex;
     std::string _sensorUid; // This *should* match _config._device.sensorUid
-    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
     std::shared_ptr<spdlog::logger> _logger;
 
     // Device with everyone you need to know about your scanner
