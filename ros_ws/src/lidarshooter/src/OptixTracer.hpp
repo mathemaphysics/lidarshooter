@@ -60,13 +60,18 @@ public:
 private:
     OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 
-	// Static logging callback function
+	// Static logging callback function for OptiX to use
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
 
-	// Storage of geometry, local and device
+	// Context setup and options for CUDA and OptiX device
 	OptixDeviceContext _devContext;
     OptixDeviceContextOptions _options;
 	CUcontext _cuContext;
+
+	// Storage of geometry, local and device
+	OptixTraversableHandle _gasHandle;
+	CUdeviceptr _devGasOutputBuffer;
+	OptixAccelBuildOptions _accelBuildOptions;
 };
 
 }

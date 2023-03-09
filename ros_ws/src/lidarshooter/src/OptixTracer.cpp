@@ -63,11 +63,32 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
     : ITracer(_sensorConfig, _traceStorage),
       _options{}
 {
-    // Initialize CUDA and OptiX
-    CUDA_CHECK(cudaFree(0));
-    OPTIX_CHECK(optixInit());
+    // Block for creating the contexts
+    _devContext = nullptr;
+    {
+        // Initialize CUDA and OptiX
+        CUDA_CHECK(cudaFree(0));
+        OPTIX_CHECK(optixInit());
 
-    // Set up options here
-    _options.logCallbackFunction = &optixLoggerCallback;
-    _options.logCallbackLevel = 4;
+        // Set up options here
+        _options.logCallbackFunction = &optixLoggerCallback;
+        _options.logCallbackLevel = 4;
+
+        // Create the device context from the CUDA context
+        _cuContext = 0; // Current context
+        OPTIX_CHECK(
+            optixDeviceContextCreate(
+                _cuContext,
+                &_options,
+                &_devContext
+            )
+        );
+    }
+
+    // Block for building the acceleration structure
+    {
+        _accelBuildOptions = {};
+        _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_NONE;
+        _accelBuildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
+    }
 }
