@@ -63,6 +63,7 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
     : ITracer(_sensorConfig, _traceStorage),
       _options{}
 {
+    // Initialize CUDA and OptiX
     CUDA_CHECK(cudaFree(0));
     OPTIX_CHECK(optixInit());
 
