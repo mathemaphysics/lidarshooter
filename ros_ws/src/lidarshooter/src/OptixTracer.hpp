@@ -63,6 +63,10 @@ private:
 	// Static logging callback function for OptiX to use
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
 
+	// In local memory storage of vertices and elements
+	std::map<const std::string, std::vector<float>> _vertices;
+	std::map<const std::string, std::vector<int>> _elements;
+
 	// Context setup and options for CUDA and OptiX device
 	OptixDeviceContext _devContext;
     OptixDeviceContextOptions _options;
