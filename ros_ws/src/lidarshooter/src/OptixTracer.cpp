@@ -37,6 +37,7 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
     const uint32_t buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
     buildInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     buildInput.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+    buildInput.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
     buildInput.triangleArray.numVertices = static_cast<uint32_t>(_numVertices);
     buildInput.triangleArray.numIndexTriplets = static_cast<uint32_t>(_numElements);
 
@@ -57,6 +58,10 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
     // Allocate space on the device
     CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>(&_devVertices[_meshName]), _numVertices * vertexSize) );
     CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>(&_devElements[_meshName]), _numElements * elementSize) );
+
+    // Set allocate device data to location on optix build input
+    buildInput.triangleArray.vertexBuffers = &_devVertices[_meshName];
+    buildInput.triangleArray.indexBuffer = _devElements[_meshName];
 
     return 0;
 }
