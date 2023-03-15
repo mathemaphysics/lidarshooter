@@ -34,12 +34,14 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
 {
     // Just make buffers and build inputs
     OptixBuildInput buildInput = {};
+    _optixInputs[_meshName] = {};
     const uint32_t buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
-    buildInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-    buildInput.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-    buildInput.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-    buildInput.triangleArray.numVertices = static_cast<uint32_t>(_numVertices);
-    buildInput.triangleArray.numIndexTriplets = static_cast<uint32_t>(_numElements);
+    _optixInputs[_meshName].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+    _optixInputs[_meshName].triangleArray.flags = buildInputFlags;
+    _optixInputs[_meshName].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+    _optixInputs[_meshName].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+    _optixInputs[_meshName].triangleArray.numVertices = static_cast<uint32_t>(_numVertices);
+    _optixInputs[_meshName].triangleArray.numIndexTriplets = static_cast<uint32_t>(_numElements);
 
     // Allocate space
     const size_t vertexSize = sizeof(float3);
