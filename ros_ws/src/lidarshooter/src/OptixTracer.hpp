@@ -64,8 +64,11 @@ private:
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
 
 	// In local memory storage of vertices and elements
-	std::map<const std::string, std::vector<float>> _vertices;
-	std::map<const std::string, std::vector<int>> _elements;
+	std::map<const std::string, OptixBuildInput> _optixInputs;
+	std::map<const std::string, std::vector<float3>> _vertices;
+	std::map<const std::string, std::vector<int3>> _elements;
+	std::map<const std::string, CUdeviceptr> _devVertices;
+	std::map<const std::string, CUdeviceptr> _devElements;
 
 	// Context setup and options for CUDA and OptiX device
 	OptixDeviceContext _devContext;

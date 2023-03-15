@@ -28,8 +28,35 @@ lidarshooter::OptixTracer::~OptixTracer()
 
 }
 
+// TODO: For now addGeometry will ignore the _geometryType and assume it's a
+// triangl mesh; generalize this later
 int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements)
 {
+    // Just make buffers and build inputs
+    OptixBuildInput buildInput = {};
+    buildInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+    buildInput.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+    buildInput.triangleArray.numVertices = static_cast<uint32_t>(_numVertices);
+    buildInput.triangleArray.numIndexTriplets = static_cast<uint32_t>(_numElements);
+
+    // Allocate space
+    const size_t vertexSize = sizeof(float3);
+    const size_t elementSize = sizeof(int3);
+
+    // Initialize a device pointer for the mesh vertices and elements
+    _devVertices[_meshName] = 0;
+    _devElements[_meshName] = 0;
+
+    // Allocate space in RAM
+    auto _verticesReference = _vertices.find(_meshName);
+    auto _elementsReference = _elements.find(_meshName);
+    _verticesReference->second.resize(_numVertices);
+    _elementsReference->second.resize(_numElements);
+
+    // Allocate space on the device
+    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>(&_devVertices[_meshName]), _numVertices * vertexSize) );
+    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>(&_devElements[_meshName]), _numElements * elementSize) );
+
     return 0;
 }
 
