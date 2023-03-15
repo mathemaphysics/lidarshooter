@@ -34,6 +34,7 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
 {
     // Just make buffers and build inputs
     OptixBuildInput buildInput = {};
+    const uint32_t buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
     buildInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     buildInput.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
     buildInput.triangleArray.numVertices = static_cast<uint32_t>(_numVertices);
