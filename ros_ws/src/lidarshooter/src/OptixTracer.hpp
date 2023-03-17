@@ -63,8 +63,9 @@ private:
 	// Static logging callback function for OptiX to use
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
 
-	// Utilitie
+	// Utilities
 	void buildAccelStructure();
+	void buildPipelines();
 
 	// In local memory storage of vertices and elements
 	std::map<const std::string, OptixBuildInput> _optixInputs;

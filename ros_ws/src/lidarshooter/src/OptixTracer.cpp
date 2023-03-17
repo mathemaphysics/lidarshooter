@@ -89,6 +89,8 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     // First build the inputs and GAS
     buildAccelStructure();
 
+    // Build the modules and pipeline
+    buildPipelines();
 
     return 0;
 }
@@ -168,7 +170,7 @@ void lidarshooter::OptixTracer::buildAccelStructure()
     OPTIX_CHECK(
         optixAccelBuild(
             _devContext,
-            0,
+            0, // This is the CUDA stream
             &_accelBuildOptions,
             buildInputArray.data(),
             buildInputArray.size(),
@@ -188,4 +190,9 @@ void lidarshooter::OptixTracer::buildAccelStructure()
             reinterpret_cast<void**>(&_devGasTempBuffer)
         )
     );
+}
+
+void lidarshooter::OptixTracer::buildPipelines()
+{
+
 }
