@@ -12,6 +12,8 @@
 #include "OptixTracer.hpp"
 
 #include <utility>
+#include <vector>
+#include <algorithm>
 
 lidarshooter::OptixTracer::Ptr lidarshooter::OptixTracer::create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage) 
 {
@@ -85,13 +87,11 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 
 int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
-    return 0;
-}
+    // First build the inputs and GAS
+    buildAccelStructure();
 
-void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
-{
-    // Log output to default location
-    spdlog::get(LIDARSHOOTER_APPLICATION_NAME)->log(static_cast<spdlog::level::level_enum>(_level), std::string(_message));
+
+    return 0;
 }
 
 lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
@@ -126,4 +126,67 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
         _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_NONE;
         _accelBuildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
     }
+}
+
+void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
+{
+    // Log output to default location
+    spdlog::get(LIDARSHOOTER_APPLICATION_NAME)->log(static_cast<spdlog::level::level_enum>(_level), std::string(_message));
+}
+
+void lidarshooter::OptixTracer::buildAccelStructure()
+{
+    // Stack all the build inputs into an array
+    std::vector<OptixBuildInput> buildInputArray;
+    for (auto& [name, input] : _optixInputs)
+        buildInputArray.push_back(input);
+
+    // Calculate the GAS buffer sizes
+    OPTIX_CHECK(
+        optixAccelComputeMemoryUsage(
+            _devContext,
+            &_accelBuildOptions,
+            buildInputArray.data(),
+            buildInputArray.size(),
+            &_gasBufferSizes
+        )
+    );
+
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(&_devGasTempBuffer),
+            _gasBufferSizes.tempSizeInBytes
+        )
+    );
+
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(&_devGasOutputBuffer),
+            _gasBufferSizes.outputSizeInBytes
+        )
+    );
+
+    OPTIX_CHECK(
+        optixAccelBuild(
+            _devContext,
+            0,
+            &_accelBuildOptions,
+            buildInputArray.data(),
+            buildInputArray.size(),
+            _devGasTempBuffer,
+            _gasBufferSizes.tempSizeInBytes,
+            _devGasOutputBuffer,
+            _gasBufferSizes.outputSizeInBytes,
+            &_gasHandle,
+            nullptr,
+            0
+        )
+    );
+
+    // The GAS temp buffer is no longer needed now
+    CUDA_CHECK(
+        cudaFree(
+            reinterpret_cast<void**>(&_devGasTempBuffer)
+        )
+    );
 }

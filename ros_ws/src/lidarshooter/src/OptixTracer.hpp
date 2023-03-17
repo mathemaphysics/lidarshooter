@@ -63,6 +63,9 @@ private:
 	// Static logging callback function for OptiX to use
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
 
+	// Utilitie
+	void buildAccelStructure();
+
 	// In local memory storage of vertices and elements
 	std::map<const std::string, OptixBuildInput> _optixInputs;
 	std::map<const std::string, std::vector<float3>> _vertices;
@@ -77,8 +80,10 @@ private:
 
 	// Storage of geometry, local and device
 	OptixTraversableHandle _gasHandle;
+	CUdeviceptr _devGasTempBuffer;
 	CUdeviceptr _devGasOutputBuffer;
 	OptixAccelBuildOptions _accelBuildOptions;
+    OptixAccelBufferSizes _gasBufferSizes;
 };
 
 }
