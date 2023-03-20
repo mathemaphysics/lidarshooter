@@ -91,6 +91,9 @@ private:
 	OptixModule _traceModule = nullptr;
 	OptixModuleCompileOptions _traceModuleCompileOptions = {};
 	OptixPipelineCompileOptions _pipelineCompileOptions = {};
+	OptixProgramGroup _raygenProgramGroup = nullptr;
+	OptixProgramGroup _missProgramGroup = nullptr;
+	OptixProgramGroup _hitProgramGroup = nullptr;
 
 	// Storage of geometry, local and device
 	OptixTraversableHandle _gasHandle;
