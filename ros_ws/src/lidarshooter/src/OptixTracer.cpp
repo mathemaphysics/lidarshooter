@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <filesystem>
 
 lidarshooter::OptixTracer::Ptr lidarshooter::OptixTracer::create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage) 
 {
@@ -48,19 +49,31 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
     const size_t vertexSize = sizeof(float3);
     const size_t elementSize = sizeof(int3);
 
-    // Initialize a device pointer for the mesh vertices and elements
-    _devVertices[_meshName] = 0;
-    _devElements[_meshName] = 0;
-
-    // Allocate space in RAM
-    auto _verticesReference = _vertices.find(_meshName);
-    auto _elementsReference = _elements.find(_meshName);
-    _verticesReference->second.resize(_numVertices);
-    _elementsReference->second.resize(_numElements);
-
+    // Allocate space in RAM calling in-place constructor
+    _vertices.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple(_numVertices)
+    );
+    _elements.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple(_numElements)
+    );
+    
     // Allocate space on the device
-    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>(&_devVertices[_meshName]), _numVertices * vertexSize) );
-    CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>(&_devElements[_meshName]), _numElements * elementSize) );
+    auto verticesEmplace = _devVertices.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple(0)
+    );
+    auto elementsEmplace = _devElements.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(_meshName),
+        std::forward_as_tuple(0)
+    );
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&_devVertices[_meshName]), static_cast<size_t>(_numVertices * vertexSize)));
+    CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&_devElements[_meshName]), static_cast<size_t>(_numElements * elementSize)));
 
     // Set allocate device data to location on optix build input
     _optixInputs[_meshName].triangleArray.vertexBuffers = &_devVertices[_meshName];
@@ -88,9 +101,6 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
     // First build the inputs and GAS
     buildAccelStructure();
-
-    // Build the modules and pipeline
-    buildPipelines();
 
     return 0;
 }
@@ -127,6 +137,9 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
         _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_NONE;
         _accelBuildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
     }
+
+    // Build the modules and pipeline
+    buildPipelines();
 }
 
 void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
@@ -192,7 +205,75 @@ void lidarshooter::OptixTracer::buildAccelStructure()
     );
 }
 
+void lidarshooter::OptixTracer::buildModules()
+{
+}
+
 void lidarshooter::OptixTracer::buildPipelines()
 {
+    // The module source in loaded and compiled on-the-fly
+    std::string moduleSource;
+    auto moduleSourcePath = std::filesystem::path(LIDARSHOOTER_OPTIX_MODULE_DIR);
+    getInputDataFromFile(moduleSource, (moduleSourcePath / "OptixTracerModules.ptx").string());
 
+    // Set the module and pipeline compile options
+    _traceModuleCompileOptions = {};
+    _pipelineCompileOptions.usesMotionBlur = false;
+    _pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+    _pipelineCompileOptions.numPayloadValues = 3; // TODO: Update this; it isn't right for this code
+    _pipelineCompileOptions.numAttributeValues = 3; // TODO: Update this; it isn't right for this code
+#ifdef LIDARSHOOTER_OPTIX_DEBUG // Enables debug exceptions during optix launches. This may incur significant performance cost and should only be done during development.
+    _pipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_DEBUG | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
+#else
+    _pipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+#endif
+    _pipelineCompileOptions.pipelineLaunchParamsVariableName = "params";
+    _pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+
+    OPTIX_CHECK_LOG(
+        optixModuleCreateFromPTX(
+            _devContext,
+            &_traceModuleCompileOptions,
+            &_pipelineCompileOptions,
+            moduleSource.c_str(),
+            moduleSource.size(),
+            _logString,
+            &_logStringLength,
+            &_traceModule
+        )
+    );
+    std::cout << _logString << std::endl;
+}
+
+bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)
+{
+    // Try to open file
+    std::ifstream file(_filename.c_str(), std::ios::binary);
+    if(file.good())
+    {
+        // Found usable source file
+        std::vector<unsigned char> buffer = std::vector<unsigned char>(std::istreambuf_iterator<char>(file), {});
+        _str.assign(buffer.begin(), buffer.end());
+        return true;
+    }
+    return false;
+}
+
+void lidarshooter::OptixTracer::getInputDataFromFile(std::string &_ptx, const std::string& _fileName)
+{
+    // TODO: Check the path works using std::filesystem
+    auto fullModulePath = std::filesystem::path(_fileName);
+    if (!std::filesystem::exists(fullModulePath))
+    {
+        std::string err = "Source file does not exist: " + _fileName;
+        throw std::runtime_error(err.c_str());
+    }
+
+    // Try to open source PTX file
+    const std::string sourceFilePath = fullModulePath.string();
+    if (!readSourceFile(_ptx, sourceFilePath))
+    {
+        std::string err = "Couldn't open source file: " + sourceFilePath;
+        throw std::runtime_error( err.c_str() );
+    }
 }

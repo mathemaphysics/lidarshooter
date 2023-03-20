@@ -12,6 +12,7 @@
 #pragma once
 
 #include "LidarShooter.hpp"
+#include "OptixTracerConfig.hpp"
 
 #include <string>
 #include <map>
@@ -38,6 +39,8 @@
 #include <optix_stubs.h>
 #include <sutil/Exception.h>
 
+
+
 namespace lidarshooter
 {
 
@@ -62,10 +65,15 @@ private:
 
 	// Static logging callback function for OptiX to use
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
+    char _logString[256];
+    size_t _logStringLength = 255;
 
 	// Utilities
 	void buildAccelStructure();
+	void buildModules();
 	void buildPipelines();
+	static bool readSourceFile( std::string& _str, const std::string& _filename);
+	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 
 	// In local memory storage of vertices and elements
 	std::map<const std::string, OptixBuildInput> _optixInputs;
@@ -78,6 +86,11 @@ private:
 	OptixDeviceContext _devContext;
     OptixDeviceContextOptions _options;
 	CUcontext _cuContext;
+
+	// Pipeline and module items
+	OptixModule _traceModule = nullptr;
+	OptixModuleCompileOptions _traceModuleCompileOptions = {};
+	OptixPipelineCompileOptions _pipelineCompileOptions = {};
 
 	// Storage of geometry, local and device
 	OptixTraversableHandle _gasHandle;

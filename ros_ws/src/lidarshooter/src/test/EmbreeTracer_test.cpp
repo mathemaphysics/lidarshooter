@@ -27,7 +27,7 @@
 namespace
 {
 
-class EmbreeTracer : public ::testing::Test
+class EmbreeTracerTest : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -76,34 +76,34 @@ protected:
     unsigned int geometryIdAdded;
 };
 
-TEST_F(EmbreeTracer, NoDeviceError)
+TEST_F(EmbreeTracerTest, NoDeviceError)
 {
     // Make sure geometry and buffer creation doesn't fail or complain
     RTCError error = rtcGetDeviceError(embreeTracer->getDevice());
     EXPECT_EQ(error, RTC_ERROR_NONE);
 }
 
-TEST_F(EmbreeTracer, VertexElementCounts)
+TEST_F(EmbreeTracerTest, VertexElementCounts)
 {
     // Check that the number of vertices and elements is right
     EXPECT_EQ(embreeTracer->getVertexCount("mesh"), 2823l);
     EXPECT_EQ(embreeTracer->getElementCount("mesh"), 5489l);
 }
 
-TEST_F(EmbreeTracer, GeometryTotalCount)
+TEST_F(EmbreeTracerTest, GeometryTotalCount)
 {
     // Make sure we have only one
     EXPECT_EQ(embreeTracer->getGeometryCount(), 1);
 }
 
-TEST_F(EmbreeTracer, AddGeometryId)
+TEST_F(EmbreeTracerTest, AddGeometryId)
 {
     // Internal map and returned IDs should match
     unsigned int idStored = static_cast<unsigned int>(embreeTracer->getGeometryId("mesh"));
     EXPECT_EQ(geometryIdAdded, idStored);
 }
 
-TEST_F(EmbreeTracer, DeleteGeometryId)
+TEST_F(EmbreeTracerTest, DeleteGeometryId)
 {
     // Have to call getGeometryId before deleting; won't exist after
     unsigned int actualGeomId = static_cast<unsigned int>(embreeTracer->getGeometryId("mesh"));
@@ -113,13 +113,13 @@ TEST_F(EmbreeTracer, DeleteGeometryId)
     EXPECT_EQ(idDeleted, actualGeomId);
 }
 
-TEST_F(EmbreeTracer, GeometryType)
+TEST_F(EmbreeTracerTest, GeometryType)
 {
     RTCGeometryType geometryType = embreeTracer->getGeometryType("mesh");
     EXPECT_EQ(geometryType, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE);
 }
 
-TEST_F(EmbreeTracer, TraceSceneCloud)
+TEST_F(EmbreeTracerTest, TraceSceneCloud)
 {
     // Must call this to initialize ros::Time for LidarDevice::initMessage
     ros::Time::init();

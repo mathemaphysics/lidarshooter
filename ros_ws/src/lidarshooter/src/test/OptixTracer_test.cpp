@@ -76,6 +76,12 @@ protected:
     unsigned int geometryIdAdded;
 };
 
+TEST_F(OptixTracerTest, InstantiateTest)
+{
+    // Make sure geometry and buffer creation doesn't fail or complain
+    EXPECT_NO_THROW();
+}
+
 }
 
 int main(int argc, char *argv[])

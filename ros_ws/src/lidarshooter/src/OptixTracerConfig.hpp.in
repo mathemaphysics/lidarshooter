@@ -1,0 +1,2 @@
+#cmakedefine LIDARSHOOTER_OPTIX_DEBUG
+#define LIDARSHOOTER_OPTIX_MODULE_DIR "@CMAKE_SOURCE_DIR@/lidarshooter/src"
