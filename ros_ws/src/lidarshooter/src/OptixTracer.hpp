@@ -70,8 +70,9 @@ private:
 
 	// Utilities
 	void buildAccelStructure();
-	void buildModules();
-	void buildPipelines();
+	void createModule();
+	void createProgramGroups();
+	void linkPipeline();
 	static bool readSourceFile( std::string& _str, const std::string& _filename);
 	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 
@@ -89,11 +90,22 @@ private:
 
 	// Pipeline and module items
 	OptixModule _traceModule = nullptr;
+	OptixPipeline _tracePipeline = nullptr;
+	OptixStackSizes _stackSizes = {};
+	uint32_t _directCallableStackSizeFromTraversal = 0;
+	uint32_t _directCallableStackSizeFromState = 0;
+	uint32_t _continuationStackSize = 0;
+	const uint32_t _maxTraceDepth = 1;
 	OptixModuleCompileOptions _traceModuleCompileOptions = {};
 	OptixPipelineCompileOptions _pipelineCompileOptions = {};
+    OptixPipelineLinkOptions _pipelineLinkOptions = {};
 	OptixProgramGroup _raygenProgramGroup = nullptr;
 	OptixProgramGroup _missProgramGroup = nullptr;
-	OptixProgramGroup _hitProgramGroup = nullptr;
+	OptixProgramGroup _hitgroupProgramGroup = nullptr;
+    OptixProgramGroupOptions _programGroupOptions = {};
+    OptixProgramGroupDesc _raygenProgramGroupDescription = {};
+    OptixProgramGroupDesc _missProgramGroupDescription = {};
+    OptixProgramGroupDesc _hitgroupProgramGroupDescription = {};
 
 	// Storage of geometry, local and device
 	OptixTraversableHandle _gasHandle;

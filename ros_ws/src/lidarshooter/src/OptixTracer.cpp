@@ -139,7 +139,9 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
     }
 
     // Build the modules and pipeline
-    buildPipelines();
+    createModule();
+    createProgramGroups();
+    linkPipeline();
 }
 
 void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
@@ -205,11 +207,7 @@ void lidarshooter::OptixTracer::buildAccelStructure()
     );
 }
 
-void lidarshooter::OptixTracer::buildModules()
-{
-}
-
-void lidarshooter::OptixTracer::buildPipelines()
+void lidarshooter::OptixTracer::createModule()
 {
     // The module source in loaded and compiled on-the-fly
     std::string moduleSource;
@@ -242,7 +240,109 @@ void lidarshooter::OptixTracer::buildPipelines()
             &_traceModule
         )
     );
-    std::cout << _logString << std::endl;
+}
+
+void lidarshooter::OptixTracer::createProgramGroups()
+{
+    // Set the options for the raygen program group
+    _raygenProgramGroupDescription.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
+    _raygenProgramGroupDescription.raygen.module = _traceModule;
+    _raygenProgramGroupDescription.raygen.entryFunctionName = "__raygen__rg";
+    
+    // Creat raygen program group
+    OPTIX_CHECK_LOG(
+        optixProgramGroupCreate(
+            _devContext,
+            &_raygenProgramGroupDescription,
+            1, // Means one program group; what is this supopsed to mean; there are three
+            &_programGroupOptions,
+            _logString,
+            &_logStringLength,
+            &_raygenProgramGroup
+        )
+    );
+
+    // Set the options for miss program group
+    _missProgramGroupDescription.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
+    _missProgramGroupDescription.miss.module = _traceModule;
+    _missProgramGroupDescription.miss.entryFunctionName = "__miss__ms";
+
+    // Create miss program group
+    OPTIX_CHECK_LOG(
+        optixProgramGroupCreate(
+            _devContext,
+            &_missProgramGroupDescription,
+            1, // Means one program group; what is this supposed to mean; there are three
+            &_programGroupOptions,
+            _logString,
+            &_logStringLength,
+            &_missProgramGroup
+        )
+    );
+
+    // Set options for the hitgroup program group
+    _hitgroupProgramGroupDescription.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+    _hitgroupProgramGroupDescription.hitgroup.moduleCH = _traceModule;
+    _hitgroupProgramGroupDescription.hitgroup.entryFunctionNameCH = "__closesthit__ch";
+
+    // Create the hitgroup program group
+    OPTIX_CHECK_LOG(
+        optixProgramGroupCreate(
+            _devContext,
+            &_hitgroupProgramGroupDescription,
+            1, // Means one program group; what is this supposed to mean; there are three
+            &_programGroupOptions,
+            _logString,
+            &_logStringLength,
+            &_hitgroupProgramGroup
+        )
+    );
+}
+
+void lidarshooter::OptixTracer::linkPipeline()
+{
+    // Link modules into a pipeline
+    OptixProgramGroup programGroups[] = { _raygenProgramGroup, _missProgramGroup, _hitgroupProgramGroup };
+    _pipelineLinkOptions.maxTraceDepth = _maxTraceDepth;
+    _pipelineLinkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+
+    // Create the pipeline
+    OPTIX_CHECK_LOG(
+        optixPipelineCreate(
+            _devContext,
+            &_pipelineCompileOptions,
+            &_pipelineLinkOptions,
+            programGroups,
+            sizeof(programGroups) / sizeof(programGroups[0]),
+            _logString,
+            &_logStringLength,
+            &_tracePipeline
+        )
+    );
+
+    // Calculate and set stack sizes
+    OPTIX_CHECK(
+        optixUtilComputeStackSizes(
+            &_stackSizes,
+            _maxTraceDepth,
+            0, // maxCCDepth
+            0, // maxDCDEpth
+            &_directCallableStackSizeFromTraversal,
+            &_directCallableStackSizeFromState,
+            &_continuationStackSize
+        )
+    );
+
+    // Set the stack sizes in the pipeline
+    OPTIX_CHECK(
+        optixPipelineSetStackSize(
+            _tracePipeline,
+            _directCallableStackSizeFromTraversal,
+            _directCallableStackSizeFromState,
+            _continuationStackSize,
+            1 // maxTraversableDepth
+        )
+    );
 }
 
 bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)
