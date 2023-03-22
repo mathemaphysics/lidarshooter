@@ -241,18 +241,25 @@ endif(ENABLE_OPENACC)
 # OptiX SDK #
 #############
 
+# Configurable build settings
+set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64" CACHE PATH "Path to OptiX installation")
 option(LIDARSHOOTER_OPTIX_DEBUG "Enables debugging for OptixTracer if used" ON)
 
-# Generate Optix debugging header for LidarShooter.hpp
-configure_file(src/OptixTracerConfig.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/OptixTracerConfig.hpp)
+# Get rid of this once CMake modules are installed correctly
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-## Get rid of this once CMake modules are installed correctly
-set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64" CACHE PATH "Path to OptiX installation")
+# Set the OptiX SDK path; important
 list(APPEND CMAKE_MODULE_PATH "${OptiX_INSTALL_DIR}/SDK/CMake")
+
+include(BuildPTXFromSource)
+
 
 # Find OptiX requirements
 find_package(CUDAToolkit REQUIRED)
 find_package(OptiX REQUIRED)
+
+# Generate Optix debugging header for LidarShooter.hpp
+configure_file(src/OptixTracerConfig.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/OptixTracerConfig.hpp)
 
 ###########################
 ## LiDARShooter Frontend ##
