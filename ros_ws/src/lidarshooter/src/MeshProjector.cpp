@@ -20,7 +20,6 @@
 #include <mutex>
 #include <atomic>
 #include <map>
-#include <functional>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
