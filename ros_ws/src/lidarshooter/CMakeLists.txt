@@ -253,7 +253,6 @@ list(APPEND CMAKE_MODULE_PATH "${OptiX_INSTALL_DIR}/SDK/CMake")
 
 include(BuildPTXFromSource)
 
-
 # Find OptiX requirements
 find_package(CUDAToolkit REQUIRED)
 find_package(OptiX REQUIRED)

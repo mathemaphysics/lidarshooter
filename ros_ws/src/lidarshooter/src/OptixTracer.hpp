@@ -39,8 +39,6 @@
 #include <optix_stubs.h>
 #include <sutil/Exception.h>
 
-
-
 namespace lidarshooter
 {
 
