@@ -416,6 +416,15 @@ void lidarshooter::OptixTracer::setupSbtRecords()
             cudaMemcpyHostToDevice
         )
     );
+
+    // Fill out SBT structure
+    _shaderBindingTable.raygenRecord = _devRaygenSbtRecord;
+    _shaderBindingTable.missRecordBase = _devMissSbtRecord;
+    _shaderBindingTable.missRecordStrideInBytes = sizeof(MissSbtRecord);
+    _shaderBindingTable.missRecordCount = 1;
+    _shaderBindingTable.hitgroupRecordBase = _devHitgroupSbtRecord;
+    _shaderBindingTable.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
+    _shaderBindingTable.hitgroupRecordCount = 1;
 }
 
 bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)
