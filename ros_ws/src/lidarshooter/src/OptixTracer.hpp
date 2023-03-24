@@ -39,14 +39,52 @@
 #include <optix_stubs.h>
 #include <sutil/Exception.h>
 
+
 namespace lidarshooter
 {
+
+struct Params
+{
+    uchar4*                image;
+    unsigned int           image_width;
+    unsigned int           image_height;
+    float3                 cam_eye;
+    float3                 cam_u, cam_v, cam_w;
+    OptixTraversableHandle handle;
+};
+
+struct RayGenData
+{
+    // No data needed
+};
+
+struct MissData
+{
+    float3 bg_color;
+};
+
+struct HitGroupData
+{
+    // No data needed
+};
+
+template <typename T>
+struct SbtRecord
+{
+    __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+    T data;
+};
 
 class OptixTracer : public ITracer, public std::enable_shared_from_this<OptixTracer>
 {
 public:
     using Ptr = std::shared_ptr<OptixTracer>;
     using ConstPtr = std::shared_ptr<OptixTracer const>;
+
+	// Definitions for SBT records of each type, e.g. lidarshooter::OptixTracer::RayGenSbtRecord
+	using RayGenSbtRecord = SbtRecord<RayGenData>;
+	using MissSbtRecord = SbtRecord<MissData>;
+	using HitGroupSbtRecord = SbtRecord<HitGroupData>;
 
     static OptixTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
 	OptixTracer::Ptr getPtr();
@@ -71,6 +109,7 @@ private:
 	void createModule();
 	void createProgramGroups();
 	void linkPipeline();
+	void setupSbtRecords();
 	static bool readSourceFile( std::string& _str, const std::string& _filename);
 	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 
@@ -104,6 +143,17 @@ private:
     OptixProgramGroupDesc _raygenProgramGroupDescription = {};
     OptixProgramGroupDesc _missProgramGroupDescription = {};
     OptixProgramGroupDesc _hitgroupProgramGroupDescription = {};
+
+	// Variables for the shader binding table
+	OptixShaderBindingTable _shaderBindingTable = {};
+
+	// Record type declaerd
+	RayGenSbtRecord _raygenSbtRecord;
+	CUdeviceptr _devRaygenSbtRecord; // Raygen SBT record on the device
+	MissSbtRecord _missSbtRecord;
+	CUdeviceptr _devMissSbtRecord; // Miss SBT record on the device
+	HitGroupSbtRecord _hitgroupSbtRecord;
+	CUdeviceptr _devHitgroupSbtRecord; // Hit group SBT record on the device
 
 	// Storage of geometry, local and device
 	OptixTraversableHandle _gasHandle;

@@ -142,6 +142,7 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
     createModule();
     createProgramGroups();
     linkPipeline();
+    setupSbtRecords();
 }
 
 void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
@@ -341,6 +342,78 @@ void lidarshooter::OptixTracer::linkPipeline()
             _directCallableStackSizeFromState,
             _continuationStackSize,
             1 // maxTraversableDepth
+        )
+    );
+}
+
+void lidarshooter::OptixTracer::setupSbtRecords()
+{
+    // Raygen SBT record
+    const size_t raygenRecordSize = sizeof(RayGenSbtRecord);
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void **>(&_devRaygenSbtRecord),
+            raygenRecordSize
+        )
+    );
+    OPTIX_CHECK(
+        optixSbtRecordPackHeader(
+            _raygenProgramGroup,
+            &_raygenSbtRecord
+        )
+    );
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void *>(_devRaygenSbtRecord),
+            &_raygenSbtRecord,
+            raygenRecordSize,
+            cudaMemcpyHostToDevice
+        )
+    );
+
+    // Miss SBT record
+    const size_t missRecordSize = sizeof(MissSbtRecord);
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void **>(&_devMissSbtRecord),
+            missRecordSize
+        )
+    );
+    OPTIX_CHECK(
+        optixSbtRecordPackHeader(
+            _missProgramGroup,
+            &_missSbtRecord
+        )
+    );
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void *>(_devMissSbtRecord),
+            &_missSbtRecord,
+            missRecordSize,
+            cudaMemcpyHostToDevice
+        )
+    );
+
+    // Hit group SBT record
+    const size_t hitGroupRecordSize = sizeof(HitGroupSbtRecord);
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void **>(&_devHitgroupSbtRecord),
+            hitGroupRecordSize
+        )
+    );
+    OPTIX_CHECK(
+        optixSbtRecordPackHeader(
+            _hitgroupProgramGroup,
+            &_hitgroupSbtRecord
+        )
+    );
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void *>(_devHitgroupSbtRecord),
+            &_hitgroupSbtRecord,
+            hitGroupRecordSize,
+            cudaMemcpyHostToDevice
         )
     );
 }
