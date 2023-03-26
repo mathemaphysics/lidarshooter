@@ -12,6 +12,7 @@
 
 	// .globl	__raygen__rg
 .const .align 8 .b8 params[72];
+.global .align 4 .u32 _ZZN5Eigen8internal21transform_make_affineILi2EE3runINS_6MatrixIfLi4ELi4ELi0ELi4ELi4EEEEEvRT_E3Dim = 3;
 
 .visible .entry __raygen__rg()
 {

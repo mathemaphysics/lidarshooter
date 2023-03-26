@@ -39,40 +39,14 @@
 #include <optix_stubs.h>
 #include <sutil/Exception.h>
 
-
 namespace lidarshooter
 {
 
-struct Params
+template<typename T>
+struct _SbtRecord
 {
-    uchar4*                image;
-    unsigned int           image_width;
-    unsigned int           image_height;
-    float3                 cam_eye;
-    float3                 cam_u, cam_v, cam_w;
-    OptixTraversableHandle handle;
-};
-
-struct RayGenData
-{
-    // No data needed
-};
-
-struct MissData
-{
-    float3 bg_color;
-};
-
-struct HitGroupData
-{
-    // No data needed
-};
-
-template <typename T>
-struct SbtRecord
-{
-    __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-    T data;
+	__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+	T data;
 };
 
 class OptixTracer : public ITracer, public std::enable_shared_from_this<OptixTracer>
@@ -80,6 +54,34 @@ class OptixTracer : public ITracer, public std::enable_shared_from_this<OptixTra
 public:
     using Ptr = std::shared_ptr<OptixTracer>;
     using ConstPtr = std::shared_ptr<OptixTracer const>;
+
+	template<typename T>
+	using SbtRecord = struct _SbtRecord<T>;
+
+	using Params = struct
+	{
+		uchar4*                image;
+		unsigned int           image_width;
+		unsigned int           image_height;
+		float3                 cam_eye;
+		float3                 cam_u, cam_v, cam_w;
+		OptixTraversableHandle handle;
+	};
+
+	using RayGenData = struct
+	{
+		// No data needed
+	};
+
+	using MissData = struct
+	{
+		float3 bg_color;
+	};
+
+	using HitGroupData = struct
+	{
+		// No data needed
+	};
 
 	// Definitions for SBT records of each type, e.g. lidarshooter::OptixTracer::RayGenSbtRecord
 	using RayGenSbtRecord = SbtRecord<RayGenData>;

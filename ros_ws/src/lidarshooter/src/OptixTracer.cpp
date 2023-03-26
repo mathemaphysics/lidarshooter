@@ -72,8 +72,18 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
         std::forward_as_tuple(_meshName),
         std::forward_as_tuple(0)
     );
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&_devVertices[_meshName]), static_cast<size_t>(_numVertices * vertexSize)));
-    CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&_devElements[_meshName]), static_cast<size_t>(_numElements * elementSize)));
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void **>(&_devVertices[_meshName]),
+            static_cast<size_t>(_numVertices * vertexSize)
+        )
+    );
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void **>(&_devElements[_meshName]),
+            static_cast<size_t>(_numElements * elementSize)
+        )
+    );
 
     // Set allocate device data to location on optix build input
     _optixInputs[_meshName].triangleArray.vertexBuffers = &_devVertices[_meshName];
@@ -99,8 +109,52 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 
 int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
+    // Creates the CUDA stream which will run the pipeline
+    CUstream cuStream;
+    CUDA_CHECK(cudaStreamCreate(&cuStream));
+
+    // Declare the output space globally
+    Params params;
+    params.image = new uchar4[36];
+    params.image_width = 6;
+    params.image_height = 6;
+    params.handle = _gasHandle;
+    params.cam_eye = { 0.0, 0.0, 0.0 };
+
+    CUdeviceptr devParams;
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(devParams),
+            sizeof(params)
+        )
+    );
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void*>(devParams),
+            &params,
+            sizeof(params),
+            cudaMemcpyHostToDevice
+        )
+    );
+
     // First build the inputs and GAS
     buildAccelStructure();
+
+    // Launch the pipeline
+    OPTIX_CHECK(
+        optixLaunch(
+            _tracePipeline,
+            cuStream,
+            devParams,
+            sizeof(Params),
+            &_shaderBindingTable,
+            6,
+            6,
+            1
+        )
+    );
+    CUDA_SYNC_CHECK();
+
 
     return 0;
 }

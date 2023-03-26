@@ -74,7 +74,13 @@
         "typeindex": "cpp",
         "variant": "cpp",
         "geometry": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "csignal": "cpp",
+        "coroutine": "cpp",
+        "forward_list": "cpp",
+        "source_location": "cpp",
+        "valarray": "cpp",
+        "__nullptr": "cpp"
     },
     "cmake.sourceDirectory": "${workspaceFolder}/ros_ws/src"
 }
