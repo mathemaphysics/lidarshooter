@@ -10,6 +10,7 @@
  */
 
 #include "OptixTracer.hpp"
+#include "MeshTransformer.hpp"
 
 #include <utility>
 #include <vector>
@@ -100,6 +101,17 @@ int lidarshooter::OptixTracer::removeGeometry(const std::string& _meshName)
 
 int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh)
 {
+    // Now update the internal buffers to align with the mesh passed in
+    auto meshTransformer = MeshTransformer::create(_mesh, _transform, getSensorConfig());
+    auto verticesReference = _vertices.find(_meshName);
+    auto elementsReference = _elements.find(_meshName);
+    meshTransformer->transformIntoBuffer(
+        RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+        verticesReference->second,
+        elementsReference->second
+    );
+
+    // Commit the changes to this geometry
     return 0;
 }
 

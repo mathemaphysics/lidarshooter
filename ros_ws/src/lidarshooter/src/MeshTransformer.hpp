@@ -3,6 +3,7 @@
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
 
+#include <cuda_runtime.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/PCLPointCloud2.h>
@@ -84,6 +85,14 @@ public:
 	 * @param _elements Element destination buffer space
 	 */
 	void transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
+
+	/**
+	 * @brief Transforms the input mesh and puts result in buffer
+	 * 
+	 * @param _vertices Vertex destination buffer space
+	 * @param _elements Element destination buffer space
+	 */
+	void transformIntoBuffer(RTCGeometryType _geometryType, float3* _vertices, uint3* _elements);
 
 	/**
 	 * @brief Apply the stored transform to the target cloud
