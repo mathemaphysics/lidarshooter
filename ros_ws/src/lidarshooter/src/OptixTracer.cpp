@@ -40,6 +40,7 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
     const uint32_t buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
     _optixInputs[_meshName].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     _optixInputs[_meshName].triangleArray.flags = buildInputFlags;
+    _optixInputs[_meshName].triangleArray.numSbtRecords = 1;
     _optixInputs[_meshName].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
     _optixInputs[_meshName].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
     _optixInputs[_meshName].triangleArray.numVertices = static_cast<uint32_t>(_numVertices);
@@ -107,6 +108,13 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
     return 0;
 }
 
+int lidarshooter::OptixTracer::commitScene()
+{
+    buildAccelStructure();
+
+    return 0;
+}
+
 int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
     // Creates the CUDA stream which will run the pipeline
@@ -137,9 +145,6 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
         )
     );
 
-    // First build the inputs and GAS
-    buildAccelStructure();
-
     // Launch the pipeline
     OPTIX_CHECK(
         optixLaunch(
@@ -154,7 +159,6 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
         )
     );
     CUDA_SYNC_CHECK();
-
 
     return 0;
 }
@@ -185,13 +189,6 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
         );
     }
 
-    // Block for building the acceleration structure
-    {
-        _accelBuildOptions = {};
-        _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_NONE;
-        _accelBuildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
-    }
-
     // Build the modules and pipeline
     createModule();
     createProgramGroups();
@@ -211,6 +208,11 @@ void lidarshooter::OptixTracer::buildAccelStructure()
     std::vector<OptixBuildInput> buildInputArray;
     for (auto& [name, input] : _optixInputs)
         buildInputArray.push_back(input);
+
+    // Set the options
+    _accelBuildOptions = {};
+    _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_NONE;
+    _accelBuildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
 
     // Calculate the GAS buffer sizes
     OPTIX_CHECK(

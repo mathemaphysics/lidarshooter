@@ -29,11 +29,11 @@
             ]
         },
         {
-            "name": "(gdb) Debug OptixTracer Tests: Instantiate",
+            "name": "(gdb) Debug OptixTracer Tests: TraceSceneCloud",
             "type": "cppdbg",
             "request": "launch",
             "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/OptixTracer_test",
-            "args": [],
+            "args": ["--gtest_filter=OptixTracerTest.TraceSceneCloud"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

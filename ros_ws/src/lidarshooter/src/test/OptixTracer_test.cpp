@@ -40,7 +40,7 @@ protected:
         meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
         auto meshPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
         pcl::io::loadPolygonFileSTL(
-            (meshPath / "mesh/ben.stl").string(),
+            (meshPath / "mesh/ground.stl").string(),
             *meshData
         );
 
@@ -80,6 +80,21 @@ TEST_F(OptixTracerTest, InstantiateTest)
 {
     // Make sure geometry and buffer creation doesn't fail or complain
     EXPECT_NO_THROW();
+}
+
+TEST_F(OptixTracerTest, TraceSceneCloud)
+{
+    // Must call this to initialize ros::Time for LidarDevice::initMessage
+    ros::Time::init();
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
+    );
+    optixTracer->commitScene();
+    //EXPECT_NO_FATAL_FAILURE(
+    //    optixTracer->traceScene(0)
+    //);
+    //auto cloud = optixTracer->getTraceCloud();
+    //EXPECT_EQ(cloud->width * cloud->height, 235);
 }
 
 }

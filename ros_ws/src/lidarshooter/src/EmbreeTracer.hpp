@@ -141,6 +141,13 @@ public:
 	int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh);
 
 	/**
+	 * @brief Commits geometry changes to the scene
+	 * 
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	int commitScene();
+
+	/**
 	 * @brief Traces the scene and puts the result in \c _traceCloud
 	 * 
 	 * @return int Returns 0 if all went well, < 0 otherwise
@@ -208,18 +215,6 @@ public:
 				_meshName
 			)
 		);
-
-		return 0;
-	}
-
-	/**
-	 * @brief Commits geometry changes to the scene
-	 * 
-	 * @return int Returns 0 if all went well, < 0 otherwise
-	 */
-	inline int commitScene()
-	{
-		rtcCommitScene(_scene);
 
 		return 0;
 	}

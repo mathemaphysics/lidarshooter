@@ -76,6 +76,13 @@ public:
 	virtual int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh) = 0;
 
 	/**
+	 * @brief Does all the finalization that is required before computing
+	 * 
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	virtual int commitScene() = 0;
+
+	/**
 	 * @brief Traces the scene and puts the result in \c _traceCloud
 	 * 
 	 * @return int Returns 0 if all went well, < 0 otherwise

@@ -96,6 +96,7 @@ public:
 	int removeGeometry(const std::string& _meshName);
 	int updateGeometry(const std::string& _meshName, Eigen::Affine3f _transform, pcl::PolygonMesh::Ptr& _mesh);
 	int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh);
+	int commitScene();
 	int traceScene(std::uint32_t _frameIndex);
 
 private:

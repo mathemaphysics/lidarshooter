@@ -287,6 +287,13 @@ int lidarshooter::EmbreeTracer::updateGeometry(const std::string& _meshName, Eig
     return commitGeometry(_meshName);
 }
 
+int lidarshooter::EmbreeTracer::commitScene()
+{
+    rtcCommitScene(_scene);
+
+    return 0;
+}
+
 int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
 {
     getSensorConfig()->initMessage(getTraceCloud(), ++_frameIndex);
