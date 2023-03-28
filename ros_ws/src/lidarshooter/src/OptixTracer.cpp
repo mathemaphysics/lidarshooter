@@ -111,6 +111,26 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
         elementsReference->second
     );
 
+    // Now copy the resulting vertices and elements into the device memory
+    const size_t verticesSize = sizeof(float3) * verticesReference->second.size();
+    const size_t elementsSize = sizeof(uint3) * elementsReference->second.size();
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void *>(_devVertices[_meshName]),
+            verticesReference->second.data(),
+            verticesSize,
+            cudaMemcpyHostToDevice
+        )
+    );
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void *>(_devElements[_meshName]),
+            elementsReference->second.data(),
+            elementsSize,
+            cudaMemcpyHostToDevice
+        )
+    );
+
     // Commit the changes to this geometry
     return 0;
 }

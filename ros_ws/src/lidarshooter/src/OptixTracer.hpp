@@ -119,7 +119,7 @@ private:
 	// In local memory storage of vertices and elements
 	std::map<const std::string, OptixBuildInput> _optixInputs;
 	std::map<const std::string, std::vector<float3>> _vertices;
-	std::map<const std::string, std::vector<int3>> _elements;
+	std::map<const std::string, std::vector<uint3>> _elements;
 	std::map<const std::string, CUdeviceptr> _devVertices;
 	std::map<const std::string, CUdeviceptr> _devElements;
 

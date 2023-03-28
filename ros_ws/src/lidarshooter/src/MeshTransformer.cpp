@@ -5,8 +5,6 @@
 
 #include <embree3/rtcore.h>
 
-#include <sutil/Scene.h>
-
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -206,7 +204,7 @@ void lidarshooter::MeshTransformer::transformIntoBuffer(RTCGeometryType _geometr
         threadItr->join();
 }
 
-void lidarshooter::MeshTransformer::transformIntoBuffer(RTCGeometryType _geometryType, float3*_vertices, uint3*_elements)
+void lidarshooter::MeshTransformer::transformIntoBuffer(RTCGeometryType _geometryType, std::vector<float3>& _vertices, std::vector<uint3>& _elements)
 {
     if (_mesh == nullptr)
     {
@@ -236,7 +234,7 @@ void lidarshooter::MeshTransformer::transformIntoBuffer(RTCGeometryType _geometr
 
         // Start thread index threadIdx
         threads.emplace_back(
-            [this, numIterations, threadIdx, startPointIndex, _vertices]() {
+            [this, numIterations, threadIdx, startPointIndex, &_vertices]() {
                 for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
                 {
                     // No mutex required since we're accessing different locations
@@ -255,9 +253,74 @@ void lidarshooter::MeshTransformer::transformIntoBuffer(RTCGeometryType _geometr
                     _config->originToSensor(ptrans);
                 
                     // Put it into the buffer
-                    _vertices[3 * jdx + 0] = ptrans.x();
-                    _vertices[3 * jdx + 1] = ptrans.y();
-                    _vertices[3 * jdx + 2] = ptrans.z();
+                    _vertices[jdx].x = ptrans.x();
+                    _vertices[jdx].y = ptrans.y();
+                    _vertices[jdx].z = ptrans.z();
+                }
+            }
+        );
+
+        // Each block might be different size
+        startPointIndex += numIterations;
+    }
+
+    // For the sake of sanity block here
+    for (auto threadItr = threads.begin(); threadItr != threads.end(); ++threadItr)
+        threadItr->join();
+}
+
+void lidarshooter::MeshTransformer::transformIntoBuffer(RTCGeometryType _geometryType, std::vector<float3>& _vertices, std::vector<uint4>& _elements)
+{
+    if (_mesh == nullptr)
+    {
+        throw(MeshNotSetException(
+            __FILE__,
+            "No mesh data to operate on",
+            2
+        ));
+    }
+
+    // TODO: Copy the elements only once; add a bool _elementsAdded variables
+    copyElementsIntoBuffer(_geometryType, _elements);
+
+    // TODO: This should be threaded
+    unsigned int numTotalPoints = _mesh->cloud.width * _mesh->cloud.height;
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int startPointIndex = 0;
+
+    // Overall: for (std::size_t jdx = 0; jdx < numTotalPoint; ++jdx)
+    std::vector<std::thread> threads;
+    for (int threadIdx = 0; threadIdx < numThreads; ++threadIdx)
+    {
+        // Number of iterations for the current threadIdx
+        unsigned int numIterations =
+            numTotalPoints / numThreads
+                + (threadIdx < numTotalPoints % numThreads ? 1 : 0);
+
+        // Start thread index threadIdx
+        threads.emplace_back(
+            [this, numIterations, threadIdx, startPointIndex, &_vertices]() {
+                for (std::size_t jdx = startPointIndex; jdx < startPointIndex + numIterations; ++jdx)
+                {
+                    // No mutex required since we're accessing different locations
+                    auto rawData = _mesh->cloud.data.data() + jdx * _mesh->cloud.point_step;
+
+                    // TODO: Generalize this to what will likely be different point types
+                    float px, py, pz;
+                    auto point = lidarshooter::XYZIRPoint(rawData);
+                    point.getPoint(&px, &py, &pz, nullptr, nullptr);
+
+                    // Rotate into the local coordinate frame for this device
+                    Eigen::Vector3f ptrans(px, py, pz);
+
+                    // Apply the affine transformation and then transf
+                    ptrans = _transform * ptrans;
+                    _config->originToSensor(ptrans);
+                
+                    // Put it into the buffer
+                    _vertices[jdx].x = ptrans.x();
+                    _vertices[jdx].y = ptrans.y();
+                    _vertices[jdx].z = ptrans.z();
                 }
             }
         );
@@ -486,4 +549,99 @@ void lidarshooter::MeshTransformer::copyElementsIntoBuffer(RTCGeometryType _geom
             break;
     }
 
+}
+
+void lidarshooter::MeshTransformer::copyElementsIntoBuffer(RTCGeometryType _geometryType, std::vector<uint3> &_elements)
+{
+    // Cannot do anything if mesh isn't set
+    if (_mesh == nullptr)
+    {
+        throw(MeshNotSetException(
+            __FILE__,
+            "No mesh data to operate on",
+            2
+        ));
+    }
+
+    // Make sure we have the correct geometry type
+    std::size_t idx = 0;
+    switch(_geometryType)
+    {
+        case RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE:
+            if (_mesh->polygons[0].vertices.size() != 3)
+                throw(BadGeometryException(
+                    __FILE__,
+                    "Geometry does not match element vertex count",
+                    1,
+                    _geometryType
+                ));
+
+            // First set the elements once
+            for (auto poly : _mesh->polygons)
+            {
+                _elements[idx].x = poly.vertices[0];
+                _elements[idx].y = poly.vertices[1];
+                _elements[idx].z = poly.vertices[2];
+                ++idx;
+            }
+
+            break;
+        default:
+            if (_mesh->polygons[0].vertices.size() != 4)
+                throw(BadGeometryException(
+                    __FILE__,
+                    "Geometry is unimplemented at the moment",
+                    3,
+                    _geometryType
+                ));
+            break;
+    }
+}
+
+void lidarshooter::MeshTransformer::copyElementsIntoBuffer(RTCGeometryType _geometryType, std::vector<uint4> &_elements)
+{
+    // Cannot do anything if mesh isn't set
+    if (_mesh == nullptr)
+    {
+        throw(MeshNotSetException(
+            __FILE__,
+            "No mesh data to operate on",
+            2
+        ));
+    }
+
+    // Make sure we have the correct geometry type
+    std::size_t idx = 0;
+    switch(_geometryType)
+    {
+        case RTCGeometryType::RTC_GEOMETRY_TYPE_QUAD:
+            if (_mesh->polygons[0].vertices.size() != 4)
+                throw(BadGeometryException(
+                    __FILE__,
+                    "Geometry does not match element vertex count",
+                    2,
+                    _geometryType
+                ));
+
+            // First set the elements once
+            for (auto poly : _mesh->polygons)
+            {
+                _elements[idx].w = poly.vertices[0];
+                _elements[idx].x = poly.vertices[1];
+                _elements[idx].y = poly.vertices[2];
+                _elements[idx].z = poly.vertices[3];
+                ++idx;
+            }
+
+            break;
+        default:
+            if (_mesh->polygons[0].vertices.size() != 4)
+                throw(BadGeometryException(
+                    __FILE__,
+                    "Geometry is unimplemented at the moment",
+                    3,
+                    _geometryType
+                ));
+            break;
+    }
 }
