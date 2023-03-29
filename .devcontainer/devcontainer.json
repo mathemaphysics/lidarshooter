@@ -46,7 +46,8 @@
 		"mischelebuha.cmake-extension-pack",
 		"ms-iot.vscode-ros",
 		"wayou.vscode-todo-highlight",
-		"Gruntfuggly.todo-tree"
+		"Gruntfuggly.todo-tree",
+		"gkarlos.vscode-ptx-syntax"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
