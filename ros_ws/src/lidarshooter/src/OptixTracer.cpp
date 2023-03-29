@@ -43,7 +43,9 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
     _optixInputs[_meshName].triangleArray.flags = buildInputFlags;
     _optixInputs[_meshName].triangleArray.numSbtRecords = 1;
     _optixInputs[_meshName].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+    _optixInputs[_meshName].triangleArray.vertexStrideInBytes = sizeof(float3);
     _optixInputs[_meshName].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+    _optixInputs[_meshName].triangleArray.indexStrideInBytes = sizeof(uint3);
     _optixInputs[_meshName].triangleArray.numVertices = static_cast<uint32_t>(_numVertices);
     _optixInputs[_meshName].triangleArray.numIndexTriplets = static_cast<uint32_t>(_numElements);
 
@@ -238,7 +240,7 @@ void lidarshooter::OptixTracer::buildAccelStructure()
 {
     // Stack all the build inputs into an array
     std::vector<OptixBuildInput> buildInputArray;
-    for (auto& [name, input] : _optixInputs)
+    for (auto [name, input] : _optixInputs)
         buildInputArray.push_back(input);
 
     // Set the options
@@ -288,12 +290,12 @@ void lidarshooter::OptixTracer::buildAccelStructure()
         )
     );
 
-    // The GAS temp buffer is no longer needed now
-    CUDA_CHECK(
-        cudaFree(
-            reinterpret_cast<void**>(&_devGasTempBuffer)
-        )
-    );
+    //// The GAS temp buffer is no longer needed now
+    //CUDA_CHECK(
+    //    cudaFree(
+    //        reinterpret_cast<void**>(&_devGasTempBuffer)
+    //    )
+    //);
 }
 
 void lidarshooter::OptixTracer::createModule()
@@ -338,7 +340,7 @@ void lidarshooter::OptixTracer::createProgramGroups()
     _raygenProgramGroupDescription.raygen.module = _traceModule;
     _raygenProgramGroupDescription.raygen.entryFunctionName = "__raygen__rg";
     
-    // Creat raygen program group
+    // Create raygen program group
     OPTIX_CHECK_LOG(
         optixProgramGroupCreate(
             _devContext,
@@ -408,6 +410,11 @@ void lidarshooter::OptixTracer::linkPipeline()
             &_tracePipeline
         )
     );
+
+    for (auto &programGroup : programGroups)
+    {
+        OPTIX_CHECK(optixUtilAccumulateStackSizes(programGroup, &_stackSizes));
+    }
 
     // Calculate and set stack sizes
     OPTIX_CHECK(
