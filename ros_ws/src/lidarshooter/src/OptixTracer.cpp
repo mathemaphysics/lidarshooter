@@ -289,13 +289,6 @@ void lidarshooter::OptixTracer::buildAccelStructure()
             0
         )
     );
-
-    //// The GAS temp buffer is no longer needed now
-    //CUDA_CHECK(
-    //    cudaFree(
-    //        reinterpret_cast<void**>(&_devGasTempBuffer)
-    //    )
-    //);
 }
 
 void lidarshooter::OptixTracer::createModule()
