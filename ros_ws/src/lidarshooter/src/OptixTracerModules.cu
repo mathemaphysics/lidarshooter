@@ -46,20 +46,6 @@ static __forceinline__ __device__ void setPayload( float3 p )
     optixSetPayload_2( __float_as_uint( p.z ) );
 }
 
-static __forceinline__ __device__ void computeRay( uint3 idx, uint3 dim, float3& origin, float3& direction )
-{
-    const float3 U = params.cam_u;
-    const float3 V = params.cam_v;
-    const float3 W = params.cam_w;
-    const float2 d = 2.0f * make_float2(
-            static_cast<float>( idx.x ) / static_cast<float>( dim.x ),
-            static_cast<float>( idx.y ) / static_cast<float>( dim.y )
-            ) - 1.0f;
-
-    origin    = params.cam_eye;
-    direction = normalize( d.x * U + d.y * V + W );
-}
-
 extern "C" __global__ void __raygen__rg()
 {
     // Lookup our location within the launch grid
@@ -68,15 +54,19 @@ extern "C" __global__ void __raygen__rg()
 
     // Map our launch idx to a screen location and create a ray from the camera
     // location through the screen
-    float3 ray_origin, ray_direction;
-    computeRay( idx, dim, ray_origin, ray_direction );
+    float3 rayOrigin, rayDirection;
+    unsigned int linearIndex = idx.z * dim.y * dim.x + idx.y * dim.x + idx.x;
+
+    // No need to do any work if we have no ray
+    if (linearIndex > params.numRays)
+        return;
 
     // Trace the ray against our scene hierarchy
     unsigned int p0, p1, p2;
     optixTrace(
             params.handle,
-            ray_origin,
-            ray_direction,
+            params.origin[linearIndex],
+            params.direction[linearIndex],
             0.0f,                // Min intersection distance
             1e16f,               // Max intersection distance
             0.0f,                // rayTime -- used for motion blur
@@ -92,7 +82,7 @@ extern "C" __global__ void __raygen__rg()
     result.z = __uint_as_float( p2 );
 
     // Record results in our output raster
-    params.image[idx.y * params.image_width + idx.x] = make_color( result );
+    //params.image[idx.y * params.image_width + idx.x] = make_color( result );
 }
 
 extern "C" __global__ void __miss__ms()

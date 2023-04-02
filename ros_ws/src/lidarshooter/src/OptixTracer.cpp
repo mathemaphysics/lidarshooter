@@ -157,11 +157,11 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 
     // Declare the output space globally
     Params params;
-    params.image = new uchar4[36];
-    params.image_width = 6;
-    params.image_height = 6;
     params.handle = _gasHandle;
-    params.cam_eye = { 0.0, 0.0, 0.0 };
+    
+    // TODO: Define the input rays here; move later
+    params.origin = {};
+    params.direction = {};
 
     CUdeviceptr devParams;
     CUDA_CHECK(
