@@ -302,8 +302,8 @@ void lidarshooter::OptixTracer::createModule()
     _traceModuleCompileOptions = {};
     _pipelineCompileOptions.usesMotionBlur = false;
     _pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-    _pipelineCompileOptions.numPayloadValues = 3; // TODO: Update this; it isn't right for this code
-    _pipelineCompileOptions.numAttributeValues = 3; // TODO: Update this; it isn't right for this code
+    _pipelineCompileOptions.numPayloadValues = 1; // TODO: Update this; it isn't right for this code
+    _pipelineCompileOptions.numAttributeValues = 1; // TODO: Update this; it isn't right for this code
 #ifdef LIDARSHOOTER_OPTIX_DEBUG // Enables debug exceptions during optix launches. This may incur significant performance cost and should only be done during development.
     _pipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_DEBUG | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
 #else

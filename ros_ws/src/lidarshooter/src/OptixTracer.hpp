@@ -63,6 +63,7 @@ public:
 		unsigned int		   numRays;
 		float3*                origin;
 		float3*				   direction;
+		float*				   tmin;
 		OptixTraversableHandle handle;
 	};
 
