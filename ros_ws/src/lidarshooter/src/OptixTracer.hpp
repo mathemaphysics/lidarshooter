@@ -58,13 +58,26 @@ public:
 	template<typename T>
 	using SbtRecord = struct _SbtRecord<T>;
 
+	using Ray = struct
+	{
+		float3 origin;
+		float  tmin;
+		float3 direction;
+		float  tmax;
+	};
+
+	using Hit = struct
+	{
+		float  t;
+		float3 normal;
+	};
+
 	using Params = struct
 	{
-		unsigned int		   numRays;
-		float3*                origin;
-		float3*				   direction;
-		float*				   tmin;
 		OptixTraversableHandle handle;
+		unsigned int numberOfRays;
+		Ray* rays;
+		Hit* hits;
 	};
 
 	using RayGenData = struct

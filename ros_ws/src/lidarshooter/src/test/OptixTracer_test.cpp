@@ -90,9 +90,9 @@ TEST_F(OptixTracerTest, TraceSceneCloud)
         optixTracer->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
     );
     optixTracer->commitScene();
-    //EXPECT_NO_FATAL_FAILURE(
-    //    optixTracer->traceScene(0)
-    //);
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->traceScene(0)
+    );
     //auto cloud = optixTracer->getTraceCloud();
     //EXPECT_EQ(cloud->width * cloud->height, 235);
 }

@@ -158,23 +158,47 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     // Declare the output space globally
     Params params;
     params.handle = _gasHandle;
-    
-    // TODO: Define the input rays here; move later
-    params.origin = {};
-    params.direction = {};
+
+    // Declare temp space for the rays
+    auto sensorConfig = getSensorConfig();
+    auto numberOfRays = sensorConfig->getTotalRays();
+    params.numberOfRays = numberOfRays;
+
+    // Allocate the space for rays and hits on device
+    lidarshooter::OptixTracer::Ray* devRays = 0;
+    lidarshooter::OptixTracer::Hit* devHits = 0;
+
+    // Allocate the ray and hit arrays on device
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(&devRays),
+            numberOfRays * sizeof(lidarshooter::OptixTracer::Ray)
+        )
+    );
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(&devHits),
+            numberOfRays * sizeof(lidarshooter::OptixTracer::Hit)
+        )
+    );
+
+    // Allocate the space on the device too
+    params.rays = devRays;
+    params.hits = devHits;
+    params.handle = _gasHandle;
 
     CUdeviceptr devParams;
     CUDA_CHECK(
         cudaMalloc(
-            reinterpret_cast<void**>(devParams),
-            sizeof(params)
+            reinterpret_cast<void**>(&devParams),
+            sizeof(lidarshooter::OptixTracer::Params)
         )
     );
     CUDA_CHECK(
         cudaMemcpy(
             reinterpret_cast<void*>(devParams),
             &params,
-            sizeof(params),
+            sizeof(lidarshooter::OptixTracer::Params),
             cudaMemcpyHostToDevice
         )
     );
@@ -187,8 +211,8 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
             devParams,
             sizeof(Params),
             &_shaderBindingTable,
-            6,
-            6,
+            numberOfRays,
+            1,
             1
         )
     );

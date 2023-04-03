@@ -50,27 +50,28 @@ extern "C" __global__ void __raygen__rg()
     unsigned int linearIndex = idx.z * dim.y * dim.x + idx.y * dim.x + idx.x;
 
     // No need to do any work if we have no ray
-    if (linearIndex > params.numRays)
+    if (linearIndex > params.numberOfRays)
         return;
 
     // Trace the ray against our scene hierarchy
     unsigned int tmin;
     optixTrace(
-            params.handle,
-            params.origin[linearIndex],
-            params.direction[linearIndex],
-            0.0f,                // Min intersection distance
-            1e16f,               // Max intersection distance
-            0.0f,                // rayTime -- used for motion blur
-            OptixVisibilityMask( 255 ), // Specify always visible
-            OPTIX_RAY_FLAG_NONE,
-            0,                   // SBT offset   -- See SBT discussion
-            1,                   // SBT stride   -- See SBT discussion
-            0,                   // missSBTIndex -- See SBT discussion
-            tmin );
-    
+        params.handle,
+        params.rays[linearIndex].origin,
+        params.rays[linearIndex].direction,
+        0.0f,                     // Min intersection distance
+        1e16f,                    // Max intersection distance
+        0.0f,                     // rayTime -- used for motion blur
+        OptixVisibilityMask(255), // Specify always visible
+        OPTIX_RAY_FLAG_NONE,
+        0, // SBT offset   -- See SBT discussion
+        1, // SBT stride   -- See SBT discussion
+        0, // missSBTIndex -- See SBT discussion
+        tmin
+    );
+
     // Set the output tmin to the same index
-    params.tmin[linearIndex] = __uint_as_float( tmin );
+    params.hits[linearIndex].t = __uint_as_float(tmin);
 }
 
 extern "C" __global__ void __miss__ms()
