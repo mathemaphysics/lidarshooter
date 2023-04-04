@@ -539,6 +539,13 @@ void lidarshooter::OptixTracer::setupSbtRecords()
     _shaderBindingTable.hitgroupRecordCount = 1;
 }
 
+void lidarshooter::OptixTracer::insertRaysToTrace()
+{
+    auto config = getSensorConfig();
+    lidarshooter::OptixTracer::Ray ray;
+    
+}
+
 bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)
 {
     // Try to open file
