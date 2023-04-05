@@ -27,6 +27,8 @@
 
 #include <Eigen/Dense>
 
+#include <optix.h>
+
 #define NEXT_RAY_BASE nextRay
 #define NEXT_RAY(__rayhit, __valid) LIDARSHOOTER_GLUE(NEXT_RAY_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__rayhit, __valid)
 
@@ -200,6 +202,22 @@ public:
      * @return int State of the system; 1 means all rays have been returns, 0 means continue
      */
     int nextRay16(RTCRayHit16& _ray, int *_valid);
+
+    /**
+     * @brief Generates all of the rays for this device and puts them in \c _ray .
+     * 
+     * @param _rays The location to which to output all the rays
+     * @return int Success if 0 else something else
+     */
+    int allRays(std::vector<RTCRayHit>& _rays);
+
+    /**
+     * @brief Generates all of the rays for this device and puts them in the GPU memory position \c _ray .
+     * 
+     * @param _rays The location in GPU memory to output all the rays
+     * @return int Success if 0 otherwise something else
+     */
+    int allRaysGPU(CUdeviceptr _rays);
 
     /**
      * @brief Transforms an origin-basis coordinate to sensor coordinates

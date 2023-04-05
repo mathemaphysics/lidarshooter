@@ -364,7 +364,17 @@ int lidarshooter::LidarDevice::nextRay16(RTCRayHit16& _ray, int *_valid)
     return 0;
 }
 
-void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor) const
+int lidarshooter::LidarDevice::allRays(std::vector<RTCRayHit> &_rays)
+{
+    return 0;
+}
+
+int lidarshooter::LidarDevice::allRaysGPU(CUdeviceptr _rays)
+{
+    return 0;
+}
+
+void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f &_sensor) const
 {
     Eigen::Vector3f translated = _sensor - Eigen::Vector3f(
         _device.transform.baseToOrigin.tx,
