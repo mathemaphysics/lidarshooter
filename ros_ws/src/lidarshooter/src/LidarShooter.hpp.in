@@ -68,4 +68,11 @@ namespace lidarshooter
  * Turn this off if you're not debugging; it will slow things down.
  */
 #cmakedefine LIDARSHOOTER_OPTIX_DEBUG
+
+/**
+ * @brief This path must be set to point at the directory containing the PTX modules
+ * 
+ * If this path is not set or is incorrect the build will finish successfully but the
+ * PTX source will not be found at runtime and the SBT will fail to build.
+ */
 #define LIDARSHOOTER_OPTIX_MODULE_DIR "@CMAKE_SOURCE_DIR@/lidarshooter/src"
