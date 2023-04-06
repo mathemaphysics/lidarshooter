@@ -396,6 +396,7 @@ int lidarshooter::LidarDevice::allRays(std::vector<RTCRayHit> &_rays)
         _rays[rayIndex].ray.tfar = std::numeric_limits<float>::infinity();
         _rays[rayIndex].hit.geomID = RTC_INVALID_GEOMETRY_ID;
 
+        // Increment to the next net ray index
         ++rayIndex;
     }
 
