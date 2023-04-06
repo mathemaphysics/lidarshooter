@@ -366,6 +366,39 @@ int lidarshooter::LidarDevice::nextRay16(RTCRayHit16& _ray, int *_valid)
 
 int lidarshooter::LidarDevice::allRays(std::vector<RTCRayHit> &_rays)
 {
+    // Clear it an
+    _rays.resize(getTotalRays());
+
+    // Stick 'em in there
+    int rayIndex = 0;
+    for (auto verticalAngle : _channels.vertical)
+        for (auto horizontalAngle = _channels.horizontal.range.begin;
+            horizontalAngle < _channels.horizontal.range.end;
+            horizontalAngle += _channels.horizontal.step)
+    {
+        // Convert to LiDAR coordinates
+        float theta = (90.0 - verticalAngle) * M_PI / 180.0; // Convert from chi in degrees to theta in radians
+        float phi = horizontalAngle * M_PI / 180.0; // Just convert to radians
+
+        // The normalized direction to trace
+        float dx = std::sin(theta) * std::cos(phi);
+        float dy = std::sin(theta) * std::sin(phi);
+        float dz = std::cos(theta);
+
+        // Set the ray and hit details
+        _rays[rayIndex].ray.org_x = 0.f;
+        _rays[rayIndex].ray.org_y = 0.f;
+        _rays[rayIndex].ray.org_z = 0.f;
+        _rays[rayIndex].ray.dir_x = dx;
+        _rays[rayIndex].ray.dir_y = dy;
+        _rays[rayIndex].ray.dir_z = dz;
+        _rays[rayIndex].ray.tnear = 0.f;
+        _rays[rayIndex].ray.tfar = std::numeric_limits<float>::infinity();
+        _rays[rayIndex].hit.geomID = RTC_INVALID_GEOMETRY_ID;
+
+        ++rayIndex;
+    }
+
     return 0;
 }
 
