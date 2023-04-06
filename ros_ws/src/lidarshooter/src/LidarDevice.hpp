@@ -27,7 +27,9 @@
 
 #include <Eigen/Dense>
 
+#ifdef LIDARSHOOTER_OPTIX_FOUND
 #include <optix.h>
+#endif
 
 #define NEXT_RAY_BASE nextRay
 #define NEXT_RAY(__rayhit, __valid) LIDARSHOOTER_GLUE(NEXT_RAY_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__rayhit, __valid)

@@ -53,3 +53,19 @@ namespace lidarshooter
  * the very least 16 bytes; we'll stick with 32 for now
  */
 #define LIDARSHOOTER_EMBREE_BUFFER_PADDING 32
+
+/**
+ * @brief Indicates whether or not NVIDIA OptiX SDK was found
+ * 
+ * This is important and affects a few different places in the code, including
+ * \c OptixTracer and \c LidarDevice classes.
+ */
+#cmakedefine LIDARSHOOTER_OPTIX_FOUND
+
+/**
+ * @brief Setting this to true in the CMakeLists.txt will turn on debugging output.
+ * 
+ * Turn this off if you're not debugging; it will slow things down.
+ */
+#cmakedefine LIDARSHOOTER_OPTIX_DEBUG
+#define LIDARSHOOTER_OPTIX_MODULE_DIR "@CMAKE_SOURCE_DIR@/lidarshooter/src"

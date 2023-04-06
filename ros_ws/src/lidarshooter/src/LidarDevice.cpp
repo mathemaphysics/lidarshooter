@@ -403,10 +403,14 @@ int lidarshooter::LidarDevice::allRays(std::vector<RTCRayHit> &_rays)
     return 0;
 }
 
+#ifdef LIDARSHOOTER_OPTIX_FOUND
 int lidarshooter::LidarDevice::allRaysGPU(CUdeviceptr _rays)
 {
+    
+
     return 0;
 }
+#endif
 
 void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f &_sensor) const
 {
