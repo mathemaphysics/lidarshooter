@@ -407,6 +407,8 @@ int lidarshooter::LidarDevice::allRays(std::vector<RTCRayHit> &_rays)
 
 int lidarshooter::LidarDevice::allRaysGPU(CUdeviceptr _rays)
 {
+    
+
     return 0;
 }
 

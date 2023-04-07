@@ -27,8 +27,6 @@
 
 #include <Eigen/Dense>
 
-#include "OptixTracerConfig.hpp"
-
 #ifdef LIDARSHOOTER_OPTIX_FOUND
 #include <optix.h>
 #endif

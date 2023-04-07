@@ -267,7 +267,7 @@ message(STATUS "Could not find the OptiX library")
 endif()
 
 # Generate Optix debugging header for LidarShooter.hpp
-configure_file(src/OptixTracerConfig.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/OptixTracerConfig.hpp)
+configure_file(src/LidarShooter.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/LidarShooter.hpp)
 
 ###########################
 ## LiDARShooter Frontend ##
@@ -376,6 +376,7 @@ add_library(lidarshooter
     src/XYZIRBytes.cpp
     src/XYZIRPoint.cpp
     src/LidarDevice.cpp
+    src/LidarDeviceKernels.cu
     src/MeshProjector.cpp
     src/CloudTransformer.cpp
     src/MeshTransformer.cpp

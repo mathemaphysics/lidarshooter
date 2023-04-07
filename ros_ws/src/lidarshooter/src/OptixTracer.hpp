@@ -12,7 +12,6 @@
 #pragma once
 
 #include "LidarShooter.hpp"
-#include "OptixTracerConfig.hpp"
 
 #include <string>
 #include <map>
