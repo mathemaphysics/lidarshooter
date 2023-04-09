@@ -370,13 +370,12 @@ add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
 ## LiDARShooter Library ##
 ##########################
 
-add_library(lidarshooter
+set(LIBRARY_TARGETS 
     src/IntBytes.cpp
     src/FloatBytes.cpp
     src/XYZIRBytes.cpp
     src/XYZIRPoint.cpp
     src/LidarDevice.cpp
-    src/LidarDeviceKernels.cu
     src/MeshProjector.cpp
     src/CloudTransformer.cpp
     src/MeshTransformer.cpp
@@ -387,6 +386,13 @@ add_library(lidarshooter
     src/OptixTracer.cpp
     src/Ray.cpp
     src/Hit.cpp)
+
+if (LIDARSHOOTER_OPTIX_FOUND)
+list(APPEND LIBRARY_TARGETS "src/LidarDeviceKernels.cu")
+endif()
+
+add_library(lidarshooter ${LIBRARY_TARGETS})
+
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 if (ENABLE_OPENACC)
     target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
