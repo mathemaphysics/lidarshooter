@@ -71,7 +71,9 @@ extern "C" __global__ void __raygen__rg()
     );
 
     // Set the output tmin to the same index
-    params.hits[linearIndex].t = __uint_as_float(tmin);
+    lidarshooter::Hit newHit;
+    newHit.t = __uint_as_float(tmin);
+    params.hits[linearIndex] = newHit;
 }
 
 extern "C" __global__ void __miss__ms()
@@ -83,7 +85,7 @@ extern "C" __global__ void __closesthit__ch()
 {
     // When built-in triangle intersection is used, a number of fundamental
     // attributes are provided by the OptiX API, indlucing barycentric coordinates.
-    const float tmin = optixGetRayTmin();    
+    const float tmin = optixGetRayTmax();
 
     optixSetPayload_0(__float_as_uint(tmin));
 }

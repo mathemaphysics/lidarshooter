@@ -203,6 +203,9 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
         )
     );
 
+    // Insert the rays to trace
+    sensorConfig->allRaysGPU(params.rays);
+
     // Launch the pipeline
     OPTIX_CHECK(
         optixLaunch(
@@ -217,6 +220,20 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
         )
     );
     CUDA_SYNC_CHECK();
+
+    // Copy results back home
+    auto resultHits = new lidarshooter::Hit[numberOfRays];
+    CUDA_CHECK(
+        cudaMemcpy(
+            static_cast<void*>(resultHits),
+            static_cast<void*>(params.hits),
+            numberOfRays * sizeof(lidarshooter::Hit),
+            cudaMemcpyDeviceToHost
+        )
+    );
+
+    // Cleanup
+    delete [] resultHits;
 
     return 0;
 }
@@ -320,7 +337,7 @@ void lidarshooter::OptixTracer::createModule()
     // The module source in loaded and compiled on-the-fly
     std::string moduleSource;
     auto moduleSourcePath = std::filesystem::path(LIDARSHOOTER_OPTIX_MODULE_DIR);
-    getInputDataFromFile(moduleSource, (moduleSourcePath / "OptixTracerModules.ptx").string());
+    getInputDataFromFile(moduleSource, (moduleSourcePath / "OptixTracerModules.optixir").string());
 
     // Set the module and pipeline compile options
     _traceModuleCompileOptions = {};
@@ -537,13 +554,6 @@ void lidarshooter::OptixTracer::setupSbtRecords()
     _shaderBindingTable.hitgroupRecordBase = _devHitgroupSbtRecord;
     _shaderBindingTable.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
     _shaderBindingTable.hitgroupRecordCount = 1;
-}
-
-void lidarshooter::OptixTracer::insertRaysToTrace()
-{
-    auto config = getSensorConfig();
-    lidarshooter::Ray ray;
-    //config->allRaysGPU();
 }
 
 bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)

@@ -11,7 +11,7 @@
 #include <optix_stubs.h>
 #include <sutil/Exception.h>
 
-__global__ void allRaysGPUKernel(lidarshooter::Ray *_raysOnDevice, int _verticalCount, int _horizontalCount, float *_verticalAngles, float *_horizontalAngles)
+__global__ void allRaysGPUKernel(lidarshooter::Ray *_devRays, int _verticalCount, int _horizontalCount, float *_verticalAngles, float *_horizontalAngles)
 {
     // Find out which ray we are in the device output
     int verticalIndex = threadIdx.x + blockIdx.x * blockDim.x;
@@ -26,12 +26,12 @@ __global__ void allRaysGPUKernel(lidarshooter::Ray *_raysOnDevice, int _vertical
     float phi = _horizontalAngles[horizontalIndex] * M_PI / 180.0;          // Just convert to radians
 
     int rayIndex = verticalIndex * _horizontalCount + horizontalIndex;
-    _raysOnDevice[rayIndex].origin.x = 0.0f;
-    _raysOnDevice[rayIndex].origin.y = 0.0f;
-    _raysOnDevice[rayIndex].origin.z = 0.0f;
-    _raysOnDevice[rayIndex].direction.x = std::sin(theta) * std::cos(phi);
-    _raysOnDevice[rayIndex].direction.y = std::sin(theta) * std::sin(phi);
-    _raysOnDevice[rayIndex].direction.z = std::cos(theta);
+    _devRays[rayIndex].origin.x = 0.0f;
+    _devRays[rayIndex].origin.y = 0.0f;
+    _devRays[rayIndex].origin.z = 0.0f;
+    _devRays[rayIndex].direction.x = std::sin(theta) * std::cos(phi);
+    _devRays[rayIndex].direction.y = std::sin(theta) * std::sin(phi);
+    _devRays[rayIndex].direction.z = std::cos(theta);
 }
 
 inline int idivCeil(int x, int y)
@@ -39,7 +39,7 @@ inline int idivCeil(int x, int y)
     return ( x + y - 1 ) / y;
 }
 
-int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_raysOnDevice)
+int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_devRays)
 {
     int verticalCount = _channels.vertical.size();
     int horizontalCount = _channels.horizontal.count;
@@ -103,7 +103,7 @@ int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_raysOnDevice)
     );
 
     // Generate the rays in place
-    allRaysGPUKernel<<<gridSize, blockSize>>>(_raysOnDevice, verticalCount, horizontalCount, reinterpret_cast<float*>(devVerticalAngles), reinterpret_cast<float*>(devHorizontalAngles));
+    allRaysGPUKernel<<<gridSize, blockSize>>>(_devRays, verticalCount, horizontalCount, reinterpret_cast<float*>(devVerticalAngles), reinterpret_cast<float*>(devHorizontalAngles));
 
     return 0;
 }

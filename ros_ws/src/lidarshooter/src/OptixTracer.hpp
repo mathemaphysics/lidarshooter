@@ -63,8 +63,8 @@ public:
 	{
 		OptixTraversableHandle handle;
 		unsigned int numberOfRays;
-		Ray* rays;
-		Hit* hits;
+		lidarshooter::Ray* rays;
+		lidarshooter::Hit* hits;
 	};
 
 	using RayGenData = struct
@@ -112,7 +112,6 @@ private:
 	void createProgramGroups();
 	void linkPipeline();
 	void setupSbtRecords();
-	void insertRaysToTrace();
 	static bool readSourceFile( std::string& _str, const std::string& _filename);
 	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 
