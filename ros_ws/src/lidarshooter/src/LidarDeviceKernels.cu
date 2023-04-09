@@ -74,13 +74,13 @@ int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_raysOnDevice)
     CUDA_CHECK(
         cudaMalloc(
             reinterpret_cast<void**>(&devVerticalAngles),
-            _channels.vertical.size() * sizeof(float)
+            static_cast<size_t>(_channels.vertical.size() * sizeof(float))
         )
     );
     CUDA_CHECK(
         cudaMalloc(
             reinterpret_cast<void**>(&devHorizontalAngles),
-            horizontalAngles.size() * sizeof(float)
+            static_cast<size_t>(horizontalAngles.size() * sizeof(float))
         )
     );
 
@@ -89,7 +89,7 @@ int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_raysOnDevice)
         cudaMemcpy(
             reinterpret_cast<void*>(devVerticalAngles),
             _channels.vertical.data(),
-            _channels.vertical.size() * sizeof(float),
+            static_cast<size_t>(_channels.vertical.size() * sizeof(float)),
             cudaMemcpyHostToDevice
         )
     );
@@ -97,7 +97,7 @@ int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_raysOnDevice)
         cudaMemcpy(
             reinterpret_cast<void*>(devHorizontalAngles),
             horizontalAngles.data(),
-            horizontalAngles.size() * sizeof(float),
+            static_cast<size_t>(horizontalAngles.size() * sizeof(float)),
             cudaMemcpyHostToDevice
         )
     );
