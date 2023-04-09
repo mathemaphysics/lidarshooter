@@ -31,6 +31,8 @@
 
 #include "LidarDevice.hpp"
 #include "ITracer.hpp"
+#include "Ray.hpp"
+#include "Hit.hpp"
 
 #include <optix.h>
 #include <optix_function_table_definition.h>
@@ -57,20 +59,6 @@ public:
 	template<typename T>
 	using SbtRecord = struct _SbtRecord<T>;
 
-	using Ray = struct
-	{
-		float3 origin;
-		float  tmin;
-		float3 direction;
-		float  tmax;
-	};
-
-	using Hit = struct
-	{
-		float  t;
-		float3 normal;
-	};
-
 	using Params = struct
 	{
 		OptixTraversableHandle handle;
@@ -94,7 +82,7 @@ public:
 		// No data needed
 	};
 
-	// Definitions for SBT records of each type, e.g. lidarshooter::OptixTracer::RayGenSbtRecord
+	// Definitions for SBT records of each type, e.g. lidarshooter::RayGenSbtRecord
 	using RayGenSbtRecord = SbtRecord<RayGenData>;
 	using MissSbtRecord = SbtRecord<MissData>;
 	using HitGroupSbtRecord = SbtRecord<HitGroupData>;

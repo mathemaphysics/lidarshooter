@@ -12,6 +12,9 @@
 
 #include "LidarShooter.hpp"
 
+#include "Ray.hpp"
+#include "Hit.hpp"
+
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -28,7 +31,11 @@
 #include <Eigen/Dense>
 
 #ifdef LIDARSHOOTER_OPTIX_FOUND
+
 #include <optix.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 #endif
 
 #define NEXT_RAY_BASE nextRay
@@ -213,13 +220,17 @@ public:
      */
     int allRays(std::vector<RTCRayHit>& _rays);
 
+#ifdef LIDARSHOOTER_OPTIX_FOUND
+
     /**
      * @brief Generates all of the rays for this device and puts them in the GPU memory position \c _ray .
      * 
      * @param _rays The location in GPU memory to output all the rays
      * @return int Success if 0 otherwise something else
      */
-    int allRaysGPU(CUdeviceptr _rays);
+    int allRaysGPU(lidarshooter::Ray *_raysOnDevice);
+
+#endif
 
     /**
      * @brief Transforms an origin-basis coordinate to sensor coordinates

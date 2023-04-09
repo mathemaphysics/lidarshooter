@@ -165,20 +165,20 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     params.numberOfRays = numberOfRays;
 
     // Allocate the space for rays and hits on device
-    lidarshooter::OptixTracer::Ray* devRays = 0;
-    lidarshooter::OptixTracer::Hit* devHits = 0;
+    lidarshooter::Ray* devRays = 0;
+    lidarshooter::Hit* devHits = 0;
 
     // Allocate the ray and hit arrays on device
     CUDA_CHECK(
         cudaMalloc(
             reinterpret_cast<void**>(&devRays),
-            numberOfRays * sizeof(lidarshooter::OptixTracer::Ray)
+            numberOfRays * sizeof(lidarshooter::Ray)
         )
     );
     CUDA_CHECK(
         cudaMalloc(
             reinterpret_cast<void**>(&devHits),
-            numberOfRays * sizeof(lidarshooter::OptixTracer::Hit)
+            numberOfRays * sizeof(lidarshooter::Hit)
         )
     );
 
@@ -542,8 +542,8 @@ void lidarshooter::OptixTracer::setupSbtRecords()
 void lidarshooter::OptixTracer::insertRaysToTrace()
 {
     auto config = getSensorConfig();
-    lidarshooter::OptixTracer::Ray ray;
-    
+    lidarshooter::Ray ray;
+    //config->allRaysGPU();
 }
 
 bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)

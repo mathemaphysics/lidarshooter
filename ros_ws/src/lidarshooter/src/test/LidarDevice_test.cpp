@@ -15,6 +15,8 @@
 
 #include <ros/ros.h>
 #include <spdlog/spdlog.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/PointField.h>
 
 #include <filesystem>
 
@@ -46,7 +48,7 @@ protected:
     std::shared_ptr<lidarshooter::LidarDevice> lidarDevice;
 };
 
-TEST_F(LidarDeviceTest, ReadConfigParameters1)
+TEST_F(LidarDeviceTest, ReadConfigParameters)
 {
     int verticalIndex, horizontalIndex;
     EXPECT_EQ(lidarDevice->getSensorUid(), "lidar_0000");
@@ -54,6 +56,23 @@ TEST_F(LidarDeviceTest, ReadConfigParameters1)
     EXPECT_EQ(verticalIndex, 0);
     EXPECT_EQ(horizontalIndex, 0);
     EXPECT_EQ(lidarDevice->getTotalRays(), 150 * 32);
+}
+
+TEST_F(LidarDeviceTest, InitializeMessage)
+{
+    // Need to do this to be able to work with messages requiring ROS operation
+    ros::Time::init();
+
+    auto cloud = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+    lidarDevice->initMessage(cloud, 100);
+    EXPECT_EQ(cloud->fields.size(), 5);
+    EXPECT_EQ(cloud->height, 1);
+    EXPECT_EQ(cloud->width, 150 * 32);
+    EXPECT_EQ(cloud->point_step, 32);
+    EXPECT_EQ(cloud->row_step, 150 * 32 * 32);
+    EXPECT_EQ(cloud->is_bigendian, false);
+    EXPECT_EQ(cloud->is_dense, true);
+    EXPECT_EQ(cloud->header.seq, 100);
 }
 
 }
