@@ -1,3 +1,14 @@
+/**
+ * @file LidarDeviceKernels.cu
+ * @author Ryan P. Daly (rdaly@herzog.com)
+ * @brief CUDA routines to put the trace rays on the GPU for \c LidarDevice
+ * @version 0.1
+ * @date 2023-04-10
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <iostream>
 #include <vector>
 
