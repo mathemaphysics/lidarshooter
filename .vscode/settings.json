@@ -81,7 +81,9 @@
         "source_location": "cpp",
         "valarray": "cpp",
         "__nullptr": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "dense": "cpp",
+        "eigenvalues": "cpp"
     },
     "cmake.sourceDirectory": "${workspaceFolder}/ros_ws/src"
 }

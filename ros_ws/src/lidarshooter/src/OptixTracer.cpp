@@ -585,6 +585,6 @@ void lidarshooter::OptixTracer::getInputDataFromFile(std::string &_ptx, const st
     if (!readSourceFile(_ptx, sourceFilePath))
     {
         std::string err = "Couldn't open source file: " + sourceFilePath;
-        throw std::runtime_error( err.c_str() );
+        throw std::runtime_error(err.c_str());
     }
 }
