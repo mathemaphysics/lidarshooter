@@ -66,8 +66,7 @@ extern "C" __global__ void __miss__ms()
 
 extern "C" __global__ void __closesthit__ch()
 {
-    // When built-in triangle intersection is used, a number of fundamental
-    // attributes are provided by the OptiX API, indlucing barycentric coordinates.
+    // In CH program, Tmin is returned by optixGetRayTmax
     const float tmin = optixGetRayTmax();
 
     optixSetPayload_0(__float_as_uint(tmin));
