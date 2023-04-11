@@ -203,8 +203,8 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
         )
     );
 
-    // Insert the rays to trace
-    sensorConfig->allRaysGPU(params.rays);
+    // Insert the rays to trace; initialize hit states
+    sensorConfig->allRaysGPU(params.rays, params.hits);
 
     // Launch the pipeline
     OPTIX_CHECK(
@@ -231,6 +231,10 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
             cudaMemcpyDeviceToHost
         )
     );
+
+    // Run the routine also shared by EmbreeTracer to add resultHits[].normal to
+    // getTraceCloud() for display
+    // -> Continue here <-
 
     // Cleanup
     delete [] resultHits;

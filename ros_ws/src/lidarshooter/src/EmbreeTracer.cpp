@@ -302,7 +302,7 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
 
     // Count the total iterations because the limits are needed for threading
     unsigned int numTotalRays = getSensorConfig()->getTotalRays();
-    unsigned int numIterations = numTotalRays / LIDARSHOOTER_RAY_PACKET_SIZE + (numTotalRays % LIDARSHOOTER_RAY_PACKET_SIZE > 0 ? 1 : 0);
+    unsigned int numIterations = numTotalRays / LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE + (numTotalRays % LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE > 0 ? 1 : 0);
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
@@ -320,22 +320,22 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
                 {
                     // Set up packet processing
                     int rayState = 0;
-                    int validRays[LIDARSHOOTER_RAY_PACKET_SIZE]; // Initialize all invalid
-                    int rayRings[LIDARSHOOTER_RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
-                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
+                    int validRays[LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE]; // Initialize all invalid
+                    int rayRings[LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE]; // Ring indexes will need to be stored for output
+                    for (int i = 0; i < LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE; ++i)
                         validRays[i] = 0;
-                    for (int i = 0; i < LIDARSHOOTER_RAY_PACKET_SIZE; ++i)
+                    for (int i = 0; i < LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE; ++i)
                         rayRings[i] = -1;
                     RayHitType rayhitn;
 
                     // Fill up the next ray in the buffer
                     rayState = this->getSensorConfig()->nextRay(rayhitn, validRays);
-                    for (int idx = 0; idx < LIDARSHOOTER_RAY_PACKET_SIZE; ++idx)
+                    for (int idx = 0; idx < LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE; ++idx)
                         rayRings[idx] = 0;
 
                     // Execute when the buffer is full
                     this->getMeshIntersect(validRays, &rayhitn); // TODO: Make sure meshMutex doesn't need set?
-                    for (int ri = 0; ri < LIDARSHOOTER_RAY_PACKET_SIZE; ++ri)
+                    for (int ri = 0; ri < LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE; ++ri)
                     {
                         if (rayhitn.hit.geomID[ri] != RTC_INVALID_GEOMETRY_ID)
                         {

@@ -220,10 +220,10 @@ public:
 	}
 
 #define EMBREETRACER_GET_MESH_INTERSECT_BASE getMeshIntersect
-#define EMBREETRACER_GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(EMBREETRACER_GET_MESH_INTERSECT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__valid, __rayhit)
+#define EMBREETRACER_GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(EMBREETRACER_GET_MESH_INTERSECT_BASE, LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE)(__valid, __rayhit)
 
     /**
-     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_RAY_PACKET_SIZE
+     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_EMBREE_RAY_PACKET_SIZE
      * 
      * Ray packet size generalization function; this will automatically
      * select which ray packet size to use based on the system preprocessor

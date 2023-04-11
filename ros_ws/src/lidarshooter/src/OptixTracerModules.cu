@@ -56,6 +56,9 @@ extern "C" __global__ void __raygen__rg()
     // Set the output tmin to the same index
     lidarshooter::Hit newHit;
     newHit.t = __uint_as_float(tmin);
+    newHit.normal.x = params.rays[linearIndex].direction.x * newHit.t;
+    newHit.normal.y = params.rays[linearIndex].direction.y * newHit.t;
+    newHit.normal.z = params.rays[linearIndex].direction.z * newHit.t;
     params.hits[linearIndex] = newHit;
 }
 

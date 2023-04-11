@@ -24,14 +24,14 @@
  * or 16 now, and note that some of the functions corresponding to these sizes
  * haven't been written yet.
  */
-#define LIDARSHOOTER_RAY_PACKET_SIZE 16
+#define LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE 16
 
 /**
  * Define ray packet size-invariant types
  */
 #include <embree3/rtcore_ray.h> // Need it to know what RTCRayHit is
 #define LIDARSHOOTER_RAY_HIT_BASE RTCRayHit
-#define LIDARSHOOTER_RAY_HIT_TYPE LIDARSHOOTER_GLUE(LIDARSHOOTER_RAY_HIT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)
+#define LIDARSHOOTER_RAY_HIT_TYPE LIDARSHOOTER_GLUE(LIDARSHOOTER_RAY_HIT_BASE, LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE)
 namespace lidarshooter
 {
     typedef LIDARSHOOTER_RAY_HIT_TYPE RayHitType;

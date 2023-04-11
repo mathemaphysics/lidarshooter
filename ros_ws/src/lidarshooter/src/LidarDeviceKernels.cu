@@ -22,7 +22,7 @@
 #include <optix_stubs.h>
 #include <sutil/Exception.h>
 
-__global__ void allRaysGPUKernel(lidarshooter::Ray *_devRays, int _verticalCount, int _horizontalCount, float *_verticalAngles, float *_horizontalAngles)
+__global__ void allRaysGPUKernel(lidarshooter::Ray *_raysOnDevice, lidarshooter::Hit *_hitsOnDevice, int _verticalCount, int _horizontalCount, float *_verticalAngles, float *_horizontalAngles)
 {
     // Find out which ray we are in the device output
     int verticalIndex = threadIdx.x + blockIdx.x * blockDim.x;
@@ -36,13 +36,17 @@ __global__ void allRaysGPUKernel(lidarshooter::Ray *_devRays, int _verticalCount
     float theta = (90.0 - _verticalAngles[verticalIndex]) * M_PI / 180.0; // Convert from chi in degrees to theta in radians
     float phi = _horizontalAngles[horizontalIndex] * M_PI / 180.0;          // Just convert to radians
 
+    // Build the ray from the origin
     int rayIndex = verticalIndex * _horizontalCount + horizontalIndex;
-    _devRays[rayIndex].origin.x = 0.0f;
-    _devRays[rayIndex].origin.y = 0.0f;
-    _devRays[rayIndex].origin.z = 0.0f;
-    _devRays[rayIndex].direction.x = std::sin(theta) * std::cos(phi);
-    _devRays[rayIndex].direction.y = std::sin(theta) * std::sin(phi);
-    _devRays[rayIndex].direction.z = std::cos(theta);
+    _raysOnDevice[rayIndex].origin.x = 0.0f;
+    _raysOnDevice[rayIndex].origin.y = 0.0f;
+    _raysOnDevice[rayIndex].origin.z = 0.0f;
+    _raysOnDevice[rayIndex].direction.x = std::sin(theta) * std::cos(phi);
+    _raysOnDevice[rayIndex].direction.y = std::sin(theta) * std::sin(phi);
+    _raysOnDevice[rayIndex].direction.z = std::cos(theta);
+    
+    // Initialize to infinity to distinguish from a real hit
+    _hitsOnDevice[rayIndex].t = 1e16f;
 }
 
 inline int idivCeil(int x, int y)
@@ -50,7 +54,7 @@ inline int idivCeil(int x, int y)
     return ( x + y - 1 ) / y;
 }
 
-int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_devRays)
+int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_raysOnDevice, lidarshooter::Hit *_hitsOnDevice)
 {
     int verticalCount = _channels.vertical.size();
     int horizontalCount = _channels.horizontal.count;
@@ -114,7 +118,7 @@ int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_devRays)
     );
 
     // Generate the rays in place
-    allRaysGPUKernel<<<gridSize, blockSize>>>(_devRays, verticalCount, horizontalCount, reinterpret_cast<float*>(devVerticalAngles), reinterpret_cast<float*>(devHorizontalAngles));
+    allRaysGPUKernel<<<gridSize, blockSize>>>(_raysOnDevice, _hitsOnDevice, verticalCount, horizontalCount, reinterpret_cast<float*>(devVerticalAngles), reinterpret_cast<float*>(devHorizontalAngles));
 
     return 0;
 }
