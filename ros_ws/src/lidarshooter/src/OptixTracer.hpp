@@ -179,6 +179,14 @@ private:
 	std::vector<float3>& getVertices(const std::string &_meshName);
 
 	/**
+	 * @brief Get the CUDA device pointer to the vertices
+	 * 
+	 * @param _meshName Mesh for which to get the vertices
+	 * @return CUdeviceptr CUDA device pointer to its memory
+	 */
+	CUdeviceptr getVerticesGPU(const std::string &_meshName);
+
+	/**
 	 * @brief Gets the number of elements in the specified mesh
 	 * 
 	 * @param _meshName Mesh key whose element count you want
@@ -193,6 +201,14 @@ private:
 	 * @return unsigned int* 
 	 */
 	std::vector<uint3>& getElements(const std::string &_meshName);
+
+	/**
+	 * @brief Gets the CUDA device pointer to the elements
+	 * 
+	 * @param _meshName Mesh for which to get the elements
+	 * @return CUdeviceptr CUDA device pointer to its memory
+	 */
+	CUdeviceptr getElementsGPU(const std::string &_meshName);
 
 	/**
 	 * @brief This is just a helper function for \c getInputDataFromFile

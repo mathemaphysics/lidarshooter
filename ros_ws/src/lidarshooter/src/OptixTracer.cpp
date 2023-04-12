@@ -106,29 +106,31 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 {
     // Now update the internal buffers to align with the mesh passed in
     auto meshTransformer = MeshTransformer::create(_mesh, _transform, getSensorConfig());
-    auto verticesReference = _vertices.find(_meshName);
-    auto elementsReference = _elements.find(_meshName);
+    auto verticesReference = getVertices(_meshName);
+    auto elementsReference = getElements(_meshName);
+    auto devVerticesReference = getVerticesGPU(_meshName);
+    auto devElementsReference = getElementsGPU(_meshName);
     meshTransformer->transformIntoBuffer(
         RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
-        verticesReference->second,
-        elementsReference->second
+        verticesReference,
+        elementsReference
     );
 
     // Now copy the resulting vertices and elements into the device memory
-    const size_t verticesSize = sizeof(float3) * verticesReference->second.size();
-    const size_t elementsSize = sizeof(uint3) * elementsReference->second.size();
+    const size_t verticesSize = sizeof(float3) * verticesReference.size();
+    const size_t elementsSize = sizeof(uint3) * elementsReference.size();
     CUDA_CHECK(
         cudaMemcpy(
-            reinterpret_cast<void *>(_devVertices[_meshName]),
-            verticesReference->second.data(),
+            reinterpret_cast<void *>(devVerticesReference),
+            verticesReference.data(),
             verticesSize,
             cudaMemcpyHostToDevice
         )
     );
     CUDA_CHECK(
         cudaMemcpy(
-            reinterpret_cast<void *>(_devElements[_meshName]),
-            elementsReference->second.data(),
+            reinterpret_cast<void *>(devElementsReference),
+            elementsReference.data(),
             elementsSize,
             cudaMemcpyHostToDevice
         )
@@ -142,29 +144,31 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 {
     // Now update the internal buffers to align with the mesh passed in
     auto meshTransformer = MeshTransformer::create(_mesh, _translation, _rotation, getSensorConfig());
-    auto verticesReference = _vertices.find(_meshName);
-    auto elementsReference = _elements.find(_meshName);
+    auto verticesReference = getVertices(_meshName);
+    auto elementsReference = getElements(_meshName);
+    auto devVerticesReference = getVerticesGPU(_meshName);
+    auto devElementsReference = getElementsGPU(_meshName);
     meshTransformer->transformIntoBuffer(
         RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
-        verticesReference->second,
-        elementsReference->second
+        verticesReference,
+        elementsReference
     );
 
     // Now copy the resulting vertices and elements into the device memory
-    const size_t verticesSize = sizeof(float3) * verticesReference->second.size();
-    const size_t elementsSize = sizeof(uint3) * elementsReference->second.size();
+    const size_t verticesSize = sizeof(float3) * verticesReference.size();
+    const size_t elementsSize = sizeof(uint3) * elementsReference.size();
     CUDA_CHECK(
         cudaMemcpy(
-            reinterpret_cast<void *>(_devVertices[_meshName]),
-            verticesReference->second.data(),
+            reinterpret_cast<void *>(devVerticesReference),
+            verticesReference.data(),
             verticesSize,
             cudaMemcpyHostToDevice
         )
     );
     CUDA_CHECK(
         cudaMemcpy(
-            reinterpret_cast<void *>(_devElements[_meshName]),
-            elementsReference->second.data(),
+            reinterpret_cast<void *>(devElementsReference),
+            elementsReference.data(),
             elementsSize,
             cudaMemcpyHostToDevice
         )
@@ -672,6 +676,18 @@ std::vector<float3>& lidarshooter::OptixTracer::getVertices(const std::string& _
     return verticesIterator->second;
 }
 
+CUdeviceptr lidarshooter::OptixTracer::getVerticesGPU(const std::string &_meshName)
+{
+    auto verticesIterator = _devVertices.find(_meshName);
+    if (verticesIterator == _devVertices.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in vertices map (on the GPU)",
+            2
+        ));
+    return verticesIterator->second;
+}
+
 int lidarshooter::OptixTracer::getElementCount(const std::string& _meshName) const
 {
     // Make sure it's in there; don't just assume it is
@@ -690,6 +706,18 @@ std::vector<uint3>& lidarshooter::OptixTracer::getElements(const std::string& _m
 {
     auto elementsIterator = _elements.find(_meshName);
     if (elementsIterator == _elements.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in elements map",
+            5
+        ));
+    return elementsIterator->second;
+}
+
+CUdeviceptr lidarshooter::OptixTracer::getElementsGPU(const std::string &_meshName)
+{
+    auto elementsIterator = _devElements.find(_meshName);
+    if (elementsIterator == _devElements.end())
         throw(TraceException(
             __FILE__,
             "Geometry key does not exist in elements map",
