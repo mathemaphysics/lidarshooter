@@ -436,6 +436,16 @@ unsigned int lidarshooter::LidarDevice::getTotalRays()
     return _channels.count;
 }
 
+unsigned int lidarshooter::LidarDevice::getTotalChannels()
+{
+    return _channels.vertical.size();
+}
+
+unsigned int lidarshooter::LidarDevice::getScanRayCount()
+{
+    return _channels.horizontal.count;
+}
+
 void lidarshooter::LidarDevice::getCurrentIndex(int *__verticalIndex, int *__horizontalIndex)
 {
     *__verticalIndex = _verticalIndex;

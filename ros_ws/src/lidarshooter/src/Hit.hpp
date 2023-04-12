@@ -24,5 +24,8 @@ public:
 		float x, y, z;
 	} normal;
 #endif
+	float intensity;
+	int ring;
 };
+
 }

@@ -259,6 +259,20 @@ public:
     unsigned int getTotalRays();
 
     /**
+     * @brief Returns the total number of "vertical" channels
+     * 
+     * @return unsigned int Total number of channels vertically
+     */
+    unsigned int getTotalChannels();
+
+    /**
+     * @brief Returns the number of iterations returns in the horizontal scan
+     * 
+     * @return unsigned int Total returns per sweep
+     */
+    unsigned int getScanRayCount();
+
+    /**
      * @brief Get the current vertical and horizontal ray index position
      * 
      * This might be useful if you need to know under the hood how many rays you've

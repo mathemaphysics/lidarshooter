@@ -296,7 +296,7 @@ int lidarshooter::EmbreeTracer::commitScene()
 
 int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
 {
-    getSensorConfig()->initMessage(getTraceCloud(), ++_frameIndex);
+    getSensorConfig()->initMessage(getTraceCloud(), _frameIndex);
     getTraceCloud()->data.clear();
     getSensorConfig()->reset();
 
@@ -306,7 +306,7 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
     unsigned int numThreads = 4; // TODO: Make this a parameter
     unsigned int numChunks = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
 
-    std::mutex sharedCloudMutex;
+    std::mutex cloudMutex;
     std::vector<std::thread> threads;
     std::atomic<int> totalPointCount;
     totalPointCount.store(0);
@@ -315,7 +315,7 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
         //unsigned int startPosition = rayChunk * numChunks;
         // TODO: Convert the contents of the thread into a "chunk" function to simplify
         threads.emplace_back(
-            [this, &sharedCloudMutex, numChunks, &totalPointCount](){
+            [this, &cloudMutex, numChunks, &totalPointCount](){
                 for (int ix = 0; ix < numChunks; ++ix)
                 {
                     // Set up packet processing
@@ -345,10 +345,10 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
                                 rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
                                 64.0, rayRings[ri]
                             );
-                            sharedCloudMutex.lock();
+                            cloudMutex.lock();
                             cloudBytes.addToCloud(this->getTraceCloud());
                             totalPointCount.store(totalPointCount.load() + 1);
-                            sharedCloudMutex.unlock();
+                            cloudMutex.unlock();
                         }
                         validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
                     }
