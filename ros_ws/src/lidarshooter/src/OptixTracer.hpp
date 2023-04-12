@@ -168,7 +168,7 @@ private:
 	 * @param _meshName Mesh key whose vertex count you want
 	 * @return int The vertex count (cast as \c size_t for fun)
 	 */
-	int getVertexCount(const std::string& _meshName) const;
+	long getVertexCount(const std::string& _meshName);
 
 	/**
 	 * @brief Get the Vertices object
@@ -192,7 +192,7 @@ private:
 	 * @param _meshName Mesh key whose element count you want
 	 * @return int The element count (case as \c size_t for fun)
 	 */
-	int getElementCount(const std::string& _meshName) const;
+	long getElementCount(const std::string& _meshName);
 
 	/**
 	 * @brief Get the Elements object

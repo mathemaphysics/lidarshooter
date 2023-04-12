@@ -650,18 +650,10 @@ void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)
     getTraceCloud()->width = totalPointCount.load();
 }
 
-int lidarshooter::OptixTracer::getVertexCount(const std::string& _meshName) const
+long lidarshooter::OptixTracer::getVertexCount(const std::string& _meshName)
 {
-    // Make sure it's in there; don't just assume it is
-    auto verticesReference = _vertices.find(_meshName);
-    if (verticesReference == _vertices.end())
-    {
-        _logger->error("Mesh key {} does not exist in local vertices list", _meshName);
-        return -1;
-    }
-
     // Cast as int to allow for -1 error state return value
-    return static_cast<int>(verticesReference->second.size());
+    return static_cast<long>(getVertices(_meshName).size());
 }
 
 std::vector<float3>& lidarshooter::OptixTracer::getVertices(const std::string& _meshName)
@@ -688,18 +680,10 @@ CUdeviceptr lidarshooter::OptixTracer::getVerticesGPU(const std::string &_meshNa
     return verticesIterator->second;
 }
 
-int lidarshooter::OptixTracer::getElementCount(const std::string& _meshName) const
+long lidarshooter::OptixTracer::getElementCount(const std::string& _meshName)
 {
-    // Make sure it's in there; don't just assume it is
-    auto elementsReference = _elements.find(_meshName);
-    if (elementsReference == _elements.end())
-    {
-        _logger->error("Mesh key {} does no exist in local elements list");
-        return -1;
-    }
-
     // Cast as int to allow for -1 error state return value
-    return static_cast<int>(elementsReference->second.size());
+    return static_cast<long>(getElements(_meshName).size());
 }
 
 std::vector<uint3>& lidarshooter::OptixTracer::getElements(const std::string& _meshName)
