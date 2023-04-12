@@ -225,6 +225,9 @@ public:
     /**
      * @brief Generates all of the rays for this device and puts them in the GPU memory position \c _ray .
      * 
+     * This function is conditionally built. It will not exist in the class if
+     * the OptiX SDK is not found in the CMake configuration step.
+     * 
      * @param _rays The location in GPU memory to output all the rays
      * @return int Success if 0 otherwise something else
      */
