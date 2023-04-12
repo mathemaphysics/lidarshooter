@@ -214,11 +214,13 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
             devParams,
             sizeof(Params),
             &_shaderBindingTable,
-            numberOfRays,
-            1,
+            getSensorConfig()->getTotalChannels(),
+            getSensorConfig()->getScanRayCount(),
             1
         )
     );
+
+    // Make sure everything is done for retrieval
     CUDA_SYNC_CHECK();
 
     // Copy results back home
@@ -232,9 +234,13 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
         )
     );
 
-    // Run the routine also shared by EmbreeTracer to add resultHits[].normal to
-    // getTraceCloud() for display
-    // -> Continue here <-
+    // Clean out the message properly
+    getSensorConfig()->initMessage(getTraceCloud(), _frameIndex);
+    getTraceCloud()->data.clear();
+    getSensorConfig()->reset();
+
+    // Add your new points to the message
+    addPointsToCloud(resultHits);
 
     // Cleanup
     delete [] resultHits;
@@ -558,6 +564,54 @@ void lidarshooter::OptixTracer::setupSbtRecords()
     _shaderBindingTable.hitgroupRecordBase = _devHitgroupSbtRecord;
     _shaderBindingTable.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
     _shaderBindingTable.hitgroupRecordCount = 1;
+}
+
+void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)
+{
+    // Count the total iterations because the limits are needed for threading
+    unsigned int numTotalRays = getSensorConfig()->getTotalRays();
+    unsigned int numIterations = numTotalRays;
+    unsigned int numThreads = 4; // TODO: Make this a parameter
+    unsigned int raysPerIteration = numIterations / numThreads + (numIterations % numThreads > 0 ? 1 : 0);
+
+    std::mutex cloudMutex;
+    std::vector<std::thread> threads;
+    std::atomic<int> totalPointCount;
+    totalPointCount.store(0);
+
+    for (int rayChunk = 0; rayChunk < numThreads; ++rayChunk)
+    {
+        // TODO: Convert the contents of the thread into a "chunk" function to simplify
+        unsigned int startPosition = rayChunk * raysPerIteration;
+        threads.emplace_back(
+            [this, _resultHits, &cloudMutex, startPosition, raysPerIteration, numTotalRays, &totalPointCount](){
+                for (int ri = startPosition; ri < startPosition + raysPerIteration && ri < numTotalRays; ++ri)
+                {
+                    // If Hit::t is different from zero then we have a hit
+                    if (_resultHits[ri].t > std::numeric_limits<float>::epsilon())
+                    {
+                        // Get the ray ring index
+                        lidarshooter::XYZIRBytes cloudBytes(
+                            _resultHits[ri].normal.x,
+                            _resultHits[ri].normal.y,
+                            _resultHits[ri].normal.z,
+                            _resultHits[ri].intensity,
+                            _resultHits[ri].ring
+                        );
+                        cloudMutex.lock();
+                        cloudBytes.addToCloud(this->getTraceCloud());
+                        totalPointCount.store(totalPointCount.load() + 1);
+                        cloudMutex.unlock();
+                    }
+                }
+            }
+        );
+    }
+    for (auto th = threads.begin(); th != threads.end(); ++th)
+        th->join();
+
+    // Set the point count to the value that made it back from tracing
+    getTraceCloud()->width = totalPointCount.load();
 }
 
 bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)

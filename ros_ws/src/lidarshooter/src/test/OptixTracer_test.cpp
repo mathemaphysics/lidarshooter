@@ -52,7 +52,8 @@ protected:
         );
 
         // Make tracer; default to create internal trace cloud storage
-        optixTracer = lidarshooter::OptixTracer::create(sensorConfig);
+        auto traceStorage = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+        optixTracer = lidarshooter::OptixTracer::create(sensorConfig, traceStorage);
         geometryIdAdded = static_cast<unsigned int>(
             optixTracer->addGeometry(
                 "mesh",
@@ -93,8 +94,8 @@ TEST_F(OptixTracerTest, TraceSceneCloud)
     EXPECT_NO_FATAL_FAILURE(
         optixTracer->traceScene(0)
     );
-    //auto cloud = optixTracer->getTraceCloud();
-    //EXPECT_EQ(cloud->width * cloud->height, 235);
+    auto cloud = optixTracer->getTraceCloud();
+    EXPECT_EQ(cloud->width * cloud->height, 1668);
 }
 
 }

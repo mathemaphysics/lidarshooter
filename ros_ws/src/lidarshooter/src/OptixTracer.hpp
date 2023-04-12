@@ -31,6 +31,7 @@
 
 #include "LidarDevice.hpp"
 #include "ITracer.hpp"
+#include "XYZIRBytes.hpp"
 #include "Ray.hpp"
 #include "Hit.hpp"
 
@@ -112,6 +113,7 @@ private:
 	void createProgramGroups();
 	void linkPipeline();
 	void setupSbtRecords();
+	void addPointsToCloud(Hit *_resultHits);
 	static bool readSourceFile( std::string& _str, const std::string& _filename);
 	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 

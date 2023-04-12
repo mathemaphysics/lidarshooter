@@ -47,6 +47,8 @@ __global__ void allRaysGPUKernel(lidarshooter::Ray *_raysOnDevice, lidarshooter:
     
     // Initialize to infinity to distinguish from a real hit
     _hitsOnDevice[rayIndex].t = 1e16f;
+    _hitsOnDevice[rayIndex].intensity = 64.0;
+    _hitsOnDevice[rayIndex].ring = verticalIndex;
 }
 
 inline int idivCeil(int x, int y)
@@ -76,10 +78,10 @@ int lidarshooter::LidarDevice::allRaysGPU(lidarshooter::Ray *_raysOnDevice, lida
     );
 
     // Make a list of the actual horizontal angles
-    for (auto horizontalAngle = _channels.horizontal.range.begin;
-              horizontalAngle < _channels.horizontal.range.end;
-              horizontalAngle += _channels.horizontal.step)
-        horizontalAngles.push_back(horizontalAngle);
+    for (auto horizontalIndex = 0;
+         horizontalIndex < _channels.horizontal.count;
+         ++horizontalIndex)
+        horizontalAngles.push_back(_channels.horizontal.range.begin + static_cast<float>(horizontalIndex) * _channels.horizontal.step);
 
     // TODO: Maybe just use unsigned long long instead of CUdeviceptr?
     CUdeviceptr devVerticalAngles;

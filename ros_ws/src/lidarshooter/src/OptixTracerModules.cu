@@ -12,11 +12,12 @@
 #include <optix.h>
 #include <optix_stubs.h>
 
-//#include "optixTriangle.h"
 #include "OptixTracer.hpp"
-#include <cuda/helpers.h>
 
+#include <cuda/helpers.h>
 #include <sutil/vec_math.h>
+
+#include <cfloat>
 
 extern "C" {
 __constant__ lidarshooter::OptixTracer::Params params;
@@ -56,9 +57,13 @@ extern "C" __global__ void __raygen__rg()
     // Set the output tmin to the same index
     lidarshooter::Hit newHit;
     newHit.t = __uint_as_float(tmin);
-    newHit.normal.x = params.rays[linearIndex].direction.x * newHit.t;
-    newHit.normal.y = params.rays[linearIndex].direction.y * newHit.t;
-    newHit.normal.z = params.rays[linearIndex].direction.z * newHit.t;
+    newHit.normal.x = params.rays[linearIndex].direction.x * __uint_as_float(tmin);
+    newHit.normal.y = params.rays[linearIndex].direction.y * __uint_as_float(tmin);
+    newHit.normal.z = params.rays[linearIndex].direction.z * __uint_as_float(tmin);
+    newHit.intensity = params.hits[linearIndex].intensity;
+    newHit.ring = params.hits[linearIndex].ring;
+
+    // This is a necessary step; only the memory is allocated
     params.hits[linearIndex] = newHit;
 }
 
