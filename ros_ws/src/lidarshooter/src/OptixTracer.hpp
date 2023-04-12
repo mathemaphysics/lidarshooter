@@ -108,13 +108,108 @@ private:
     size_t _logStringLength = 255;
 
 	// Utilities
+	
+	/**
+	 * @brief Builds the acceleration structure for the geometry inside
+	 * 
+	 * This function builds whatever structure is chosen inside the allotted
+	 * space. Frequently this is a kd-tree or an axis-aligned bounding box of
+	 * some sort.
+	 */
 	void buildAccelStructure();
+
+	/**
+	 * @brief Creates the "module" which contains the PTX/OPTIX-IR source programs
+	 * 
+	 * What is meant by "programs" here is different from what you might expect;
+	 * a "program" in OptiX terms is akin to a shader from GLSL; in this case a
+	 * mnodule is created containing these shader-like programs, e.g. raygen,
+	 * closest hit, any hit, miss, etc., this is where those are loaded.
+	 */
 	void createModule();
+
+	/**
+	 * @brief Creates the differe types of program groups
+	 * 
+	 * A program group is a "type" of shader-like program which you can find in
+	 * the aforementioned module; for example closest hit and any hit programs
+	 * are both "hitgroup" programs.
+	 */
 	void createProgramGroups();
+
+	/**
+	 * @brief Generate the pipeline object which will actually do the work
+	 * 
+	 * This created the \c _tracePipeline object of type \c OptixPipeline which
+	 * defines the sequence of events in a CUDA stream while we're doing
+	 * calculations.
+	 */
 	void linkPipeline();
+
+	/**
+	 * @brief Sets up the shader binding table with their programs
+	 * 
+	 * This sets up \c _shaderBindingTable of type \c OptixShaderBindingTable
+	 * which contains the aforementioned program code themselves.
+	 */
 	void setupSbtRecords();
+
+	/**
+	 * @brief Adds the generated points from \c resultHits inside \c traceScene
+	 * 
+	 * @param _resultHits Pointers to an array of \c lidarshooter::Hit
+	 * 		  containing the results of a trace
+	 */
 	void addPointsToCloud(Hit *_resultHits);
+
+	/**
+	 * @brief Gets the number of vertices in the specified mesh
+	 * 
+	 * @param _meshName Mesh key whose vertex count you want
+	 * @return int The vertex count (cast as \c size_t for fun)
+	 */
+	int getVertexCount(const std::string& _meshName) const;
+
+	/**
+	 * @brief Get the Vertices object
+	 * 
+	 * @param _meshName 
+	 * @return float* 
+	 */
+	std::vector<float3>& getVertices(const std::string &_meshName);
+
+	/**
+	 * @brief Gets the number of elements in the specified mesh
+	 * 
+	 * @param _meshName Mesh key whose element count you want
+	 * @return int The element count (case as \c size_t for fun)
+	 */
+	int getElementCount(const std::string& _meshName) const;
+
+	/**
+	 * @brief Get the Elements object
+	 * 
+	 * @param _meshName 
+	 * @return unsigned int* 
+	 */
+	std::vector<uint3>& getElements(const std::string &_meshName);
+
+	/**
+	 * @brief This is just a helper function for \c getInputDataFromFile
+	 * 
+	 * @param _str Reference to an output string to store the source
+	 * @param _filename Name of the file from whence the source flows
+	 * @return true Successfully read the source
+	 * @return false Failed reading the source
+	 */
 	static bool readSourceFile( std::string& _str, const std::string& _filename);
+
+	/**
+	 * @brief This is just a glorified text file reader program
+	 * 
+	 * @param _ptx The string into which to insert the source text
+	 * @param _filename Source file name from when text is read
+	 */
 	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 
 	// In local memory storage of vertices and elements

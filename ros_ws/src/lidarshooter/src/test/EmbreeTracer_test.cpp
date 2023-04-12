@@ -40,7 +40,7 @@ protected:
         meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
         auto meshPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
         pcl::io::loadPolygonFileSTL(
-            (meshPath / "mesh/ben.stl").string(),
+            (meshPath / "mesh/ground.stl").string(),
             *meshData
         );
 
@@ -86,8 +86,8 @@ TEST_F(EmbreeTracerTest, NoDeviceError)
 TEST_F(EmbreeTracerTest, VertexElementCounts)
 {
     // Check that the number of vertices and elements is right
-    EXPECT_EQ(embreeTracer->getVertexCount("mesh"), 2823l);
-    EXPECT_EQ(embreeTracer->getElementCount("mesh"), 5489l);
+    EXPECT_EQ(embreeTracer->getVertexCount("mesh"), 98l);
+    EXPECT_EQ(embreeTracer->getElementCount("mesh"), 162l);
 }
 
 TEST_F(EmbreeTracerTest, GeometryTotalCount)
@@ -131,7 +131,7 @@ TEST_F(EmbreeTracerTest, TraceSceneCloud)
         embreeTracer->traceScene(0)
     );
     auto cloud = embreeTracer->getTraceCloud();
-    EXPECT_EQ(cloud->width * cloud->height, 235);
+    EXPECT_EQ(cloud->width * cloud->height, 1668);
 }
 
 }

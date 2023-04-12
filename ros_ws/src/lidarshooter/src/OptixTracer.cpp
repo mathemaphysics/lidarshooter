@@ -11,6 +11,7 @@
 
 #include "OptixTracer.hpp"
 #include "MeshTransformer.hpp"
+#include "Exceptions.hpp"
 
 #include <utility>
 #include <vector>
@@ -139,6 +140,37 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 
 int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh)
 {
+    // Now update the internal buffers to align with the mesh passed in
+    auto meshTransformer = MeshTransformer::create(_mesh, _translation, _rotation, getSensorConfig());
+    auto verticesReference = _vertices.find(_meshName);
+    auto elementsReference = _elements.find(_meshName);
+    meshTransformer->transformIntoBuffer(
+        RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+        verticesReference->second,
+        elementsReference->second
+    );
+
+    // Now copy the resulting vertices and elements into the device memory
+    const size_t verticesSize = sizeof(float3) * verticesReference->second.size();
+    const size_t elementsSize = sizeof(uint3) * elementsReference->second.size();
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void *>(_devVertices[_meshName]),
+            verticesReference->second.data(),
+            verticesSize,
+            cudaMemcpyHostToDevice
+        )
+    );
+    CUDA_CHECK(
+        cudaMemcpy(
+            reinterpret_cast<void *>(_devElements[_meshName]),
+            elementsReference->second.data(),
+            elementsSize,
+            cudaMemcpyHostToDevice
+        )
+    );
+
+    // Commit the changes to this geometry
     return 0;
 }
 
@@ -612,6 +644,58 @@ void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)
 
     // Set the point count to the value that made it back from tracing
     getTraceCloud()->width = totalPointCount.load();
+}
+
+int lidarshooter::OptixTracer::getVertexCount(const std::string& _meshName) const
+{
+    // Make sure it's in there; don't just assume it is
+    auto verticesReference = _vertices.find(_meshName);
+    if (verticesReference == _vertices.end())
+    {
+        _logger->error("Mesh key {} does not exist in local vertices list", _meshName);
+        return -1;
+    }
+
+    // Cast as int to allow for -1 error state return value
+    return static_cast<int>(verticesReference->second.size());
+}
+
+std::vector<float3>& lidarshooter::OptixTracer::getVertices(const std::string& _meshName)
+{
+    auto verticesIterator = _vertices.find(_meshName);
+    if (verticesIterator == _vertices.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in vertices map",
+            2
+        ));
+    return verticesIterator->second;
+}
+
+int lidarshooter::OptixTracer::getElementCount(const std::string& _meshName) const
+{
+    // Make sure it's in there; don't just assume it is
+    auto elementsReference = _elements.find(_meshName);
+    if (elementsReference == _elements.end())
+    {
+        _logger->error("Mesh key {} does no exist in local elements list");
+        return -1;
+    }
+
+    // Cast as int to allow for -1 error state return value
+    return static_cast<int>(elementsReference->second.size());
+}
+
+std::vector<uint3>& lidarshooter::OptixTracer::getElements(const std::string& _meshName)
+{
+    auto elementsIterator = _elements.find(_meshName);
+    if (elementsIterator == _elements.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in elements map",
+            5
+        ));
+    return elementsIterator->second;
 }
 
 bool lidarshooter::OptixTracer::readSourceFile(std::string &_str, const std::string &_filename)
