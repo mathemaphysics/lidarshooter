@@ -69,7 +69,8 @@ extern "C" __global__ void __raygen__rg()
 
 extern "C" __global__ void __miss__ms()
 {
-
+    // This guarantees we have consistent fail values for Tmin
+    optixSetPayload_0(__float_as_uint(-1.0f));
 }
 
 extern "C" __global__ void __closesthit__ch()

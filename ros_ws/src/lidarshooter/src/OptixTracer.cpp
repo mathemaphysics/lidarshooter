@@ -588,7 +588,7 @@ void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)
                 for (int ri = startPosition; ri < startPosition + raysPerIteration && ri < numTotalRays; ++ri)
                 {
                     // If Hit::t is different from zero then we have a hit
-                    if (_resultHits[ri].t > std::numeric_limits<float>::epsilon())
+                    if (_resultHits[ri].t > 0.0f)
                     {
                         // Get the ray ring index
                         lidarshooter::XYZIRBytes cloudBytes(
