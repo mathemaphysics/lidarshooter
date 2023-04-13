@@ -73,6 +73,7 @@ public:
      * @brief Construct a new \c MeshProjector to run in the node
      * 
      * @param _configFile Path to device configuration file to load for this node
+     * @param __nodeHandle Input \c NodeHandlePtr to use for ROS communication 
      * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
@@ -83,6 +84,7 @@ public:
      * @brief Construct a new \c MeshProjector to run in the node
      * 
      * @param _configDevice Already loaded \c LidarDevice representing the LiDAR device
+     * @param __nodeHandle Input \c NodeHandlePtr to use for ROS communication 
      * @param __publishPeriod Publish \c _currentState every \c __publishPeriod
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
