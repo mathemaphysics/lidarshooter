@@ -12,6 +12,9 @@
 
 #include "LidarShooter.hpp"
 
+#include "Ray.hpp"
+#include "Hit.hpp"
+
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -27,8 +30,16 @@
 
 #include <Eigen/Dense>
 
+#ifdef LIDARSHOOTER_OPTIX_FOUND
+
+#include <optix.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+#endif
+
 #define NEXT_RAY_BASE nextRay
-#define NEXT_RAY(__rayhit, __valid) LIDARSHOOTER_GLUE(NEXT_RAY_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__rayhit, __valid)
+#define NEXT_RAY(__rayhit, __valid) LIDARSHOOTER_GLUE(NEXT_RAY_BASE, LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE)(__rayhit, __valid)
 
 namespace lidarshooter
 {
@@ -144,7 +155,7 @@ public:
      * @brief Abstraction of the \c nextRayNN functions
      * 
      * This function decides which \c nextRayNN to call based on what the
-     * value of \c LIDARSHOOTER_RAY_PACKET_SIZE is. Note also that \c RayHitType is a
+     * value of \c LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE is. Note also that \c RayHitType is a
      * \c typedef which depends on the packet size as well.
      * 
      * @param _ray Ray or packet of rays to trace
@@ -157,7 +168,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      *
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 1.
+     * \c LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE = 1.
      *  
      * @param _ray A single ray from the device
      * @param _valid Ignored for a single ray
@@ -169,7 +180,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 4.
+     * \c LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE = 4.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 4; 0 means don't compute, -1 means compute
@@ -181,7 +192,7 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 8.
+     * \c LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE = 8.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 8; 0 means don't compute, -1 means compute
@@ -193,13 +204,36 @@ public:
      * @brief Returns a single initialized ray from device's sequence
      * 
      * NOTE: This function is called by the macro inside of \c nextRay if
-     * \c LIDARSHOOTER_RAY_PACKET_SIZE = 16.
+     * \c LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE = 16.
      * 
      * @param _ray A single ray from the device
      * @param _valid Array of \c int of length 16; 0 means don't compute, -1 means compute
      * @return int State of the system; 1 means all rays have been returns, 0 means continue
      */
     int nextRay16(RTCRayHit16& _ray, int *_valid);
+
+    /**
+     * @brief Generates all of the rays for this device and puts them in \c _ray .
+     * 
+     * @param _rays The location to which to output all the rays
+     * @return int Success if 0 else something else
+     */
+    int allRays(std::vector<RTCRayHit>& _rays);
+
+#ifdef LIDARSHOOTER_OPTIX_FOUND
+
+    /**
+     * @brief Generates all of the rays for this device and puts them in the GPU memory position \c _ray .
+     * 
+     * This function is conditionally built. It will not exist in the class if
+     * the OptiX SDK is not found in the CMake configuration step.
+     * 
+     * @param _rays The location in GPU memory to output all the rays
+     * @return int Success if 0 otherwise something else
+     */
+    int allRaysGPU(lidarshooter::Ray *_raysOnDevice, lidarshooter::Hit *_hitsOnDevice);
+
+#endif
 
     /**
      * @brief Transforms an origin-basis coordinate to sensor coordinates
@@ -228,6 +262,20 @@ public:
     unsigned int getTotalRays();
 
     /**
+     * @brief Returns the total number of "vertical" channels
+     * 
+     * @return unsigned int Total number of channels vertically
+     */
+    unsigned int getTotalChannels();
+
+    /**
+     * @brief Returns the number of iterations returns in the horizontal scan
+     * 
+     * @return unsigned int Total returns per sweep
+     */
+    unsigned int getScanRayCount();
+
+    /**
      * @brief Get the current vertical and horizontal ray index position
      * 
      * This might be useful if you need to know under the hood how many rays you've
@@ -248,11 +296,6 @@ public:
     const std::string& getSensorUid() const;
 
 private:
-    /**
-     * @brief Name of the application to use as global logger reference
-     */
-    const std::string _applicationName = LIDARSHOOTER_APPLICATION_NAME;
-
     /**
      * @brief Folder into which output files are written when needed
      * 

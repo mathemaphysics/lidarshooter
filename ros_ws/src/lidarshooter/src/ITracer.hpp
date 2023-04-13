@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LidarShooter.hpp"
+
 #include <string>
 #include <map>
 #include <memory>
@@ -15,6 +17,9 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_sinks.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "LidarDevice.hpp"
 
@@ -24,7 +29,7 @@ namespace lidarshooter
 class ITracer
 {
 public:
-    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
     virtual ~ITracer() = default;
 
     // TODO: Get the RTCGeometry type from the mesh itself; or don't generalize it
@@ -69,6 +74,13 @@ public:
 	 * @return int Returns 0 if all went well, < 0 otherwise
 	 */
 	virtual int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh) = 0;
+
+	/**
+	 * @brief Does all the finalization that is required before computing
+	 * 
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	virtual int commitScene() = 0;
 
 	/**
 	 * @brief Traces the scene and puts the result in \c _traceCloud
@@ -119,6 +131,9 @@ protected:
      * @param _count Number of geometries to which to set the count
      */
     void setGeometryCount(long _count);
+
+	// The logger
+	std::shared_ptr<spdlog::logger> _logger;
 
 private:
 

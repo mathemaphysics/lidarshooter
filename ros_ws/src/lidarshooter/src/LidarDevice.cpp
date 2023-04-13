@@ -54,9 +54,9 @@ lidarshooter::LidarDevice::LidarDevice(std::shared_ptr<spdlog::logger> __logger)
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
@@ -67,9 +67,9 @@ lidarshooter::LidarDevice::LidarDevice(const std::string& _config, std::shared_p
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
@@ -83,9 +83,9 @@ lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::st
     // Set up the logger
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
@@ -364,7 +364,46 @@ int lidarshooter::LidarDevice::nextRay16(RTCRayHit16& _ray, int *_valid)
     return 0;
 }
 
-void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f& _sensor) const
+int lidarshooter::LidarDevice::allRays(std::vector<RTCRayHit> &_rays)
+{
+    // Clear it an
+    _rays.resize(getTotalRays());
+
+    // Stick 'em in there
+    int rayIndex = 0;
+    for (auto verticalAngle : _channels.vertical)
+        for (auto horizontalAngle = _channels.horizontal.range.begin;
+            horizontalAngle < _channels.horizontal.range.end;
+            horizontalAngle += _channels.horizontal.step)
+    {
+        // Convert to LiDAR coordinates
+        float theta = (90.0 - verticalAngle) * M_PI / 180.0; // Convert from chi in degrees to theta in radians
+        float phi = horizontalAngle * M_PI / 180.0; // Just convert to radians
+
+        // The normalized direction to trace
+        float dx = std::sin(theta) * std::cos(phi);
+        float dy = std::sin(theta) * std::sin(phi);
+        float dz = std::cos(theta);
+
+        // Set the ray and hit details
+        _rays[rayIndex].ray.org_x = 0.f;
+        _rays[rayIndex].ray.org_y = 0.f;
+        _rays[rayIndex].ray.org_z = 0.f;
+        _rays[rayIndex].ray.dir_x = dx;
+        _rays[rayIndex].ray.dir_y = dy;
+        _rays[rayIndex].ray.dir_z = dz;
+        _rays[rayIndex].ray.tnear = 0.f;
+        _rays[rayIndex].ray.tfar = std::numeric_limits<float>::infinity();
+        _rays[rayIndex].hit.geomID = RTC_INVALID_GEOMETRY_ID;
+
+        // Increment to the next net ray index
+        ++rayIndex;
+    }
+
+    return 0;
+}
+
+void lidarshooter::LidarDevice::originToSensor(Eigen::Vector3f &_sensor) const
 {
     Eigen::Vector3f translated = _sensor - Eigen::Vector3f(
         _device.transform.baseToOrigin.tx,
@@ -395,6 +434,16 @@ void lidarshooter::LidarDevice::reset()
 unsigned int lidarshooter::LidarDevice::getTotalRays()
 {
     return _channels.count;
+}
+
+unsigned int lidarshooter::LidarDevice::getTotalChannels()
+{
+    return _channels.vertical.size();
+}
+
+unsigned int lidarshooter::LidarDevice::getScanRayCount()
+{
+    return _channels.horizontal.count;
 }
 
 void lidarshooter::LidarDevice::getCurrentIndex(int *__verticalIndex, int *__horizontalIndex)

@@ -1,6 +1,7 @@
 FROM ubuntu:22.04
 
 ARG DEVUSER devuser
+ARG DEVUID 1000
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update \
@@ -15,7 +16,7 @@ RUN apt-get -y update \
 	libstd-srvs-dev ros-std-srvs python3-std-srvs libroslib-dev python3-roslib \
 	python3-rostest librostest-dev ros-geometry-msgs libjsoncpp-dev libpoco-dev \
 	ros-pcl-msgs libpcl-msgs-dev libpcl-conversions-dev rosbash libusb-1.0-0-dev \
-	libspdlog-dev libfmt-dev python3-pcl-msgs
+	libspdlog-dev libfmt-dev python3-pcl-msgs xorg-dev libglu1-mesa-dev
 
 RUN apt-get -y update \
 	&& apt-get -y install qtbase5-dev qtbase5-dev-tools libqwt-qt5-dev libqwt-headers
@@ -30,6 +31,6 @@ RUN apt-get -y update \
 	&& apt-get -y install libgtest-dev
 
 ENV DEVUSER=${DEVUSER}
-RUN adduser --uid 1000 --disabled-password --gecos "" ${DEVUSER} \
+RUN adduser --uid ${DEVUID} --disabled-password --gecos "" ${DEVUSER} \
     && echo "${DEVUSER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${DEVUSER}
 USER ${DEVUSER}

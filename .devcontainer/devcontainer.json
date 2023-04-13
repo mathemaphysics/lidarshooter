@@ -4,7 +4,7 @@
 	"name": "LiDARShooter Development",
 	"build": {
 		"dockerfile": "Dockerfile-cuda",
-		"args": { "DEVUSER": "devuser", "BUILDKIT_INLINE_CACHE": "0"}
+		"args": { "DEVUSER": "devuser", "DEVUID": "1000", "BUILDKIT_INLINE_CACHE": "0"}
 	},
 	"runArgs": ["--privileged", "--network=host", "--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"], //["--gpus=all", "-e", "NVIDIA_DRIVER_CAPABILITIES=all"],
 
@@ -46,7 +46,8 @@
 		"mischelebuha.cmake-extension-pack",
 		"ms-iot.vscode-ros",
 		"wayou.vscode-todo-highlight",
-		"Gruntfuggly.todo-tree"
+		"Gruntfuggly.todo-tree",
+		"gkarlos.vscode-ptx-syntax"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

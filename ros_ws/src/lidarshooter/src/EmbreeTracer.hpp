@@ -141,6 +141,13 @@ public:
 	int updateGeometry(const std::string& _meshName, Eigen::Vector3f _translation, Eigen::Vector3f _rotation, pcl::PolygonMesh::Ptr& _mesh);
 
 	/**
+	 * @brief Commits geometry changes to the scene
+	 * 
+	 * @return int Returns 0 if all went well, < 0 otherwise
+	 */
+	int commitScene();
+
+	/**
 	 * @brief Traces the scene and puts the result in \c _traceCloud
 	 * 
 	 * @return int Returns 0 if all went well, < 0 otherwise
@@ -212,23 +219,11 @@ public:
 		return 0;
 	}
 
-	/**
-	 * @brief Commits geometry changes to the scene
-	 * 
-	 * @return int Returns 0 if all went well, < 0 otherwise
-	 */
-	inline int commitScene()
-	{
-		rtcCommitScene(_scene);
-
-		return 0;
-	}
-
 #define EMBREETRACER_GET_MESH_INTERSECT_BASE getMeshIntersect
-#define EMBREETRACER_GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(EMBREETRACER_GET_MESH_INTERSECT_BASE, LIDARSHOOTER_RAY_PACKET_SIZE)(__valid, __rayhit)
+#define EMBREETRACER_GET_MESH_INTERSECT(__valid, __rayhit) LIDARSHOOTER_GLUE(EMBREETRACER_GET_MESH_INTERSECT_BASE, LIDARSHOOTER_EMBREE_RAY_PACKET_SIZE)(__valid, __rayhit)
 
     /**
-     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_RAY_PACKET_SIZE
+     * @brief Maps \c getMeshIntersect -> \c getMeshIntersectLIDARSHOOTER_EMBREE_RAY_PACKET_SIZE
      * 
      * Ray packet size generalization function; this will automatically
      * select which ray packet size to use based on the system preprocessor

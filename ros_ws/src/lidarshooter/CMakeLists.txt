@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.5)
-project(lidarshooter VERSION 0.1 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.17)
+project(lidarshooter VERSION 0.1 LANGUAGES CXX CUDA)
 
 include(FetchContent)
 
@@ -237,6 +237,38 @@ endif(ENABLE_OPENACC)
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+#############
+# OptiX SDK #
+#############
+
+# Configurable build settings
+set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64" CACHE PATH "Path to OptiX installation")
+option(LIDARSHOOTER_OPTIX_DEBUG "Enables debugging for OptixTracer if used" ON)
+option(LIDARSHOOTER_OPTIX_FOUND "Set to true if NVIDIA OptiX was found" OFF)
+
+# Get rid of this once CMake modules are installed correctly
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+# Set the OptiX SDK path; important
+list(APPEND CMAKE_MODULE_PATH "${OptiX_INSTALL_DIR}/SDK/CMake")
+
+include(BuildPTXFromSource)
+
+# Find OptiX requirements
+find_package(CUDAToolkit REQUIRED)
+find_package(OptiX)
+
+# Check for OptiX and set variable
+if (EXISTS ${OptiX_INCLUDE})
+message(STATUS "Setting OptiX library to found: ${OptiX_INCLUDE}")
+set(LIDARSHOOTER_OPTIX_FOUND ON)
+else()
+message(STATUS "Could not find the OptiX library")
+endif()
+
+# Generate Optix debugging header for LidarShooter.hpp
+configure_file(src/LidarShooter.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/LidarShooter.hpp)
+
 ###########################
 ## LiDARShooter Frontend ##
 ###########################
@@ -253,7 +285,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools REQUIRED)
 
-add_compile_options(-O2 -g3)
+add_compile_options(-O0 -g3)
 
 set(TS_FILES LiDARShooterGUI_en_US.ts)
 
@@ -301,7 +333,7 @@ endif()
 
 target_compile_features(LiDARShooterGUI PUBLIC cxx_std_17)
 target_include_directories(LiDARShooterGUI PRIVATE ${PCL_INCLUDE_DIRS} /usr/include/jsoncpp /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets lidarshooter ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp fmt ${catkin_LIBRARIES})
+target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets lidarshooter CUDA::cudart ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp fmt ${catkin_LIBRARIES})
 
 set_target_properties(LiDARShooterGUI PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -325,20 +357,20 @@ add_executable(projector src/projector.cpp)
 target_compile_features(projector PUBLIC cxx_std_17)
 target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
+target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} CUDA::cudart Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
 add_dependencies(projector ${catkin_EXPORTED_TARGETS})
 
 add_executable(objtracker src/objtracker.cpp)
 target_compile_features(objtracker PUBLIC cxx_std_17)
 target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options spdlog::spdlog fmt Poco::Net)
+target_link_libraries(objtracker lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} CUDA::cudart Boost::program_options spdlog::spdlog fmt Poco::Net)
 add_dependencies(objtracker ${catkin_EXPORTED_TARGETS})
 
 ##########################
 ## LiDARShooter Library ##
 ##########################
 
-add_library(lidarshooter
+set(LIBRARY_TARGETS 
     src/IntBytes.cpp
     src/FloatBytes.cpp
     src/XYZIRBytes.cpp
@@ -350,14 +382,25 @@ add_library(lidarshooter
     src/CloudConverter.cpp
     src/AffineMesh.cpp
     src/ITracer.cpp
-    src/EmbreeTracer.cpp)
+    src/EmbreeTracer.cpp
+    src/OptixTracer.cpp
+    src/Ray.cpp
+    src/Hit.cpp)
+
+if (LIDARSHOOTER_OPTIX_FOUND)
+list(APPEND LIBRARY_TARGETS "src/LidarDeviceKernels.cu")
+endif()
+
+add_library(lidarshooter ${LIBRARY_TARGETS})
+
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
+
 if (ENABLE_OPENACC)
     target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
 endif (ENABLE_OPENACC)
-target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
+target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include ${OptiX_INCLUDE} ${OptiX_INCLUDE}/../SDK ${OptiX_INCLUDE}/../SDK/support)
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
+target_link_libraries(lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} CUDA::cudart Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
 if (ENABLE_OPENACC)
     target_link_libraries(lidarshooter OpenACC::OpenACC_CXX)
 endif (ENABLE_OPENACC)
@@ -374,9 +417,17 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(AffineMesh_test src/test/AffineMesh_test.cpp)
 catkin_add_gtest(EmbreeTracer_test src/test/EmbreeTracer_test.cpp)
+catkin_add_gtest(OptixTracer_test src/test/OptixTracer_test.cpp)
+catkin_add_gtest(LidarDevice_test src/test/LidarDevice_test.cpp)
+if(TARGET AffineMesh_test)
+  target_link_libraries(AffineMesh_test lidarshooter)
+endif()
 if(TARGET EmbreeTracer_test)
   target_link_libraries(EmbreeTracer_test lidarshooter)
 endif()
-if(TARGET AffineMesh_test)
-  target_link_libraries(AffineMesh_test lidarshooter)
+if(TARGET OptixTracer_test)
+  target_link_libraries(OptixTracer_test lidarshooter)
+endif()
+if(TARGET LidarDevice_test)
+  target_link_libraries(LidarDevice_test lidarshooter)
 endif()

@@ -1,9 +1,9 @@
 /**
- * @file EmbreeTracer_test.cpp
+ * @file OptixTracer_test.cpp
  * @author Ryan P. Daly (rdaly@herzog.com)
- * @brief Unit tests related to the EmbreeTracer class
+ * @brief Unit tests for the OptixTracer class
  * @version 0.1
- * @date 2023-01-22
+ * @date 2023-02-25
  * 
  * @copyright Copyright (c) 2023
  * 
@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../EmbreeTracer.hpp"
+#include "../OptixTracer.hpp"
 #include "../LidarDevice.hpp"
 
 #include <pcl/point_cloud.h>
@@ -27,7 +27,7 @@
 namespace
 {
 
-class EmbreeTracerTest : public ::testing::Test
+class OptixTracerTest : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -52,9 +52,10 @@ protected:
         );
 
         // Make tracer; default to create internal trace cloud storage
-        embreeTracer = lidarshooter::EmbreeTracer::create(sensorConfig);
+        auto traceStorage = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+        optixTracer = lidarshooter::OptixTracer::create(sensorConfig, traceStorage);
         geometryIdAdded = static_cast<unsigned int>(
-            embreeTracer->addGeometry(
+            optixTracer->addGeometry(
                 "mesh",
                 RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
                 meshData->cloud.width * meshData->cloud.height,
@@ -65,72 +66,35 @@ protected:
 
     void TearDown() override
     {
-        embreeTracer.reset();
+        optixTracer.reset();
         sensorConfig.reset();
         meshData.reset();
     }
 
     pcl::PolygonMesh::Ptr meshData;
     std::shared_ptr<lidarshooter::LidarDevice> sensorConfig;
-    lidarshooter::EmbreeTracer::Ptr embreeTracer;
+    lidarshooter::OptixTracer::Ptr optixTracer;
     unsigned int geometryIdAdded;
 };
 
-TEST_F(EmbreeTracerTest, NoDeviceError)
+TEST_F(OptixTracerTest, InstantiateTest)
 {
     // Make sure geometry and buffer creation doesn't fail or complain
-    RTCError error = rtcGetDeviceError(embreeTracer->getDevice());
-    EXPECT_EQ(error, RTC_ERROR_NONE);
+    EXPECT_NO_THROW();
 }
 
-TEST_F(EmbreeTracerTest, VertexElementCounts)
-{
-    // Check that the number of vertices and elements is right
-    EXPECT_EQ(embreeTracer->getVertexCount("mesh"), 98l);
-    EXPECT_EQ(embreeTracer->getElementCount("mesh"), 162l);
-}
-
-TEST_F(EmbreeTracerTest, GeometryTotalCount)
-{
-    // Make sure we have only one
-    EXPECT_EQ(embreeTracer->getGeometryCount(), 1);
-}
-
-TEST_F(EmbreeTracerTest, AddGeometryId)
-{
-    // Internal map and returned IDs should match
-    unsigned int idStored = static_cast<unsigned int>(embreeTracer->getGeometryId("mesh"));
-    EXPECT_EQ(geometryIdAdded, idStored);
-}
-
-TEST_F(EmbreeTracerTest, DeleteGeometryId)
-{
-    // Have to call getGeometryId before deleting; won't exist after
-    unsigned int actualGeomId = static_cast<unsigned int>(embreeTracer->getGeometryId("mesh"));
-    unsigned int idDeleted = static_cast<unsigned int>(embreeTracer->removeGeometry("mesh"));
-
-    // Make sure the geometry it claims it deleted was the right one; consistency check
-    EXPECT_EQ(idDeleted, actualGeomId);
-}
-
-TEST_F(EmbreeTracerTest, GeometryType)
-{
-    RTCGeometryType geometryType = embreeTracer->getGeometryType("mesh");
-    EXPECT_EQ(geometryType, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE);
-}
-
-TEST_F(EmbreeTracerTest, TraceSceneCloud)
+TEST_F(OptixTracerTest, TraceSceneCloud)
 {
     // Must call this to initialize ros::Time for LidarDevice::initMessage
     ros::Time::init();
     EXPECT_NO_FATAL_FAILURE(
-        embreeTracer->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
+        optixTracer->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
     );
-    embreeTracer->commitScene();
+    optixTracer->commitScene();
     EXPECT_NO_FATAL_FAILURE(
-        embreeTracer->traceScene(0)
+        optixTracer->traceScene(0)
     );
-    auto cloud = embreeTracer->getTraceCloud();
+    auto cloud = optixTracer->getTraceCloud();
     EXPECT_EQ(cloud->width * cloud->height, 1668);
 }
 

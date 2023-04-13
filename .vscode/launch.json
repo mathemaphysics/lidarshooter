@@ -1,11 +1,8 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "(gdb) Debug LiDARShooterGUI",
             "type": "cppdbg",
             "request": "launch",
             "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/LiDARShooterGUI",
@@ -27,7 +24,78 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "(gdb) Debug OptixTracer Tests: TraceSceneCloud",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/OptixTracer_test",
+            "args": ["--gtest_filter=OptixTracerTest.TraceSceneCloud"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug LidarDevice Tests: ReadConfigParameters",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/LidarDevice_test",
+            "args": ["--gtest_filter=LidarDeviceTest.ReadConfigParameters"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug LidarDevice Tests: InitializeMessage",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/LidarDevice_test",
+            "args": ["--gtest_filter=LidarDeviceTest.InitializeMessage"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
         }
-
     ]
 }

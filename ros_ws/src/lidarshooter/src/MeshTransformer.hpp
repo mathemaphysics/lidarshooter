@@ -3,6 +3,7 @@
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
 
+#include <cuda_runtime.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/PCLPointCloud2.h>
@@ -84,6 +85,24 @@ public:
 	 * @param _elements Element destination buffer space
 	 */
 	void transformIntoBuffer(RTCGeometryType _geometryType, float* _vertices, unsigned int* _elements);
+
+	/**
+	 * @brief Transforms the input mesh and puts result in buffer
+	 * 
+	 * @param _geometryType Geometry type should be TRIANGLE
+	 * @param _vertices Vertex destination buffer space
+	 * @param _elements Element destination buffer space
+	 */
+	void transformIntoBuffer(RTCGeometryType _geometryType, std::vector<float3>& _vertices, std::vector<uint3>& _elements);
+
+	/**
+	 * @brief Transforms the input mesh and puts result in buffer
+	 * 
+	 * @param _geometryType Geometry type should be QUAD
+	 * @param _vertices Vertex destination buffer space
+	 * @param _elements Element destination buffer space
+	 */
+	void transformIntoBuffer(RTCGeometryType _geometryType, std::vector<float3>& _vertices, std::vector<uint4>& _elements);
 
 	/**
 	 * @brief Apply the stored transform to the target cloud
@@ -169,6 +188,22 @@ private:
 	 * @param _elements Pointer to the elements storage space
 	 */
 	void copyElementsIntoBuffer(RTCGeometryType _geometryType, unsigned int* _elements);
+
+	/**
+	 * @brief Copy elements into triangle mesh space
+	 * 
+	 * @param _geometryType \c RTCGeometryType, the type of geometry (should be TRIANGLE)
+	 * @param _elements The target to copy the elements into
+	 */
+	void copyElementsIntoBuffer(RTCGeometryType _geometryType, std::vector<uint3> &_elements);
+
+	/**
+	 * @brief Copy elements into triangle mesh space
+	 * 
+	 * @param _geometryType \c RTCGeometryType, the type of geometry (should be QUAD)
+	 * @param _elements The target to copy the elements into
+	 */
+	void copyElementsIntoBuffer(RTCGeometryType _geometryType, std::vector<uint4> &_elements);
 };
 
 }

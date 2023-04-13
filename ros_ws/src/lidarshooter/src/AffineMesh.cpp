@@ -287,9 +287,9 @@ void lidarshooter::AffineMesh::setupLogger(std::shared_ptr<spdlog::logger> __log
 {
     if (__logger == nullptr)
     {
-        _logger = spdlog::get(_applicationName);
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
         if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(_applicationName);
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
     }
     else
         _logger = __logger;
