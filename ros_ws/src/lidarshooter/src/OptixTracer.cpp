@@ -66,17 +66,19 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
         std::forward_as_tuple(_numElements)
     );
     
-    // Allocate space on the device
-    auto verticesEmplace = _devVertices.emplace(
+    // Insert key into device vertices and elements for storing GPU space
+    _devVertices.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(_meshName),
         std::forward_as_tuple(0)
     );
-    auto elementsEmplace = _devElements.emplace(
+    _devElements.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(_meshName),
         std::forward_as_tuple(0)
     );
+    
+    // Allocate the actual space on the GPU for vertices and elements
     CUDA_CHECK(
         cudaMalloc(
             reinterpret_cast<void **>(&_devVertices[_meshName]),
@@ -99,6 +101,53 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
 
 int lidarshooter::OptixTracer::removeGeometry(const std::string& _meshName)
 {
+    // Free space on GPU while making sure keys exist (getVerticesGPU will throw
+    // if not present)
+    CUDA_CHECK(
+        cudaFree(
+            reinterpret_cast<void*>(getVerticesGPU(_meshName))
+        )
+    );
+    CUDA_CHECK(
+        cudaFree(
+            reinterpret_cast<void*>(getElementsGPU(_meshName))
+        )
+    );
+
+    // Free the storage for the GPU pointers in the device map
+    _devVertices.erase(_meshName);
+    _devElements.erase(_meshName);
+
+    // Make sure key exist in local vertices storage and erase
+    auto verticesIterator = _vertices.find(_meshName);
+    if (verticesIterator == _vertices.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in vertices map",
+            2
+        ));
+    _vertices.erase(verticesIterator);
+
+    // Make sure key exists in local elements storage and erase
+    auto elementsIterator = _elements.find(_meshName);
+    if (elementsIterator == _elements.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in elements map",
+            5
+        ));
+    _elements.erase(elementsIterator);
+
+    // Now finally remove the corresponding OptixBuildInput
+    auto inputsIterator = _optixInputs.find(_meshName);
+    if (inputsIterator == _optixInputs.end())
+        throw(TraceException(
+            __FILE__,
+            "Geometry key does not exist in OptiX inputs map",
+            9
+        ));
+    _optixInputs.erase(inputsIterator);
+
     return 0;
 }
 
