@@ -25,11 +25,6 @@ lidarshooter::ITracer::ITracer(std::shared_ptr<LidarDevice> _sensorConfig, senso
     _geometryCount = 0;
 }
 
-lidarshooter::ITracer::Ptr lidarshooter::ITracer::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
-{
-    return nullptr;
-}
-
 long lidarshooter::ITracer::getGeometryCount() const
 {
     return _geometryCount;
