@@ -48,14 +48,14 @@ public:
 	 * 
 	 * @return EmbreeTracer::Ptr Your new shared \c EmbreeTracer
 	 */
-	static EmbreeTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+	static EmbreeTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
 
 	/**
 	 * @brief Get a shared pointer to this object
 	 * 
 	 * @return std::shared_ptr<EmbreeTracer> A pointer to the object
 	 */
-	EmbreeTracer::Ptr getPtr();
+	ITracer::Ptr getPtr();
 
 	// Still need to clean up
 	~EmbreeTracer();

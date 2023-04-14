@@ -33,6 +33,8 @@ public:
 	using ConstPtr = std::shared_ptr<ITracer const>;
 
     ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+	static ITracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+	virtual ITracer::Ptr getPtr() = 0;
     virtual ~ITracer() = default;
 
     // TODO: Get the RTCGeometry type from the mesh itself; or don't generalize it

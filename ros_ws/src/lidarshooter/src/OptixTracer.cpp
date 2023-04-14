@@ -18,12 +18,12 @@
 #include <algorithm>
 #include <filesystem>
 
-lidarshooter::OptixTracer::Ptr lidarshooter::OptixTracer::create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage) 
+lidarshooter::OptixTracer::Ptr lidarshooter::OptixTracer::create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger) 
 {
     return lidarshooter::OptixTracer::Ptr(new OptixTracer(_sensorConfig, _traceStorage));
 }
 
-lidarshooter::OptixTracer::Ptr lidarshooter::OptixTracer::getPtr()
+lidarshooter::ITracer::Ptr lidarshooter::OptixTracer::getPtr()
 {
     return shared_from_this();
 }

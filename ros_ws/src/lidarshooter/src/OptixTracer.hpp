@@ -88,8 +88,8 @@ public:
 	using MissSbtRecord = SbtRecord<MissData>;
 	using HitGroupSbtRecord = SbtRecord<HitGroupData>;
 
-    static OptixTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
-	OptixTracer::Ptr getPtr();
+    static OptixTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+	ITracer::Ptr getPtr();
     ~OptixTracer();
 
 	int addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
