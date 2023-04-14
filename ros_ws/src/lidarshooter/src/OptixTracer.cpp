@@ -333,8 +333,8 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     return 0;
 }
 
-lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage)
-    : ITracer(_sensorConfig, _traceStorage),
+lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
+    : ITracer(_sensorConfig, _traceStorage, _logger),
       _options{}
 {
     // Block for creating the contexts

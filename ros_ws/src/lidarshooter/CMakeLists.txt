@@ -383,12 +383,13 @@ set(LIBRARY_TARGETS
     src/AffineMesh.cpp
     src/ITracer.cpp
     src/EmbreeTracer.cpp
-    src/OptixTracer.cpp
     src/Ray.cpp
     src/Hit.cpp)
 
 if (LIDARSHOOTER_OPTIX_FOUND)
-list(APPEND LIBRARY_TARGETS "src/LidarDeviceKernels.cu")
+list(APPEND LIBRARY_TARGETS
+    src/OptixTracer.cpp
+    src/LidarDeviceKernels.cu)
 endif()
 
 add_library(lidarshooter ${LIBRARY_TARGETS})
@@ -417,7 +418,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(AffineMesh_test src/test/AffineMesh_test.cpp)
 catkin_add_gtest(EmbreeTracer_test src/test/EmbreeTracer_test.cpp)
+if (LIDARSHOOTER_OPTIX_FOUND)
 catkin_add_gtest(OptixTracer_test src/test/OptixTracer_test.cpp)
+endif()
 catkin_add_gtest(LidarDevice_test src/test/LidarDevice_test.cpp)
 if(TARGET AffineMesh_test)
   target_link_libraries(AffineMesh_test lidarshooter)
