@@ -29,6 +29,9 @@ namespace lidarshooter
 class ITracer
 {
 public:
+	using Ptr = std::shared_ptr<ITracer>;
+	using ConstPtr = std::shared_ptr<ITracer const>;
+
     ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
     virtual ~ITracer() = default;
 
