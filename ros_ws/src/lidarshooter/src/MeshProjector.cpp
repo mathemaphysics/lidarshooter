@@ -33,7 +33,7 @@
 lidarshooter::MeshProjector::MeshProjector(ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _tracer(__tracer),
-      _meshWasUpdated(false), _meshWasUpdatedPublic(true),
+      _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
       _shouldPublishCloud(false)
 {
@@ -82,7 +82,6 @@ lidarshooter::MeshProjector::MeshProjector(ITracer::Ptr __tracer, ros::NodeHandl
     _config.reset(new LidarDevice(configFile, _sensorUid, __logger));
 
     // The current state cloud is now a shared pointer and needs alloc'ed
-    //_currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
     _currentState = _tracer->getTraceCloud();
     
     // When object is created we start at frame index 0
@@ -165,7 +164,6 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ITrac
     _config.reset(new LidarDevice(_configFile, _sensorUid, __logger));
 
     // The current state cloud is now a shared pointer and needs alloc'ed
-    //_currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
     _currentState = _tracer->getTraceCloud();
 
     // When object is created we start at frame index 0
@@ -244,7 +242,6 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _config = _configDevice;
 
     // The current state cloud is now a shared pointer and needs alloc'ed
-    //_currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
     _currentState = _tracer->getTraceCloud();
 
     // When object is created we start at frame index 0
