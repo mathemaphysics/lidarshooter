@@ -115,6 +115,9 @@ private:
 	 * This function builds whatever structure is chosen inside the allotted
 	 * space. Frequently this is a kd-tree or an axis-aligned bounding box of
 	 * some sort.
+	 * 
+	 * @param _fullUpdate Force a full update (build) to the acceleration structure
+	 * 
 	 */
 	void buildAccelStructure();
 
@@ -228,6 +231,16 @@ private:
 	 */
 	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 
+	// Events state handling
+
+	/**
+	 * @brief Returns whether changes made to geometry list, \c OptixBuildInput array
+	 * 
+	 * @return true Geometry was either added or removed
+	 * @return false No geometry changes were made
+	 */
+	bool geometryWasUpdated();
+
 	// In local memory storage of vertices and elements
 	std::map<const std::string, OptixBuildInput> _optixInputs;
 	std::map<const std::string, std::vector<float3>> _vertices;
@@ -281,6 +294,10 @@ private:
 	OptixAccelBuildOptions _accelBuildOptions;
     OptixAccelBufferSizes _gasBufferSizes;
     const uint32_t _buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+
+	// Event states
+	std::atomic<bool> _gasBuffersAllocated;
+	std::atomic<bool> _geometryWasUpdated;
 };
 
 }

@@ -30,7 +30,7 @@ lidarshooter::ITracer::Ptr lidarshooter::OptixTracer::getPtr()
 
 lidarshooter::OptixTracer::~OptixTracer()
 {
-    // TODO: You only need to allocate once at the beginning
+    // Freeing the device rays, hits, and params space
     CUDA_CHECK(
         cudaFree(
             reinterpret_cast<void*>(_devRays)
@@ -49,6 +49,21 @@ lidarshooter::OptixTracer::~OptixTracer()
         )
     );
 
+    // Freeing the GAS buffers
+    if (_gasBuffersAllocated)
+    {
+        CUDA_CHECK(
+            cudaFree(
+                reinterpret_cast<void*>(_devGasTempBuffer)
+            )
+        );
+        CUDA_CHECK(
+            cudaFree(
+                reinterpret_cast<void*>(_devGasOutputBuffer)
+            )
+        );
+        _gasBuffersAllocated = false;
+    }
 }
 
 // TODO: For now addGeometry will ignore the _geometryType and assume it's a
@@ -115,6 +130,9 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
 
     CUDA_SYNC_CHECK();
 
+    // Add or remove geometry event
+    _geometryWasUpdated.store(true);
+
     return 0;
 }
 
@@ -168,6 +186,9 @@ int lidarshooter::OptixTracer::removeGeometry(const std::string& _meshName)
     _optixInputs.erase(inputsIterator);
 
     CUDA_SYNC_CHECK();
+
+    // Add or remove geometry event
+    _geometryWasUpdated.store(true);
 
     return 0;
 }
@@ -254,6 +275,7 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 
 int lidarshooter::OptixTracer::commitScene()
 {
+    
     buildAccelStructure();
 
     CUDA_SYNC_CHECK();
@@ -339,7 +361,9 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 
 lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
     : ITracer(_sensorConfig, _traceStorage, _logger),
-      _options{}
+      _options{},
+      _gasBuffersAllocated(false),
+      _geometryWasUpdated(false)
 {
     // Block for creating the contexts
     _devContext = nullptr;
@@ -407,35 +431,45 @@ void lidarshooter::OptixTracer::buildAccelStructure()
     for (auto [name, input] : _optixInputs)
         buildInputArray.push_back(input);
 
+    // Do full update because geometry was added
+    auto _fullUpdate = geometryWasUpdated();
+
     // Set the options
     _accelBuildOptions = {};
-    _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_NONE;
-    _accelBuildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
+    _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_ALLOW_UPDATE;
+    _accelBuildOptions.operation = _fullUpdate ? OPTIX_BUILD_OPERATION_BUILD : OPTIX_BUILD_OPERATION_UPDATE;
 
     // Calculate the GAS buffer sizes
-    OPTIX_CHECK(
-        optixAccelComputeMemoryUsage(
-            _devContext,
-            &_accelBuildOptions,
-            buildInputArray.data(),
-            buildInputArray.size(),
-            &_gasBufferSizes
-        )
-    );
+    if (_fullUpdate || !_gasBuffersAllocated)
+    {
+        OPTIX_CHECK(
+            optixAccelComputeMemoryUsage(
+                _devContext,
+                &_accelBuildOptions,
+                buildInputArray.data(),
+                buildInputArray.size(),
+                &_gasBufferSizes
+            )
+        );
 
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void**>(&_devGasTempBuffer),
-            _gasBufferSizes.tempSizeInBytes
-        )
-    );
+        CUDA_CHECK(
+            cudaMalloc(
+                reinterpret_cast<void**>(&_devGasTempBuffer),
+                _gasBufferSizes.tempSizeInBytes
+            )
+        );
 
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void**>(&_devGasOutputBuffer),
-            _gasBufferSizes.outputSizeInBytes
-        )
-    );
+        CUDA_CHECK(
+            cudaMalloc(
+                reinterpret_cast<void**>(&_devGasOutputBuffer),
+                _gasBufferSizes.outputSizeInBytes
+            )
+        );
+
+        // Indicate that we already built the accleeration structure and allocate
+        // the space needed to easily update
+        _gasBuffersAllocated = true;
+    }
 
     OPTIX_CHECK(
         optixAccelBuild(
@@ -818,4 +852,15 @@ void lidarshooter::OptixTracer::getInputDataFromFile(std::string &_ptx, const st
         std::string err = "Couldn't open source file: " + sourceFilePath;
         throw std::runtime_error(err.c_str());
     }
+}
+
+bool lidarshooter::OptixTracer::geometryWasUpdated()
+{
+    if (_geometryWasUpdated.load() == true)
+    {
+        _geometryWasUpdated.store(false);
+        return true;
+    }
+    else
+        return false;
 }

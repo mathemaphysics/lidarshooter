@@ -331,8 +331,8 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
     _logger->debug("Added geometric ID {}", geomId);
 
     // Indicate the mesh was updated so we get a retrace
-    //_meshWasUpdated.store(true);
-    //_meshWasUpdatedPublic.store(true);
+    _meshWasUpdated.store(true);
+    _meshWasUpdatedPublic.store(true);
 }
 
 void lidarshooter::MeshProjector::deleteMeshFromScene(const std::string &_meshName)
