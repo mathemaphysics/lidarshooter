@@ -254,8 +254,8 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
     else
     {
         // This is where you would choose which tracer to use
-        lidarshooter::ITracer::Ptr tracer = lidarshooter::OptixTracer::create(devicePointer, nullptr, loggerTop);
-        //lidarshooter::ITracer::Ptr tracer = lidarshooter::EmbreeTracer::create(devicePointer, nullptr, loggerTop);
+        //lidarshooter::ITracer::Ptr tracer = lidarshooter::OptixTracer::create(devicePointer, nullptr, loggerTop);
+        lidarshooter::ITracer::Ptr tracer = lidarshooter::EmbreeTracer::create(devicePointer, nullptr, loggerTop);
 
         // Create the sensor
         auto result = runtimeMap.emplace(
