@@ -235,6 +235,10 @@ private:
 	std::map<const std::string, CUdeviceptr> _devVertices;
 	std::map<const std::string, CUdeviceptr> _devElements;
 
+	Ray* _devRays = 0;
+	Hit* _devHits = 0;
+	CUdeviceptr _devParams = 0;
+
 	// Context setup and options for CUDA and OptiX device
 	OptixDeviceContext _devContext;
     OptixDeviceContextOptions _options;
@@ -276,6 +280,7 @@ private:
 	CUdeviceptr _devGasOutputBuffer;
 	OptixAccelBuildOptions _accelBuildOptions;
     OptixAccelBufferSizes _gasBufferSizes;
+    const uint32_t _buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 };
 
 }

@@ -30,6 +30,24 @@ lidarshooter::ITracer::Ptr lidarshooter::OptixTracer::getPtr()
 
 lidarshooter::OptixTracer::~OptixTracer()
 {
+    // TODO: You only need to allocate once at the beginning
+    CUDA_CHECK(
+        cudaFree(
+            reinterpret_cast<void*>(_devRays)
+        )
+    );
+    CUDA_CHECK(
+        cudaFree(
+            reinterpret_cast<void*>(_devHits)
+        )
+    );
+
+    // Clean up params space on device
+    CUDA_CHECK(
+        cudaFree(
+            reinterpret_cast<void*>(_devParams)
+        )
+    );
 
 }
 
@@ -39,9 +57,8 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
 {
     // Just make buffers and build inputs
     _optixInputs[_meshName] = {};
-    const uint32_t buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
     _optixInputs[_meshName].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-    _optixInputs[_meshName].triangleArray.flags = buildInputFlags;
+    _optixInputs[_meshName].triangleArray.flags = _buildInputFlags;
     _optixInputs[_meshName].triangleArray.numSbtRecords = 1;
     _optixInputs[_meshName].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
     _optixInputs[_meshName].triangleArray.vertexStrideInBytes = sizeof(float3);
@@ -150,6 +167,8 @@ int lidarshooter::OptixTracer::removeGeometry(const std::string& _meshName)
         ));
     _optixInputs.erase(inputsIterator);
 
+    CUDA_SYNC_CHECK();
+
     return 0;
 }
 
@@ -186,6 +205,8 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
             cudaMemcpyHostToDevice
         )
     );
+
+    CUDA_SYNC_CHECK();
 
     // Commit the changes to this geometry
     return 0;
@@ -225,6 +246,8 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
         )
     );
 
+    CUDA_SYNC_CHECK();
+
     // Commit the changes to this geometry
     return 0;
 }
@@ -232,6 +255,8 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 int lidarshooter::OptixTracer::commitScene()
 {
     buildAccelStructure();
+
+    CUDA_SYNC_CHECK();
 
     return 0;
 }
@@ -251,41 +276,16 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     auto numberOfRays = sensorConfig->getTotalRays();
     params.numberOfRays = numberOfRays;
 
-    // Allocate the space for rays and hits on device
-    lidarshooter::Ray* devRays = 0;
-    lidarshooter::Hit* devHits = 0;
-
-    // Allocate the ray and hit arrays on device
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void**>(&devRays),
-            numberOfRays * sizeof(lidarshooter::Ray)
-        )
-    );
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void**>(&devHits),
-            numberOfRays * sizeof(lidarshooter::Hit)
-        )
-    );
-
     // Allocate the space on the device too
-    params.rays = devRays;
-    params.hits = devHits;
+    params.rays = _devRays;
+    params.hits = _devHits;
     params.handle = _gasHandle;
 
-    CUdeviceptr devParams;
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void**>(&devParams),
-            sizeof(lidarshooter::OptixTracer::Params)
-        )
-    );
     CUDA_CHECK(
         cudaMemcpy(
-            reinterpret_cast<void*>(devParams),
+            reinterpret_cast<void*>(_devParams),
             &params,
-            sizeof(lidarshooter::OptixTracer::Params),
+            sizeof(Params),
             cudaMemcpyHostToDevice
         )
     );
@@ -298,7 +298,7 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
         optixLaunch(
             _tracePipeline,
             cuStream,
-            devParams,
+            _devParams,
             sizeof(Params),
             &_shaderBindingTable,
             getSensorConfig()->getTotalChannels(),
@@ -311,12 +311,12 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     CUDA_SYNC_CHECK();
 
     // Copy results back home
-    auto resultHits = new lidarshooter::Hit[numberOfRays];
+    auto resultHits = new Hit[numberOfRays];
     CUDA_CHECK(
         cudaMemcpy(
             static_cast<void*>(resultHits),
             static_cast<void*>(params.hits),
-            numberOfRays * sizeof(lidarshooter::Hit),
+            numberOfRays * sizeof(Hit),
             cudaMemcpyDeviceToHost
         )
     );
@@ -331,6 +331,8 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 
     // Cleanup
     delete [] resultHits;
+
+    CUDA_SYNC_CHECK();
 
     return 0;
 }
@@ -366,6 +368,30 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
     createProgramGroups();
     linkPipeline();
     setupSbtRecords();
+
+    // Allocate space
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(&_devParams),
+            sizeof(Params)
+        )
+    );
+
+    // Allocate the ray and hit arrays on device
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(&_devRays),
+            _sensorConfig->getTotalRays() * sizeof(Ray)
+        )
+    );
+    CUDA_CHECK(
+        cudaMalloc(
+            reinterpret_cast<void**>(&_devHits),
+            _sensorConfig->getTotalRays() * sizeof(Hit)
+        )
+    );
+
+    CUDA_SYNC_CHECK();
 }
 
 void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
@@ -678,7 +704,7 @@ void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)
                     if (_resultHits[ri].t > 0.0f)
                     {
                         // Get the ray ring index
-                        lidarshooter::XYZIRBytes cloudBytes(
+                        XYZIRBytes cloudBytes(
                             _resultHits[ri].normal.x,
                             _resultHits[ri].normal.y,
                             _resultHits[ri].normal.z,

@@ -12,7 +12,12 @@
             "environment": [
                 {
                     "name": "ROS_MASTER_URI",
-                    "value": "http://Dommage:11311/"}
+                    "value": "http://Dommage:11311"
+                },
+                {
+                    "name": "ROS_IP",
+                    "value": "127.0.0.1"
+                }
             ],
             "externalConsole": false,
             "MIMode": "gdb",

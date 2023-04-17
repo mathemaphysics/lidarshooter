@@ -108,8 +108,8 @@ lidarshooter::MeshProjector::MeshProjector(ITracer::Ptr __tracer, ros::NodeHandl
     _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
-    _meshWasUpdated.store(true);
-    _meshWasUpdatedPublic.store(true);
+    //_meshWasUpdated.store(true);
+    //_meshWasUpdatedPublic.store(true);
 
     // False because it hasn't bee traced yet
     _stateWasUpdated.store(false);
@@ -190,8 +190,8 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ITrac
     _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
-    _meshWasUpdated.store(true);
-    _meshWasUpdatedPublic.store(true);
+    //_meshWasUpdated.store(true);
+    //_meshWasUpdatedPublic.store(true);
 }
 
 lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
@@ -268,8 +268,8 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
-    _meshWasUpdated.store(true);
-    _meshWasUpdatedPublic.store(true);
+    //_meshWasUpdated.store(true);
+    //_meshWasUpdatedPublic.store(true);
 }
 
 lidarshooter::MeshProjector::~MeshProjector()
@@ -331,8 +331,8 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
     _logger->debug("Added geometric ID {}", geomId);
 
     // Indicate the mesh was updated so we get a retrace
-    _meshWasUpdated.store(true);
-    _meshWasUpdatedPublic.store(true);
+    //_meshWasUpdated.store(true);
+    //_meshWasUpdatedPublic.store(true);
 }
 
 void lidarshooter::MeshProjector::deleteMeshFromScene(const std::string &_meshName)
