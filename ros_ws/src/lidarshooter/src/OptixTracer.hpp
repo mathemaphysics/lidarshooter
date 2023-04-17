@@ -75,7 +75,7 @@ public:
 
 	using MissData = struct
 	{
-		float3 bg_color;
+		// No data needed
 	};
 
 	using HitGroupData = struct
@@ -247,6 +247,7 @@ private:
 	std::map<const std::string, std::vector<uint3>> _elements;
 	std::map<const std::string, CUdeviceptr> _devVertices;
 	std::map<const std::string, CUdeviceptr> _devElements;
+	std::vector<OptixBuildInput> _buildInputArray;
 
 	Ray* _devRays = 0;
 	Hit* _devHits = 0;
@@ -288,6 +289,7 @@ private:
 	CUdeviceptr _devHitgroupSbtRecord; // Hit group SBT record on the device
 
 	// Storage of geometry, local and device
+	CUstream _cuStream;
 	OptixTraversableHandle _gasHandle;
 	CUdeviceptr _devGasTempBuffer;
 	CUdeviceptr _devGasOutputBuffer;

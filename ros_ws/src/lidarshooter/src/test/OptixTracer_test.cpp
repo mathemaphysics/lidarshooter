@@ -37,11 +37,18 @@ protected:
 
         // Load the mesh for reference
         // TODO: See the note below; the same goes here
-        meshData = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
-        auto meshPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
+        meshGround = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
+        auto meshGroundPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
         pcl::io::loadPolygonFileSTL(
-            (meshPath / "mesh/ground.stl").string(),
-            *meshData
+            (meshGroundPath / "mesh/ground.stl").string(),
+            *meshGround
+        );
+        
+        meshFace = pcl::PolygonMesh::Ptr(new pcl::PolygonMesh());
+        auto meshFacePath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
+        pcl::io::loadPolygonFileSTL(
+            (meshFacePath / "mesh/ben.stl").string(),
+            *meshFace
         );
 
         // Make the LidarDevice
@@ -56,10 +63,18 @@ protected:
         optixTracer = lidarshooter::OptixTracer::create(sensorConfig, traceStorage);
         geometryIdAdded = static_cast<unsigned int>(
             optixTracer->addGeometry(
-                "mesh",
+                "ground",
                 RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
-                meshData->cloud.width * meshData->cloud.height,
-                meshData->polygons.size()
+                meshGround->cloud.width * meshGround->cloud.height,
+                meshGround->polygons.size()
+            )
+        );
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "face",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshFace->cloud.width * meshFace->cloud.height,
+                meshFace->polygons.size()
             )
         );
     }
@@ -68,10 +83,12 @@ protected:
     {
         optixTracer.reset();
         sensorConfig.reset();
-        meshData.reset();
+        meshGround.reset();
+        meshFace.reset();
     }
 
-    pcl::PolygonMesh::Ptr meshData;
+    pcl::PolygonMesh::Ptr meshGround;
+    pcl::PolygonMesh::Ptr meshFace;
     std::shared_ptr<lidarshooter::LidarDevice> sensorConfig;
     lidarshooter::OptixTracer::Ptr optixTracer;
     unsigned int geometryIdAdded;
@@ -88,7 +105,10 @@ TEST_F(OptixTracerTest, TraceSceneCloud)
     // Must call this to initialize ros::Time for LidarDevice::initMessage
     ros::Time::init();
     EXPECT_NO_FATAL_FAILURE(
-        optixTracer->updateGeometry("mesh", Eigen::Affine3f::Identity(), meshData)
+        optixTracer->updateGeometry("ground", Eigen::Affine3f::Identity(), meshGround)
+    );
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->updateGeometry("face", Eigen::Affine3f::Identity(), meshFace)
     );
     optixTracer->commitScene();
     EXPECT_NO_FATAL_FAILURE(

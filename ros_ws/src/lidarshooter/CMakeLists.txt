@@ -243,8 +243,9 @@ endif(ENABLE_OPENACC)
 
 # Configurable build settings
 set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64" CACHE PATH "Path to OptiX installation")
-option(LIDARSHOOTER_OPTIX_DEBUG "Enables debugging for OptixTracer if used" ON)
 option(LIDARSHOOTER_OPTIX_FOUND "Set to true if NVIDIA OptiX was found" OFF)
+option(LIDARSHOOTER_OPTIX_DEBUG "Enables debugging for OptixTracer if used" ON)
+option(LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS "Forces acceleration structure in OptiX to build full every time (no update only)" ON)
 
 # Get rid of this once CMake modules are installed correctly
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")

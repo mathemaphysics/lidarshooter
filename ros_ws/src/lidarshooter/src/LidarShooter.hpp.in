@@ -70,6 +70,11 @@ namespace lidarshooter
 #cmakedefine LIDARSHOOTER_OPTIX_DEBUG
 
 /**
+ * @brief When ON forces GAS to build full with every geometry update
+ */
+#cmakedefine LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS
+
+/**
  * @brief This path must be set to point at the directory containing the PTX modules
  * 
  * If this path is not set or is incorrect the build will finish successfully but the

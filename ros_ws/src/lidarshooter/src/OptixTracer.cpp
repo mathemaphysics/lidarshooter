@@ -64,6 +64,8 @@ lidarshooter::OptixTracer::~OptixTracer()
         );
         _gasBuffersAllocated = false;
     }
+
+    // Bye bye stream
 }
 
 // TODO: For now addGeometry will ignore the _geometryType and assume it's a
@@ -130,6 +132,9 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
 
     CUDA_SYNC_CHECK();
 
+    // Count the geometries to know how much space is needed
+    setGeometryCount(getGeometryCount() + 1);
+
     // Add or remove geometry event
     _geometryWasUpdated.store(true);
 
@@ -186,6 +191,9 @@ int lidarshooter::OptixTracer::removeGeometry(const std::string& _meshName)
     _optixInputs.erase(inputsIterator);
 
     CUDA_SYNC_CHECK();
+
+    // Keep track of the number of remaining geometries
+    setGeometryCount(getGeometryCount() - 1);
 
     // Add or remove geometry event
     _geometryWasUpdated.store(true);
@@ -285,10 +293,6 @@ int lidarshooter::OptixTracer::commitScene()
 
 int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
-    // Creates the CUDA stream which will run the pipeline
-    CUstream cuStream;
-    CUDA_CHECK(cudaStreamCreate(&cuStream));
-
     // Declare the output space globally
     Params params;
     params.handle = _gasHandle;
@@ -319,7 +323,7 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
     OPTIX_CHECK(
         optixLaunch(
             _tracePipeline,
-            cuStream,
+            _cuStream,
             _devParams,
             sizeof(Params),
             &_shaderBindingTable,
@@ -415,6 +419,13 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
         )
     );
 
+    // Creates the CUDA stream which will run the pipeline
+    CUDA_CHECK(
+        cudaStreamCreate(
+            &_cuStream
+        )
+    );
+
     CUDA_SYNC_CHECK();
 }
 
@@ -427,16 +438,21 @@ void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const c
 void lidarshooter::OptixTracer::buildAccelStructure()
 {
     // Stack all the build inputs into an array
-    std::vector<OptixBuildInput> buildInputArray;
+    _buildInputArray.clear();
     for (auto [name, input] : _optixInputs)
-        buildInputArray.push_back(input);
+        _buildInputArray.push_back(input);
 
     // Do full update because geometry was added
-    auto _fullUpdate = geometryWasUpdated();
+    bool _fullUpdate = true;
 
     // Set the options
     _accelBuildOptions = {};
+#ifdef LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS
+    _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_NONE;
+#else
+    _fullUpdate = geometryWasUpdated();
     _accelBuildOptions.buildFlags = OPTIX_BUILD_FLAG_ALLOW_UPDATE;
+#endif
     _accelBuildOptions.operation = _fullUpdate ? OPTIX_BUILD_OPERATION_BUILD : OPTIX_BUILD_OPERATION_UPDATE;
 
     // Calculate the GAS buffer sizes
@@ -446,8 +462,8 @@ void lidarshooter::OptixTracer::buildAccelStructure()
             optixAccelComputeMemoryUsage(
                 _devContext,
                 &_accelBuildOptions,
-                buildInputArray.data(),
-                buildInputArray.size(),
+                _buildInputArray.data(),
+                _buildInputArray.size(),
                 &_gasBufferSizes
             )
         );
@@ -474,10 +490,10 @@ void lidarshooter::OptixTracer::buildAccelStructure()
     OPTIX_CHECK(
         optixAccelBuild(
             _devContext,
-            0, // This is the CUDA stream
+            _cuStream, // This is the CUDA stream
             &_accelBuildOptions,
-            buildInputArray.data(),
-            buildInputArray.size(),
+            _buildInputArray.data(),
+            _buildInputArray.size(),
             _devGasTempBuffer,
             _gasBufferSizes.tempSizeInBytes,
             _devGasOutputBuffer,

@@ -12,7 +12,7 @@
             "environment": [
                 {
                     "name": "ROS_MASTER_URI",
-                    "value": "http://Dommage:11311"
+                    "value": "http://127.0.0.1:11311"
                 },
                 {
                     "name": "ROS_IP",
