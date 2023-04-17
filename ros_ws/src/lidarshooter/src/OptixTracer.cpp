@@ -96,6 +96,8 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
     _optixInputs[_meshName].triangleArray.vertexBuffers = &_devVertices[_meshName];
     _optixInputs[_meshName].triangleArray.indexBuffer = _devElements[_meshName];
 
+    CUDA_SYNC_CHECK();
+
     return 0;
 }
 

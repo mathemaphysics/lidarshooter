@@ -48,7 +48,7 @@
 #include "XYZIRPoint.hpp"
 #include "LidarDevice.hpp"
 #include "AffineMesh.hpp"
-#include "EmbreeTracer.hpp"
+#include "ITracer.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -67,7 +67,7 @@ public:
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
      */
-    MeshProjector(ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+    MeshProjector(ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Construct a new \c MeshProjector to run in the node
@@ -78,7 +78,7 @@ public:
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
      */
-    MeshProjector(const std::string& _configFile, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+    MeshProjector(const std::string& _configFile, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Construct a new \c MeshProjector to run in the node
@@ -89,7 +89,7 @@ public:
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
      */
-    MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+    MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Destroy the mesh projector object
@@ -221,8 +221,8 @@ private:
     std::map<const std::string, lidarshooter::AffineMesh::Ptr> _affineTrackObjects; // Remove _trackObject (singular) when finished
     sensor_msgs::PointCloud2::Ptr _currentState;
 
-    // EmbreeTracer is an ITracer, the abstracted raytracing backend
-    EmbreeTracer::Ptr _traceData;
+    // The abstracted raytracing backend: There are options here
+    ITracer::Ptr _tracer;
 
     // ROS, timing, and mutex variables for events
     std::atomic<bool> _meshWasUpdated;

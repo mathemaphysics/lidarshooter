@@ -1,6 +1,12 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
+// Needed for creating tracer of choice
+#include "EmbreeTracer.hpp"
+#ifdef LIDARSHOOTER_OPTIX_FOUND
+#include "OptixTracer.hpp"
+#endif
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow),
       rosThreadRunning(false)
@@ -247,14 +253,21 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
         loggerTop->warn("Runtime space for {} already exists and should not");
     else
     {
+        // This is where you would choose which tracer to use
+        lidarshooter::ITracer::Ptr tracer = lidarshooter::OptixTracer::create(devicePointer, nullptr, loggerTop);
+        //lidarshooter::ITracer::Ptr tracer = lidarshooter::EmbreeTracer::create(devicePointer, nullptr, loggerTop);
+
         // Create the sensor
         auto result = runtimeMap.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(devicePointer->getSensorUid()),
             std::forward_as_tuple(
                 devicePointer,
+                tracer,
                 viewer,
                 nodeHandle,
+                ros::Duration(0.1),
+                ros::Duration(0.1),
                 loggerTop,
                 this
             )

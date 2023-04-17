@@ -9,7 +9,11 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "ROS_MASTER_URI",
+                    "value": "http://Dommage:11311/"}
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [

@@ -5,6 +5,7 @@
 
 #include "LidarDevice.hpp"
 #include "MeshProjector.hpp"
+#include "ITracer.hpp"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -38,21 +39,23 @@ public:
      */
     DeviceRuntime(
         const std::string& _fileName,
+        ITracer::Ptr _tracer,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         ros::NodeHandlePtr __nodeHandle = nullptr,
-        std::shared_ptr<spdlog::logger> __logger = nullptr,
-        QObject* _parent = nullptr,
         ros::Duration _publishPeriod = ros::Duration(0.1),
-        ros::Duration _tracePeriod = ros::Duration(0.1)
+        ros::Duration _tracePeriod = ros::Duration(0.1),
+        std::shared_ptr<spdlog::logger> __logger = nullptr,
+        QObject* _parent = nullptr
     );
     DeviceRuntime(
         std::shared_ptr<LidarDevice> _deviceConfig,
+        ITracer::Ptr _tracer,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         ros::NodeHandlePtr __nodeHandle = nullptr,
-        std::shared_ptr<spdlog::logger> __logger = nullptr,
-        QObject* _parent = nullptr,
         ros::Duration _publishPeriod = ros::Duration(0.1),
-        ros::Duration _tracePeriod = ros::Duration(0.1)
+        ros::Duration _tracePeriod = ros::Duration(0.1),
+        std::shared_ptr<spdlog::logger> __logger = nullptr,
+        QObject* _parent = nullptr
     );
     ~DeviceRuntime();
 
