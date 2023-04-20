@@ -30,9 +30,10 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-lidarshooter::MeshProjector::MeshProjector(ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::MeshProjector::MeshProjector(ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
-      _meshWasUpdated(false), _meshWasUpdatedPublic(true),
+      _tracer(__tracer),
+      _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
       _shouldPublishCloud(false)
 {
@@ -81,11 +82,8 @@ lidarshooter::MeshProjector::MeshProjector(ros::NodeHandlePtr __nodeHandle, ros:
     _config.reset(new LidarDevice(configFile, _sensorUid, __logger));
 
     // The current state cloud is now a shared pointer and needs alloc'ed
-    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+    _currentState = _tracer->getTraceCloud();
     
-    // Setup for the contextless tracing space
-    _traceData = EmbreeTracer::create(_config, _currentState);
-
     // When object is created we start at frame index 0
     _frameIndex = 0;
 
@@ -110,16 +108,17 @@ lidarshooter::MeshProjector::MeshProjector(ros::NodeHandlePtr __nodeHandle, ros:
     _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
-    _meshWasUpdated.store(true);
-    _meshWasUpdatedPublic.store(true);
+    //_meshWasUpdated.store(true);
+    //_meshWasUpdatedPublic.store(true);
 
     // False because it hasn't bee traced yet
     _stateWasUpdated.store(false);
     _stateWasUpdatedPublic.store(false);
 }
 
-lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _nodeHandle(new ros::NodeHandle("~")), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+      _tracer(__tracer),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
       _shouldPublishCloud(false)
@@ -165,10 +164,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     _config.reset(new LidarDevice(_configFile, _sensorUid, __logger));
 
     // The current state cloud is now a shared pointer and needs alloc'ed
-    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
-
-    // Setup for the contextless tracing space
-    _traceData = EmbreeTracer::create(_config, _currentState);
+    _currentState = _tracer->getTraceCloud();
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -194,12 +190,13 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ros::
     _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
-    _meshWasUpdated.store(true);
-    _meshWasUpdatedPublic.store(true);
+    //_meshWasUpdated.store(true);
+    //_meshWasUpdatedPublic.store(true);
 }
 
-lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _nodeHandle(new ros::NodeHandle("~")), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
+      _tracer(__tracer),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),
       _stateWasUpdated(false), _stateWasUpdatedPublic(false),
       _shouldPublishCloud(false)
@@ -245,10 +242,7 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _config = _configDevice;
 
     // The current state cloud is now a shared pointer and needs alloc'ed
-    _currentState = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
-
-    // Setup for the contextless tracing space
-    _traceData = EmbreeTracer::create(_config, _currentState);
+    _currentState = _tracer->getTraceCloud();
 
     // When object is created we start at frame index 0
     _frameIndex = 0;
@@ -274,8 +268,8 @@ lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configD
     _traceTimer = _nodeHandle->createTimer(_tracePeriod, std::bind(&MeshProjector::traceMeshWrapper, this));
 
     // Admit we updated the mesh because this is the first iteration
-    _meshWasUpdated.store(true);
-    _meshWasUpdatedPublic.store(true);
+    //_meshWasUpdated.store(true);
+    //_meshWasUpdatedPublic.store(true);
 }
 
 lidarshooter::MeshProjector::~MeshProjector()
@@ -333,7 +327,7 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
     // TODO: Presence of RTCGeometryType is implementation-specific; generalize
     // it Just use the mesh itself to infer the geometry type and remove the
     // RTCGeometryType
-    int geomId = _traceData->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->getMesh()->cloud.width * _mesh->getMesh()->cloud.height, _mesh->getMesh()->polygons.size());
+    int geomId = _tracer->addGeometry(_meshName, RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE, _mesh->getMesh()->cloud.width * _mesh->getMesh()->cloud.height, _mesh->getMesh()->polygons.size());
     _logger->debug("Added geometric ID {}", geomId);
 
     // Indicate the mesh was updated so we get a retrace
@@ -343,8 +337,8 @@ void lidarshooter::MeshProjector::addMeshToScene(const std::string& _meshName, c
 
 void lidarshooter::MeshProjector::deleteMeshFromScene(const std::string &_meshName)
 {
-    // Remove the geometry from _traceData
-    _traceData->removeGeometry(_meshName);
+    // Remove the geometry from _tracer
+    _tracer->removeGeometry(_meshName);
     _affineTrackObjects.erase(_meshName);
 
     // Signal that there were changes to the mesh
@@ -450,7 +444,7 @@ void lidarshooter::MeshProjector::traceAffineMesh()
     for (auto& [name, mesh] : _affineTrackObjects)
     {
         // Copy vertex and elemet data from mesh into buffers
-        _traceData->updateGeometry(
+        _tracer->updateGeometry(
             name,
             mesh->getLinearDisplacementConst(),
             mesh->getAngularDisplacementConst(),
@@ -460,12 +454,12 @@ void lidarshooter::MeshProjector::traceAffineMesh()
         // Debugging information
         _logger->debug("Updated {} with {} points and {} elements", name, mesh->getMesh()->cloud.width * mesh->getMesh()->cloud.height, mesh->getMesh()->polygons.size());
     }
-    _traceData->commitScene();
+    _tracer->commitScene();
     lockCloudMutex(); // Locks _currentState
-    _traceData->traceScene(++_frameIndex);
+    _tracer->traceScene(++_frameIndex);
     unlockCloudMutex();
 
-    _logger->debug("Trace cloud has {} points in it", _traceData->getTraceCloud()->width * _traceData->getTraceCloud()->height);
+    _logger->debug("Trace cloud has {} points in it", _tracer->getTraceCloud()->width * _tracer->getTraceCloud()->height);
 
     // Indicate that we just retraced and you can come and get it
     _stateWasUpdated.store(true);

@@ -1,4 +1,4 @@
 #!/bin/bash
 pushd /workspaces/lidarshooter/ros_ws/src/lidarshooter/src
-nvcc -optix-ir -I /workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/include -I /workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/SDK/optixTriangle/ -I /workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/SDK -I /usr/src/embree-3.13.4.x86_64.linux/include -I /workspaces/lidarshooter/ros_ws/build/lidarshooter -I /usr/include/pcl-1.12 -I /usr/include/eigen3 -I /usr/include/vtk-9.1 -I /usr/include/jsoncpp -I ../../../../NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/SDK/support -ptx ./OptixTracerModules.cu
+nvcc -ptx -I /workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/include -I /workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/SDK/optixTriangle/ -I /workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/SDK -I /usr/src/embree-3.13.4.x86_64.linux/include -I /workspaces/lidarshooter/ros_ws/build/lidarshooter -I /usr/include/pcl-1.12 -I /usr/include/eigen3 -I /usr/include/vtk-9.1 -I /usr/include/jsoncpp -I ../../../../NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64/SDK/support -ptx ./OptixTracerModules.cu
 popd

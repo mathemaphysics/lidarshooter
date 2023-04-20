@@ -12,6 +12,7 @@
 #pragma once
 
 #include "LidarShooter.hpp"
+#include "Exceptions.hpp"
 
 #include <string>
 #include <map>
@@ -39,7 +40,6 @@
 #include <optix_function_table_definition.h>
 #include <optix_stack_size.h>
 #include <optix_stubs.h>
-#include <sutil/Exception.h>
 
 namespace lidarshooter
 {
@@ -75,7 +75,7 @@ public:
 
 	using MissData = struct
 	{
-		float3 bg_color;
+		// No data needed
 	};
 
 	using HitGroupData = struct
@@ -88,8 +88,8 @@ public:
 	using MissSbtRecord = SbtRecord<MissData>;
 	using HitGroupSbtRecord = SbtRecord<HitGroupData>;
 
-    static OptixTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
-	OptixTracer::Ptr getPtr();
+    static OptixTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+	ITracer::Ptr getPtr();
     ~OptixTracer();
 
 	int addGeometry(const std::string& _meshName, enum RTCGeometryType _geometryType, int _numVertices, int _numElements);
@@ -100,7 +100,7 @@ public:
 	int traceScene(std::uint32_t _frameIndex);
 
 private:
-    OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr);
+    OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
 
 	// Static logging callback function for OptiX to use
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);
@@ -115,6 +115,9 @@ private:
 	 * This function builds whatever structure is chosen inside the allotted
 	 * space. Frequently this is a kd-tree or an axis-aligned bounding box of
 	 * some sort.
+	 * 
+	 * @param _fullUpdate Force a full update (build) to the acceleration structure
+	 * 
 	 */
 	void buildAccelStructure();
 
@@ -228,12 +231,27 @@ private:
 	 */
 	static void getInputDataFromFile( std::string& _ptx, const std::string& _filename );
 
+	// Events state handling
+
+	/**
+	 * @brief Returns whether changes made to geometry list, \c OptixBuildInput array
+	 * 
+	 * @return true Geometry was either added or removed
+	 * @return false No geometry changes were made
+	 */
+	bool geometryWasUpdated();
+
 	// In local memory storage of vertices and elements
 	std::map<const std::string, OptixBuildInput> _optixInputs;
 	std::map<const std::string, std::vector<float3>> _vertices;
 	std::map<const std::string, std::vector<uint3>> _elements;
 	std::map<const std::string, CUdeviceptr> _devVertices;
 	std::map<const std::string, CUdeviceptr> _devElements;
+	std::vector<OptixBuildInput> _buildInputArray;
+
+	Ray* _devRays = 0;
+	Hit* _devHits = 0;
+	CUdeviceptr _devParams = 0;
 
 	// Context setup and options for CUDA and OptiX device
 	OptixDeviceContext _devContext;
@@ -271,11 +289,17 @@ private:
 	CUdeviceptr _devHitgroupSbtRecord; // Hit group SBT record on the device
 
 	// Storage of geometry, local and device
+	CUstream _cuStream;
 	OptixTraversableHandle _gasHandle;
 	CUdeviceptr _devGasTempBuffer;
 	CUdeviceptr _devGasOutputBuffer;
 	OptixAccelBuildOptions _accelBuildOptions;
     OptixAccelBufferSizes _gasBufferSizes;
+    const uint32_t _buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+
+	// Event states
+	std::atomic<bool> _gasBuffersAllocated;
+	std::atomic<bool> _geometryWasUpdated;
 };
 
 }

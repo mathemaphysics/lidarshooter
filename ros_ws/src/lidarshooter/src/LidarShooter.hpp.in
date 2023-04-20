@@ -46,7 +46,7 @@ namespace lidarshooter
 #define LIDARSHOOTER_AFFINEMESH_SUB_QUEUE_SIZE 20
 
 /**
- * @brief Embree shaerd geometry buffers require padding for SIMD ops
+ * @brief Embree shared geometry buffers require padding for SIMD ops
  * 
  * This is important to the correct tracing of geometries so we're
  * going to include it at the top level; just to be same set it to at
@@ -68,6 +68,18 @@ namespace lidarshooter
  * Turn this off if you're not debugging; it will slow things down.
  */
 #cmakedefine LIDARSHOOTER_OPTIX_DEBUG
+
+/**
+ * @brief When ON forces GAS to build full with every geometry update
+ */
+#cmakedefine LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS
+
+/**
+ * @brief Enable validation mode on the OptiX device context
+ * 
+ * This will force validation of pipeline bound at runtime.
+ */
+#cmakedefine LIDARSHOOTER_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE
 
 /**
  * @brief This path must be set to point at the directory containing the PTX modules

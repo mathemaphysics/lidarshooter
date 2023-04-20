@@ -243,8 +243,10 @@ endif(ENABLE_OPENACC)
 
 # Configurable build settings
 set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x86_64" CACHE PATH "Path to OptiX installation")
-option(LIDARSHOOTER_OPTIX_DEBUG "Enables debugging for OptixTracer if used" ON)
 option(LIDARSHOOTER_OPTIX_FOUND "Set to true if NVIDIA OptiX was found" OFF)
+option(LIDARSHOOTER_OPTIX_DEBUG "Enables debugging for OptixTracer if used" ON)
+option(LIDARSHOOTER_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE "Enables bounds validation at runtime on pipelines" OFF)
+option(LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS "Forces acceleration structure in OptiX to build full every time (no update only)" ON)
 
 # Get rid of this once CMake modules are installed correctly
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -353,13 +355,6 @@ add_dependencies(LiDARShooterGUI ${catkin_EXPORTED_TARGETS})
 ## LiDARShooter CLI ##
 ######################
 
-add_executable(projector src/projector.cpp)
-target_compile_features(projector PUBLIC cxx_std_17)
-target_include_directories(projector PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
-target_link_directories(projector PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
-target_link_libraries(projector lidarshooter ${catkin_LIBRARIES} ${PCL_LIBRARIES} CUDA::cudart Boost::program_options embree3 Poco::Net jsoncpp spdlog::spdlog fmt)
-add_dependencies(projector ${catkin_EXPORTED_TARGETS})
-
 add_executable(objtracker src/objtracker.cpp)
 target_compile_features(objtracker PUBLIC cxx_std_17)
 target_include_directories(objtracker PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include)
@@ -383,12 +378,13 @@ set(LIBRARY_TARGETS
     src/AffineMesh.cpp
     src/ITracer.cpp
     src/EmbreeTracer.cpp
-    src/OptixTracer.cpp
     src/Ray.cpp
     src/Hit.cpp)
 
 if (LIDARSHOOTER_OPTIX_FOUND)
-list(APPEND LIBRARY_TARGETS "src/LidarDeviceKernels.cu")
+list(APPEND LIBRARY_TARGETS
+    src/OptixTracer.cpp
+    src/LidarDeviceKernels.cu)
 endif()
 
 add_library(lidarshooter ${LIBRARY_TARGETS})
@@ -417,7 +413,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 # Add gtest based cpp test target and link libraries
 catkin_add_gtest(AffineMesh_test src/test/AffineMesh_test.cpp)
 catkin_add_gtest(EmbreeTracer_test src/test/EmbreeTracer_test.cpp)
+if (LIDARSHOOTER_OPTIX_FOUND)
 catkin_add_gtest(OptixTracer_test src/test/OptixTracer_test.cpp)
+endif()
 catkin_add_gtest(LidarDevice_test src/test/LidarDevice_test.cpp)
 if(TARGET AffineMesh_test)
   target_link_libraries(AffineMesh_test lidarshooter)

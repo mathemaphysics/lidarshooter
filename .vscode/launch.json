@@ -9,6 +9,39 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
+            "environment": [
+                {
+                    "name": "ROS_MASTER_URI",
+                    "value": "http://127.0.0.1:11311"
+                },
+                {
+                    "name": "ROS_IP",
+                    "value": "127.0.0.1"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug OptixTracer Tests: TraceSceneCloudOneMesh",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/OptixTracer_test",
+            "args": ["--gtest_filter=OptixTracerTest.TraceSceneCloudOneMesh"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -26,11 +59,11 @@
             ]
         },
         {
-            "name": "(gdb) Debug OptixTracer Tests: TraceSceneCloud",
+            "name": "(gdb) Debug OptixTracer Tests: TraceSceneCloudTwoMeshes",
             "type": "cppdbg",
             "request": "launch",
             "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/OptixTracer_test",
-            "args": ["--gtest_filter=OptixTracerTest.TraceSceneCloud"],
+            "args": ["--gtest_filter=OptixTracerTest.TraceSceneCloudTwoMeshes"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
