@@ -74,6 +74,7 @@ int lidarshooter::OptixTracer::addGeometry(const std::string& _meshName, enum RT
 {
     // Just make buffers and build inputs
     _optixInputs[_meshName] = {};
+    std::memset(&_optixInputs[_meshName], 0, sizeof(OptixBuildInput));
     _optixInputs[_meshName].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     _optixInputs[_meshName].triangleArray.flags = _buildInputFlags;
     _optixInputs[_meshName].triangleArray.numSbtRecords = 1;
@@ -283,7 +284,7 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 
 int lidarshooter::OptixTracer::commitScene()
 {
-    
+    setupSbtRecords();
     buildAccelStructure();
 
     CUDA_SYNC_CHECK();
@@ -398,7 +399,6 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
     createModule();
     createProgramGroups();
     linkPipeline();
-    setupSbtRecords();
 
     // Allocate space
     CUDA_CHECK(
@@ -681,55 +681,65 @@ void lidarshooter::OptixTracer::setupSbtRecords()
     CUDA_CHECK(
         cudaMalloc(
             reinterpret_cast<void **>(&_devMissSbtRecord),
-            missRecordSize
+            getGeometryCount() * missRecordSize
         )
     );
+
     OPTIX_CHECK(
         optixSbtRecordPackHeader(
             _missProgramGroup,
             &_missSbtRecord
         )
     );
-    CUDA_CHECK(
-        cudaMemcpy(
-            reinterpret_cast<void *>(_devMissSbtRecord),
-            &_missSbtRecord,
-            missRecordSize,
-            cudaMemcpyHostToDevice
-        )
-    );
+
+    for (int recordIndex = 0; recordIndex < getGeometryCount(); ++recordIndex)
+    {
+        CUDA_CHECK(
+            cudaMemcpy(
+                reinterpret_cast<void *>(_devMissSbtRecord + missRecordSize * recordIndex),
+                &_missSbtRecord,
+                missRecordSize,
+                cudaMemcpyHostToDevice
+            )
+        );
+    }
 
     // Hit group SBT record
     const size_t hitGroupRecordSize = sizeof(HitGroupSbtRecord);
     CUDA_CHECK(
         cudaMalloc(
             reinterpret_cast<void **>(&_devHitgroupSbtRecord),
-            hitGroupRecordSize
+            getGeometryCount() * hitGroupRecordSize
         )
     );
+
     OPTIX_CHECK(
         optixSbtRecordPackHeader(
             _hitgroupProgramGroup,
             &_hitgroupSbtRecord
         )
     );
-    CUDA_CHECK(
-        cudaMemcpy(
-            reinterpret_cast<void *>(_devHitgroupSbtRecord),
-            &_hitgroupSbtRecord,
-            hitGroupRecordSize,
-            cudaMemcpyHostToDevice
-        )
-    );
+
+    for (int recordIndex = 0; recordIndex < getGeometryCount(); ++recordIndex)
+    {
+        CUDA_CHECK(
+            cudaMemcpy(
+                reinterpret_cast<void *>(_devHitgroupSbtRecord + hitGroupRecordSize * recordIndex),
+                &_hitgroupSbtRecord,
+                hitGroupRecordSize,
+                cudaMemcpyHostToDevice
+            )
+        );
+    }
 
     // Fill out SBT structure
     _shaderBindingTable.raygenRecord = _devRaygenSbtRecord;
     _shaderBindingTable.missRecordBase = _devMissSbtRecord;
     _shaderBindingTable.missRecordStrideInBytes = sizeof(MissSbtRecord);
-    _shaderBindingTable.missRecordCount = 1;
+    _shaderBindingTable.missRecordCount = getGeometryCount();
     _shaderBindingTable.hitgroupRecordBase = _devHitgroupSbtRecord;
     _shaderBindingTable.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
-    _shaderBindingTable.hitgroupRecordCount = 1;
+    _shaderBindingTable.hitgroupRecordCount = getGeometryCount();
 }
 
 void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)

@@ -58,25 +58,11 @@ protected:
             (sensorPath / "config/hesai-pandar-XT-32-lidar_0000.json").string()
         );
 
-        // Make tracer; default to create internal trace cloud storage
+        // Allocate trace output storage space
         auto traceStorage = sensor_msgs::PointCloud2Ptr(new sensor_msgs::PointCloud2());
+
+        // Make tracer; default to create internal trace cloud storage
         optixTracer = lidarshooter::OptixTracer::create(sensorConfig, traceStorage);
-        geometryIdAdded = static_cast<unsigned int>(
-            optixTracer->addGeometry(
-                "ground",
-                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
-                meshGround->cloud.width * meshGround->cloud.height,
-                meshGround->polygons.size()
-            )
-        );
-        geometryIdAdded = static_cast<unsigned int>(
-            optixTracer->addGeometry(
-                "face",
-                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
-                meshFace->cloud.width * meshFace->cloud.height,
-                meshFace->polygons.size()
-            )
-        );
     }
 
     void TearDown() override
@@ -100,22 +86,88 @@ TEST_F(OptixTracerTest, InstantiateTest)
     EXPECT_NO_THROW();
 }
 
-TEST_F(OptixTracerTest, TraceSceneCloud)
+TEST_F(OptixTracerTest, TraceSceneCloudOneMesh)
 {
     // Must call this to initialize ros::Time for LidarDevice::initMessage
     ros::Time::init();
+
+    // Add the ground geometry
+    EXPECT_NO_FATAL_FAILURE(
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "ground",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshGround->cloud.width * meshGround->cloud.height,
+                meshGround->polygons.size()
+            )
+        );
+    );
+    
+    // Add point positions from ground mesh
     EXPECT_NO_FATAL_FAILURE(
         optixTracer->updateGeometry("ground", Eigen::Affine3f::Identity(), meshGround)
     );
-    EXPECT_NO_FATAL_FAILURE(
-        optixTracer->updateGeometry("face", Eigen::Affine3f::Identity(), meshFace)
-    );
-    optixTracer->commitScene();
+
+    // Commit the geometry and build the geometry acceleration structure (GAS)
+    EXPECT_NO_FATAL_FAILURE(optixTracer->commitScene());
+
     EXPECT_NO_FATAL_FAILURE(
         optixTracer->traceScene(0)
     );
     auto cloud = optixTracer->getTraceCloud();
     EXPECT_EQ(cloud->width * cloud->height, 1668);
+}
+
+TEST_F(OptixTracerTest, TraceSceneCloudTwoMeshes)
+{
+    // Must call this to initialize ros::Time for LidarDevice::initMessage
+    ros::Time::init();
+
+    // Add the ground geometry
+    EXPECT_NO_FATAL_FAILURE(
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "ground",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshGround->cloud.width * meshGround->cloud.height,
+                meshGround->polygons.size()
+            )
+        );
+    );
+
+    // Add the face geometry
+    EXPECT_NO_FATAL_FAILURE(
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "face",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshFace->cloud.width * meshFace->cloud.height,
+                meshFace->polygons.size()
+            )
+        );
+    );
+
+    // Add point positions from ground mesh
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->updateGeometry("ground", Eigen::Affine3f::Identity(), meshGround)
+    );
+
+    // Add point positions from face mesh
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->updateGeometry("face", Eigen::Affine3f::Identity(), meshFace)
+    );
+
+    // Commit the geometry and build the geometry acceleration structure (GAS)
+    EXPECT_NO_FATAL_FAILURE(optixTracer->commitScene());
+
+    // Actually trace the scene
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->traceScene(0)
+    );
+
+    // Acquire the output mesh to extract the result
+    auto cloud = optixTracer->getTraceCloud();
+    EXPECT_EQ(cloud->width * cloud->height, 1781);
 }
 
 }
