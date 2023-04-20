@@ -75,6 +75,13 @@ namespace lidarshooter
 #cmakedefine LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS
 
 /**
+ * @brief Enable validation mode on the OptiX device context
+ * 
+ * This will force validation of pipeline bound at runtime.
+ */
+#cmakedefine LIDARSHOOTER_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE
+
+/**
  * @brief This path must be set to point at the directory containing the PTX modules
  * 
  * If this path is not set or is incorrect the build will finish successfully but the

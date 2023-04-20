@@ -379,6 +379,9 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
         // Set up options here
         _options.logCallbackFunction = &optixLoggerCallback;
         _options.logCallbackLevel = 4;
+#ifdef LIDARSHOOTER_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE
+        _options.validationMode = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
+#endif
 
         // Create the device context from the CUDA context
         _cuContext = 0; // Current context
