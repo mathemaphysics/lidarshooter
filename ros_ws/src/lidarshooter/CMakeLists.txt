@@ -163,7 +163,7 @@ find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS program_options system)
 
 if (ENABLE_OPENACC)
-find_package(OpenACC REQUIRED)
+  find_package(OpenACC REQUIRED)
 endif(ENABLE_OPENACC)
 
 ## Declare a C++ library
@@ -406,7 +406,7 @@ add_library(lidarshooter ${LIBRARY_TARGETS})
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 
 if (ENABLE_OPENACC)
-    target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
+  target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
 endif (ENABLE_OPENACC)
 target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include ${OptiX_INCLUDE} ${OptiX_INCLUDE}/../SDK ${OptiX_INCLUDE}/../SDK/support)
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)
