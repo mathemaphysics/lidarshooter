@@ -13,6 +13,9 @@
  */
 #define LIDARSHOOTER_APPLICATION_NAME "LiDARShooter"
 
+#define LIDARSHOOTER_LOGGER_TOP "LiDARShooterTop"
+#define LIDARSHOOTER_LOGGER_BOTTOM "LiDARShooterBottom"
+
 /**
  * Helper function for macro generation
  */

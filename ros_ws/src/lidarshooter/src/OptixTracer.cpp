@@ -435,7 +435,7 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
 void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
 {
     // Log output to default location
-    spdlog::get(LIDARSHOOTER_APPLICATION_NAME)->log(static_cast<spdlog::level::level_enum>(_level), std::string(_message));
+    spdlog::get(LIDARSHOOTER_LOGGER_TOP)->log(static_cast<spdlog::level::level_enum>(_level), std::string(_message));
 }
 
 void lidarshooter::OptixTracer::buildAccelStructure()

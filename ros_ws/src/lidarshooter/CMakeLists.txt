@@ -152,7 +152,7 @@ include_directories(
 option(ENABLE_OPENACC "Enable compilation with OpenACC" OFF)
 
 # General package-wide options
-option(LIDARSHOOTER_DEBUG "Whole scope debug setting for LiDARShooter" ON)
+option(LIDARSHOOTER_DEBUG "Whole scope debug setting for LiDARShooter" OFF)
 option(LIDARSHOOTER_FULL_OPTIMIZE "Set to greater than average optimization" OFF)
 
 find_package(PCL REQUIRED)
