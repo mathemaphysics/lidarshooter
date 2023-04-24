@@ -35,6 +35,198 @@
             ]
         },
         {
+            "name": "(gdb) Debug AffineMesh Tests: DisplacementResetNoFail",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/AffineMesh_test",
+            "args": ["--gtest_filter=AffineMeshTest.DisplacementResetNoFail"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug EmbreeTracer Tests: NoDeviceError",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/EmbreeTracer_test",
+            "args": ["--gtest_filter=EmbreeTracerTest.NoDeviceError"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug EmbreeTracer Tests: VertexElementCounts",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/EmbreeTracer_test",
+            "args": ["--gtest_filter=EmbreeTracerTest.VertexElementCounts"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug EmbreeTracer Tests: GeometryTotalCount",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/EmbreeTracer_test",
+            "args": ["--gtest_filter=EmbreeTracerTest.GeometryTotalCount"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug EmbreeTracer Tests: AddGeometryId",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/EmbreeTracer_test",
+            "args": ["--gtest_filter=EmbreeTracerTest.AddGeometryId"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug EmbreeTracer Tests: DeleteGeometryId",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/EmbreeTracer_test",
+            "args": ["--gtest_filter=EmbreeTracerTest.DeleteGeometryId"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug EmbreeTracer Tests: GeometryType",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/EmbreeTracer_test",
+            "args": ["--gtest_filter=EmbreeTracerTest.GeometryType"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Debug EmbreeTracer Tests: TraceSceneCloud",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/workspaces/lidarshooter/ros_ws/devel/lib/lidarshooter/EmbreeTracer_test",
+            "args": ["--gtest_filter=EmbreeTracerTest.TraceSceneCloud"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "(gdb) Debug OptixTracer Tests: TraceSceneCloudOneMesh",
             "type": "cppdbg",
             "request": "launch",
