@@ -132,7 +132,7 @@ void lidarshooter::LidarDevice::initMessage(
     _msg->header.stamp = ros::Time::now();
     _msg->header.seq = _frameIndex;
     _msg->height = 1;
-    _msg->width = _channels.count;
+    _msg->width = _channels.count; // TODO: This should be zero until it's filled in
     _msg->point_step = _message.pointStep;
     _msg->row_step = _channels.count * _message.pointStep;
     _msg->is_bigendian = _message.isBigendian;
