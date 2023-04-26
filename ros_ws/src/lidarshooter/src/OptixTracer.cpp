@@ -284,6 +284,10 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 
 int lidarshooter::OptixTracer::commitScene()
 {
+    // Don't build the acceleration structure for an empty geometry; this will fail
+    if (getGeometryCount() < 1)
+        return -1;
+
     setupSbtRecords();
     buildAccelStructure();
 
@@ -294,8 +298,12 @@ int lidarshooter::OptixTracer::commitScene()
 
 int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
+    // Don't build the acceleration structure for an empty geometry; this will fail
+    if (getGeometryCount() < 1)
+        return -1;
+
     // Declare the output space globally
-    Params params;
+    Params params; // TODO: Make this member data
     params.handle = _gasHandle;
 
     // Declare temp space for the rays
