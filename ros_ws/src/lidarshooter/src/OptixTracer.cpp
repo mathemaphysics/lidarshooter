@@ -162,24 +162,12 @@ int lidarshooter::OptixTracer::removeGeometry(const std::string& _meshName)
     _devElements.erase(_meshName);
 
     // Make sure key exist in local vertices storage and erase
-    auto verticesIterator = _vertices.find(_meshName);
-    if (verticesIterator == _vertices.end())
-        throw(TraceException(
-            __FILE__,
-            "Geometry key does not exist in vertices map",
-            2
-        ));
-    _vertices.erase(verticesIterator);
+    auto verticesVector = getVertices(_meshName);
+    _vertices.erase(_meshName);
 
     // Make sure key exists in local elements storage and erase
-    auto elementsIterator = _elements.find(_meshName);
-    if (elementsIterator == _elements.end())
-        throw(TraceException(
-            __FILE__,
-            "Geometry key does not exist in elements map",
-            5
-        ));
-    _elements.erase(elementsIterator);
+    auto elementsVector = getElements(_meshName);
+    _elements.erase(_meshName);
 
     // Now finally remove the corresponding OptixBuildInput
     auto inputsIterator = _optixInputs.find(_meshName);
@@ -300,7 +288,14 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
     // Don't build the acceleration structure for an empty geometry; this will fail
     if (getGeometryCount() < 1)
+    {
+        // Clean out the message properly
+        getSensorConfig()->initMessage(getTraceCloud(), _frameIndex);
+        getTraceCloud()->data.clear();
+        getSensorConfig()->reset();
+
         return -1;
+    }
 
     // Declare the output space globally
     Params params; // TODO: Make this member data

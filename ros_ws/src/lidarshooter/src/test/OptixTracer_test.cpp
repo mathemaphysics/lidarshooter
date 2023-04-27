@@ -32,6 +32,10 @@ class OptixTracerTest : public ::testing::Test
 protected:
     void SetUp() override
     {
+        // Initialize ROS time for LidarDevice::initMessage(), which calls an
+        // ROS time function
+        ros::Time::init();
+
         // Silence the logger for testing
         spdlog::set_level(spdlog::level::off);
 
@@ -88,9 +92,6 @@ TEST_F(OptixTracerTest, InstantiateTest)
 
 TEST_F(OptixTracerTest, TraceSceneCloudOneMesh)
 {
-    // Must call this to initialize ros::Time for LidarDevice::initMessage
-    ros::Time::init();
-
     // Add the ground geometry
     EXPECT_NO_FATAL_FAILURE(
         geometryIdAdded = static_cast<unsigned int>(
@@ -120,9 +121,6 @@ TEST_F(OptixTracerTest, TraceSceneCloudOneMesh)
 
 TEST_F(OptixTracerTest, TraceSceneCloudTwoMeshes)
 {
-    // Must call this to initialize ros::Time for LidarDevice::initMessage
-    ros::Time::init();
-
     // Add the ground geometry
     EXPECT_NO_FATAL_FAILURE(
         geometryIdAdded = static_cast<unsigned int>(
@@ -168,6 +166,148 @@ TEST_F(OptixTracerTest, TraceSceneCloudTwoMeshes)
     // Acquire the output mesh to extract the result
     auto cloud = optixTracer->getTraceCloud();
     EXPECT_EQ(cloud->width * cloud->height, 1781);
+}
+
+TEST_F(OptixTracerTest, RemoveTwoGeometriesNoTrace)
+{
+    // Add the ground geometry
+    EXPECT_NO_FATAL_FAILURE(
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "ground",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshGround->cloud.width * meshGround->cloud.height,
+                meshGround->polygons.size()
+            )
+        );
+    );
+
+    // Add the face geometry
+    EXPECT_NO_FATAL_FAILURE(
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "face",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshFace->cloud.width * meshFace->cloud.height,
+                meshFace->polygons.size()
+            )
+        );
+    );
+
+    // Make sure it's two to begin with
+    EXPECT_EQ(optixTracer->getGeometryCount(), 2);
+
+    // Remove the face first
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->removeGeometry("face");
+    );
+    
+    // Now it should be 1
+    EXPECT_EQ(optixTracer->getGeometryCount(), 1);
+    
+    // Now remove the ground
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->removeGeometry("ground");
+    );
+
+    // Should be 0 now
+    EXPECT_EQ(optixTracer->getGeometryCount(), 0);
+}
+
+TEST_F(OptixTracerTest, RemoveTwoGeometriesWhileTracing)
+{
+    // Add the ground geometry
+    EXPECT_NO_FATAL_FAILURE(
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "ground",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshGround->cloud.width * meshGround->cloud.height,
+                meshGround->polygons.size()
+            )
+        );
+    );
+
+    // Add the face geometry
+    EXPECT_NO_FATAL_FAILURE(
+        geometryIdAdded = static_cast<unsigned int>(
+            optixTracer->addGeometry(
+                "face",
+                RTCGeometryType::RTC_GEOMETRY_TYPE_TRIANGLE,
+                meshFace->cloud.width * meshFace->cloud.height,
+                meshFace->polygons.size()
+            )
+        );
+    );
+
+    // Make sure it's two to begin with
+    EXPECT_EQ(optixTracer->getGeometryCount(), 2);
+
+    // Add point positions from ground mesh
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->updateGeometry("ground", Eigen::Affine3f::Identity(), meshGround)
+    );
+
+    // Add point positions from face mesh
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->updateGeometry("face", Eigen::Affine3f::Identity(), meshFace)
+    );
+
+    EXPECT_NO_FATAL_FAILURE(optixTracer->commitScene());
+
+    // Actually trace the scene
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->traceScene(0)
+    );
+
+    // Acquire the output mesh to extract the result
+    auto cloudTwo = optixTracer->getTraceCloud();
+    EXPECT_EQ(cloudTwo->width * cloudTwo->height, 1781);
+
+    // Remove the face first
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->removeGeometry("face");
+    );
+
+    // Add point positions from ground mesh
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->updateGeometry("ground", Eigen::Affine3f::Identity(), meshGround)
+    );
+
+    // Commits a scene with only the "ground" mesh
+    EXPECT_NO_FATAL_FAILURE(optixTracer->commitScene());
+
+    // Actually trace the scene
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->traceScene(0)
+    );
+
+    // Now it should be 1
+    EXPECT_EQ(optixTracer->getGeometryCount(), 1);
+
+    // Acquire the output mesh to extract the result
+    auto cloudOne = optixTracer->getTraceCloud();
+    EXPECT_EQ(cloudOne->width * cloudOne->height, 1668);
+    
+    // Now remove the ground
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->removeGeometry("ground");
+    );
+
+    // This will commit an empty scene
+    EXPECT_NO_FATAL_FAILURE(optixTracer->commitScene());
+
+    // Actually trace the now empty scene
+    EXPECT_NO_FATAL_FAILURE(
+        optixTracer->traceScene(0);
+    );
+
+    // Acquire the output mesh to extract the result
+    auto cloudZero = optixTracer->getTraceCloud();
+    EXPECT_EQ(cloudZero->width * cloudZero->height, 0);
+
+    // Now it should be 1
+    EXPECT_EQ(optixTracer->getGeometryCount(), 0);
 }
 
 }
