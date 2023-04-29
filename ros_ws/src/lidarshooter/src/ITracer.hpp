@@ -32,7 +32,7 @@ public:
 	using Ptr = std::shared_ptr<ITracer>;
 	using ConstPtr = std::shared_ptr<ITracer const>;
 
-    ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+    ITracer(LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
 	virtual ITracer::Ptr getPtr() = 0;
     virtual ~ITracer() = default;
 
@@ -117,16 +117,16 @@ public:
     /**
      * @brief Returns the \c LidarDevice being used for tracing
      * 
-     * @return std::shared_ptr<LidarDevice> \c LidarDevice being used for tracing
+     * @return LidarDevice::Ptr \c LidarDevice being used for tracing
      */
-    std::shared_ptr<LidarDevice> getSensorConfig();
+    LidarDevice::Ptr getSensorConfig();
 
     /**
      * @brief Sets the \c LidarDevice to use for tracing
      * 
      * @param __config The \c LidarDevice to set it to
      */
-    void setSensorConfig(std::shared_ptr<LidarDevice> __config);
+    void setSensorConfig(LidarDevice::Ptr __config);
 
 protected:
     /**
@@ -142,7 +142,7 @@ protected:
 private:
 
 	// Sensor configuration for the affine transformation
-	std::shared_ptr<LidarDevice> _config;
+	LidarDevice::Ptr _config;
  
     // Track the number of geometries added
     long _geometryCount;

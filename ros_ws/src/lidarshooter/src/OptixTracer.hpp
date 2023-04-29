@@ -88,7 +88,7 @@ public:
 	using MissSbtRecord = SbtRecord<MissData>;
 	using HitGroupSbtRecord = SbtRecord<HitGroupData>;
 
-    static OptixTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+    static OptixTracer::Ptr create(LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
 	ITracer::Ptr getPtr();
     ~OptixTracer();
 
@@ -100,7 +100,7 @@ public:
 	int traceScene(std::uint32_t _frameIndex);
 
 private:
-    OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+    OptixTracer(LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
 
 	// Static logging callback function for OptiX to use
 	static void optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data);

@@ -47,7 +47,7 @@ protected:
         // Make the LidarDevice
         // TODO: Move the configure_file output file to better place
         auto sensorPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
-        sensorConfig = std::make_shared<lidarshooter::LidarDevice>(
+        sensorConfig = lidarshooter::LidarDevice::create(
             (sensorPath / "config/hesai-pandar-XT-32-lidar_0000.json").string()
         );
 
@@ -71,7 +71,7 @@ protected:
     }
 
     pcl::PolygonMesh::Ptr meshData;
-    std::shared_ptr<lidarshooter::LidarDevice> sensorConfig;
+    lidarshooter::LidarDevice::Ptr sensorConfig;
     lidarshooter::EmbreeTracer::Ptr embreeTracer;
     unsigned int geometryIdAdded;
 };

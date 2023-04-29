@@ -47,7 +47,7 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
     }
 
     // Allocate space for the device
-    _deviceConfig = std::make_shared<lidarshooter::LidarDevice>(
+    _deviceConfig = lidarshooter::LidarDevice::create(
         _fileName,
         _logger
     );
@@ -76,7 +76,7 @@ lidarshooter::DeviceRuntime::DeviceRuntime(
 }
 
 lidarshooter::DeviceRuntime::DeviceRuntime(
-    std::shared_ptr<lidarshooter::LidarDevice> __deviceConfig,
+    lidarshooter::LidarDevice::Ptr __deviceConfig,
     ITracer::Ptr _tracer,
     pcl::visualization::PCLVisualizer::Ptr __viewer,
     ros::NodeHandlePtr __nodeHandle,
@@ -146,7 +146,7 @@ lidarshooter::DeviceRuntime::~DeviceRuntime()
     disconnect(_renderConnection);
 }
 
-std::shared_ptr<lidarshooter::LidarDevice> lidarshooter::DeviceRuntime::getDeviceConfig()
+lidarshooter::LidarDevice::Ptr lidarshooter::DeviceRuntime::getDeviceConfig()
 {
     return _deviceConfig;
 }

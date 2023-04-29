@@ -23,7 +23,7 @@
 #include <thread>
 #include <mutex>
 
-lidarshooter::EmbreeTracer::Ptr lidarshooter::EmbreeTracer::create(std::shared_ptr<lidarshooter::LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
+lidarshooter::EmbreeTracer::Ptr lidarshooter::EmbreeTracer::create(lidarshooter::LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
 {
     return lidarshooter::EmbreeTracer::Ptr(new EmbreeTracer(_sensorConfig, _traceStorage));
 }
@@ -478,7 +478,7 @@ void lidarshooter::EmbreeTracer::getMeshIntersect16(const int *validRays, RTCRay
     rtcIntersect16(validRays, _scene, &context, rayhit);
 }
 
-lidarshooter::EmbreeTracer::EmbreeTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
+lidarshooter::EmbreeTracer::EmbreeTracer(LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
     : _device(rtcNewDevice(nullptr)),
       _scene(rtcNewScene(_device)),
       ITracer(_sensorConfig, _traceStorage, _logger)

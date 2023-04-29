@@ -79,7 +79,9 @@ lidarshooter::MeshProjector::MeshProjector(ITracer::Ptr __tracer, ros::NodeHandl
 
     // Initializing the LiDAR device
     _logger->info("Loading config file {} specified via configfile ROS parameter", configFile);
-    _config.reset(new LidarDevice(configFile, _sensorUid, __logger));
+    //_config.reset(new LidarDevice(configFile, _sensorUid, __logger));
+    _config.reset();
+    _config = LidarDevice::create(configFile, _sensorUid, __logger);
 
     // The current state cloud is now a shared pointer and needs alloc'ed
     _currentState = _tracer->getTraceCloud();
@@ -161,7 +163,9 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ITrac
 
     // Initializing the LiDAR device
     _logger->info("Loading device configuration from {}", _configFile);
-    _config.reset(new LidarDevice(_configFile, _sensorUid, __logger));
+    //_config.reset(new LidarDevice(_configFile, _sensorUid, __logger));
+    _config.reset();
+    _config = LidarDevice::create(_configFile, _sensorUid, __logger);
 
     // The current state cloud is now a shared pointer and needs alloc'ed
     _currentState = _tracer->getTraceCloud();
@@ -194,7 +198,7 @@ lidarshooter::MeshProjector::MeshProjector(const std::string& _configFile, ITrac
     //_meshWasUpdatedPublic.store(true);
 }
 
-lidarshooter::MeshProjector::MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::MeshProjector::MeshProjector(LidarDevice::Ptr _configDevice, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle, ros::Duration __publishPeriod, ros::Duration __tracePeriod, std::shared_ptr<spdlog::logger> __logger)
     : _nodeHandle(new ros::NodeHandle("~")), _publishPeriod(__publishPeriod), _tracePeriod(__tracePeriod),
       _tracer(__tracer),
       _meshWasUpdated(false), _meshWasUpdatedPublic(false),

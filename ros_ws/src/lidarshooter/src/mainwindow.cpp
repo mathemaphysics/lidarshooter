@@ -235,7 +235,7 @@ void MainWindow::slotRenderWindow()
 const std::string MainWindow::addSensor(const std::string& _fileName)
 {
     // Must load device first because we need the sensor UID for the maps
-    auto devicePointer = std::make_shared<lidarshooter::LidarDevice>(_fileName, loggerTop);
+    auto devicePointer = lidarshooter::LidarDevice::create(_fileName, loggerTop);
     if (devicePointer->getSensorUid().length() == 0)
     {
         // There was definitely some error loading the file and it failed

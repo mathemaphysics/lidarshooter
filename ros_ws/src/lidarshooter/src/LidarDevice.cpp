@@ -49,52 +49,27 @@
 using namespace Poco::Net;
 using namespace Poco;
 
-lidarshooter::LidarDevice::LidarDevice(std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::LidarDevice::Ptr lidarshooter::LidarDevice::create(std::shared_ptr<spdlog::logger> __logger)
 {
-    // Set up the logger
-    if (__logger == nullptr)
-    {
-        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
-        if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
-    }
-    else
-        _logger = __logger;
+    return Ptr(new LidarDevice(__logger));
 }
 
-lidarshooter::LidarDevice::LidarDevice(const std::string& _config, std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::LidarDevice::Ptr lidarshooter::LidarDevice::create(const std::string &_config, std::shared_ptr<spdlog::logger> __logger)
 {
-    // Set up the logger
-    if (__logger == nullptr)
-    {
-        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
-        if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
-    }
-    else
-        _logger = __logger;
-
-    // Load configuration and transformation
-    initialize(_config);
+    return Ptr(new LidarDevice(_config, __logger));
 }
 
-lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::string& _sensorUid, std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::LidarDevice::Ptr lidarshooter::LidarDevice::create(const std::string &_config, const std::string &_sensorUid, std::shared_ptr<spdlog::logger> __logger)
 {
-    // Set up the logger
-    if (__logger == nullptr)
-    {
-        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
-        if (_logger == nullptr)
-            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
-    }
-    else
-        _logger = __logger;
-
-    // Load configuration and transformation
-    initialize(_config, _sensorUid);
+    return Ptr(new LidarDevice(_config, _sensorUid, __logger));
 }
 
-void lidarshooter::LidarDevice::initialize(const std::string& _config)
+lidarshooter::LidarDevice::Ptr lidarshooter::LidarDevice::getPtr()
+{
+    return shared_from_this();
+}
+
+void lidarshooter::LidarDevice::initialize(const std::string &_config)
 {
     // Load the configuration defining rays here from _config
     _channels.count = 0;
@@ -455,6 +430,51 @@ void lidarshooter::LidarDevice::getCurrentIndex(int *__verticalIndex, int *__hor
 const std::string& lidarshooter::LidarDevice::getSensorUid() const
 {
     return _device.sensorUid;
+}
+
+lidarshooter::LidarDevice::LidarDevice(std::shared_ptr<spdlog::logger> __logger)
+{
+    // Set up the logger
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
+    }
+    else
+        _logger = __logger;
+}
+
+lidarshooter::LidarDevice::LidarDevice(const std::string& _config, std::shared_ptr<spdlog::logger> __logger)
+{
+    // Set up the logger
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
+    }
+    else
+        _logger = __logger;
+
+    // Load configuration and transformation
+    initialize(_config);
+}
+
+lidarshooter::LidarDevice::LidarDevice(const std::string& _config, const std::string& _sensorUid, std::shared_ptr<spdlog::logger> __logger)
+{
+    // Set up the logger
+    if (__logger == nullptr)
+    {
+        _logger = spdlog::get(LIDARSHOOTER_APPLICATION_NAME);
+        if (_logger == nullptr)
+            _logger = spdlog::stdout_color_mt(LIDARSHOOTER_APPLICATION_NAME);
+    }
+    else
+        _logger = __logger;
+
+    // Load configuration and transformation
+    initialize(_config, _sensorUid);
 }
 
 int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, const std::string& _sensorUid)

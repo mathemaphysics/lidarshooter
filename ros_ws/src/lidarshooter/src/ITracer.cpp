@@ -1,6 +1,6 @@
 #include "ITracer.hpp"
 
-lidarshooter::ITracer::ITracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> __logger)
+lidarshooter::ITracer::ITracer(LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> __logger)
     : _config(_sensorConfig)
 {
     // Set up the logger
@@ -40,12 +40,12 @@ void lidarshooter::ITracer::setTraceCloud(sensor_msgs::PointCloud2::Ptr _traceSt
     _traceCloud = _traceStorage;
 }
 
-std::shared_ptr<lidarshooter::LidarDevice> lidarshooter::ITracer::getSensorConfig()
+lidarshooter::LidarDevice::Ptr lidarshooter::ITracer::getSensorConfig()
 {
     return _config;
 }
 
-void lidarshooter::ITracer::setSensorConfig(std::shared_ptr<LidarDevice> __config)
+void lidarshooter::ITracer::setSensorConfig(LidarDevice::Ptr __config)
 {
     _config = __config;
 }

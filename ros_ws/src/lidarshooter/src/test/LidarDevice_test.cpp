@@ -35,7 +35,7 @@ protected:
 
         // Create the device to work with
         auto configPath = std::filesystem::path(LIDARSHOOTER_TESTING_DATA_DIR);
-        lidarDevice = std::make_shared<lidarshooter::LidarDevice>(
+        lidarDevice = lidarshooter::LidarDevice::create(
             (configPath / "config/hesai-pandar-XT-32-lidar_0000.json").string()
         );
     }
@@ -45,7 +45,7 @@ protected:
         lidarDevice.reset();
     }
 
-    std::shared_ptr<lidarshooter::LidarDevice> lidarDevice;
+    lidarshooter::LidarDevice::Ptr lidarDevice;
 };
 
 TEST_F(LidarDeviceTest, ReadConfigParameters)

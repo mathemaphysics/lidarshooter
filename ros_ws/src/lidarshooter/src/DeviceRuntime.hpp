@@ -48,7 +48,7 @@ public:
         QObject* _parent = nullptr
     );
     DeviceRuntime(
-        std::shared_ptr<LidarDevice> _deviceConfig,
+        LidarDevice::Ptr _deviceConfig,
         ITracer::Ptr _tracer,
         pcl::visualization::PCLVisualizer::Ptr __viewer,
         ros::NodeHandlePtr __nodeHandle = nullptr,
@@ -63,9 +63,9 @@ public:
     /**
      * @brief Get the DeviceConfig object
      * 
-     * @return std::shared_ptr<LidarDevice> The device config object
+     * @return LidarDevice::Ptr The device config object
      */
-    std::shared_ptr<LidarDevice> getDeviceConfig();
+    LidarDevice::Ptr getDeviceConfig();
 
     /**
      * @brief Get the MeshProjector object
@@ -165,7 +165,7 @@ private slots:
 
 private:
     // Data required for runtime
-    std::shared_ptr<LidarDevice> _deviceConfig;
+    LidarDevice::Ptr _deviceConfig;
     std::shared_ptr<MeshProjector> _meshProjector;
     pcl::PCLPointCloud2::Ptr _tempTraceCloud;
     pcl::PointCloud<pcl::PointXYZ>::Ptr _traceCloud;

@@ -48,7 +48,7 @@ public:
 	 * 
 	 * @return EmbreeTracer::Ptr Your new shared \c EmbreeTracer
 	 */
-	static EmbreeTracer::Ptr create(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+	static EmbreeTracer::Ptr create(LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
 
 	/**
 	 * @brief Get a shared pointer to this object
@@ -272,7 +272,7 @@ public:
 
 private:
 	// Private constructor for factory production of shared_ptr
-	EmbreeTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
+	EmbreeTracer(LidarDevice::Ptr _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage = nullptr, std::shared_ptr<spdlog::logger> _logger = nullptr);
 
 	// TODO: Figure out if these should even be in here
 	RTCDevice _device;
