@@ -924,10 +924,11 @@ void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)
                             _resultHits[ri].intensity,
                             _resultHits[ri].ring
                         );
-                        cloudMutex.lock();
-                        cloudBytes.addToCloud(this->getTraceCloud());
-                        totalPointCount.store(totalPointCount.load() + 1);
-                        cloudMutex.unlock();
+                        {
+                            std::lock_guard<std::mutex>cloudLock(cloudMutex);
+                            cloudBytes.addToCloud(this->getTraceCloud());
+                            totalPointCount.store(totalPointCount.load() + 1);
+                        }
                     }
                 }
             }
