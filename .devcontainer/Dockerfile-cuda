@@ -28,7 +28,7 @@ RUN wget https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.
 
 # Add a testing layer
 RUN apt-get -y update \
-	&& apt-get -y install libgtest-dev
+	&& apt-get -y install libgtest-dev envstore
 
 ENV DEVUSER=${DEVUSER}
 RUN adduser --uid ${DEVUID} --disabled-password --gecos "" ${DEVUSER} \

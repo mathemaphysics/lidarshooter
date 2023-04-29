@@ -108,7 +108,17 @@ private:
     size_t _logStringLength = 255;
 
 	// Utilities
-	
+
+	/**
+	 * @brief Allocate the GAS buffers (temporary and output)
+	 */
+	void setupGasBuffers();
+
+	/**
+	 * @brief Clean up the GAS buffers (temporary and output)
+	 */
+	void teardownGasBuffers();
+
 	/**
 	 * @brief Builds the acceleration structure for the geometry inside
 	 * 
@@ -156,6 +166,11 @@ private:
 	 * which contains the aforementioned program code themselves.
 	 */
 	void setupSbtRecords();
+
+	/**
+	 * @brief Clean up after SBT allocations
+	 */
+	void teardownSbtRecords();
 
 	/**
 	 * @brief Adds the generated points from \c resultHits inside \c traceScene
@@ -283,22 +298,26 @@ private:
 	// Record type declaerd
 	RayGenSbtRecord _raygenSbtRecord;
 	CUdeviceptr _devRaygenSbtRecord; // Raygen SBT record on the device
+	std::atomic<unsigned int> _devNumRaygenSbtRecordAllocated;
 	MissSbtRecord _missSbtRecord;
 	CUdeviceptr _devMissSbtRecord; // Miss SBT record on the device
+	std::atomic<unsigned int> _devNumMissSbtRecordAllocated;
 	HitGroupSbtRecord _hitgroupSbtRecord;
 	CUdeviceptr _devHitgroupSbtRecord; // Hit group SBT record on the device
+	std::atomic<unsigned int> _devNumHitgroupSbtRecordAllocated;
 
 	// Storage of geometry, local and device
 	CUstream _cuStream;
 	OptixTraversableHandle _gasHandle;
 	CUdeviceptr _devGasTempBuffer;
+	std::atomic<unsigned long> _devGasTempBufferSizeInBytes;
 	CUdeviceptr _devGasOutputBuffer;
+	std::atomic<unsigned long> _devGasOutputBufferSizeInBytes;
 	OptixAccelBuildOptions _accelBuildOptions;
     OptixAccelBufferSizes _gasBufferSizes;
     const uint32_t _buildInputFlags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 
 	// Event states
-	std::atomic<bool> _gasBuffersAllocated;
 	std::atomic<bool> _geometryWasUpdated;
 };
 

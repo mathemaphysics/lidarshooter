@@ -13,6 +13,9 @@
  */
 #define LIDARSHOOTER_APPLICATION_NAME "LiDARShooter"
 
+#define LIDARSHOOTER_LOGGER_TOP "LiDARShooterTop"
+#define LIDARSHOOTER_LOGGER_BOTTOM "LiDARShooterBottom"
+
 /**
  * Helper function for macro generation
  */
@@ -80,6 +83,14 @@ namespace lidarshooter
  * This will force validation of pipeline bound at runtime.
  */
 #cmakedefine LIDARSHOOTER_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE
+
+/**
+ * @brief Only traverse the GAS to generate closest hits; nothing more
+ * 
+ * This is for future consideration; we may want to write an anyhit program
+ * which will produce multiple returns for tracing.
+ */
+#cmakedefine LIDARSHOOTER_OPTIX_TERMINATE_ON_FIRST_HIT
 
 /**
  * @brief This path must be set to point at the directory containing the PTX modules

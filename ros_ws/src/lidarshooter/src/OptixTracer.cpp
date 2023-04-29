@@ -49,21 +49,11 @@ lidarshooter::OptixTracer::~OptixTracer()
         )
     );
 
-    // Freeing the GAS buffers
-    if (_gasBuffersAllocated)
-    {
-        CUDA_CHECK(
-            cudaFree(
-                reinterpret_cast<void*>(_devGasTempBuffer)
-            )
-        );
-        CUDA_CHECK(
-            cudaFree(
-                reinterpret_cast<void*>(_devGasOutputBuffer)
-            )
-        );
-        _gasBuffersAllocated = false;
-    }
+    // Clean up the GAS storage
+    teardownGasBuffers();
+
+    // Clean up the SBT record store
+    teardownSbtRecords();
 
     // Bye bye stream
 }
@@ -162,24 +152,12 @@ int lidarshooter::OptixTracer::removeGeometry(const std::string& _meshName)
     _devElements.erase(_meshName);
 
     // Make sure key exist in local vertices storage and erase
-    auto verticesIterator = _vertices.find(_meshName);
-    if (verticesIterator == _vertices.end())
-        throw(TraceException(
-            __FILE__,
-            "Geometry key does not exist in vertices map",
-            2
-        ));
-    _vertices.erase(verticesIterator);
+    auto verticesVector = getVertices(_meshName);
+    _vertices.erase(_meshName);
 
     // Make sure key exists in local elements storage and erase
-    auto elementsIterator = _elements.find(_meshName);
-    if (elementsIterator == _elements.end())
-        throw(TraceException(
-            __FILE__,
-            "Geometry key does not exist in elements map",
-            5
-        ));
-    _elements.erase(elementsIterator);
+    auto elementsVector = getElements(_meshName);
+    _elements.erase(_meshName);
 
     // Now finally remove the corresponding OptixBuildInput
     auto inputsIterator = _optixInputs.find(_meshName);
@@ -284,6 +262,10 @@ int lidarshooter::OptixTracer::updateGeometry(const std::string& _meshName, Eige
 
 int lidarshooter::OptixTracer::commitScene()
 {
+    // Don't build the acceleration structure for an empty geometry; this will fail
+    if (getGeometryCount() < 1)
+        return -1;
+
     setupSbtRecords();
     buildAccelStructure();
 
@@ -294,8 +276,19 @@ int lidarshooter::OptixTracer::commitScene()
 
 int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 {
+    // Don't build the acceleration structure for an empty geometry; this will fail
+    if (getGeometryCount() < 1)
+    {
+        // Clean out the message properly
+        getSensorConfig()->initMessage(getTraceCloud(), _frameIndex);
+        getTraceCloud()->data.clear();
+        getSensorConfig()->reset();
+
+        return -1;
+    }
+
     // Declare the output space globally
-    Params params;
+    Params params; // TODO: Make this member data
     params.handle = _gasHandle;
 
     // Declare temp space for the rays
@@ -367,8 +360,12 @@ int lidarshooter::OptixTracer::traceScene(std::uint32_t _frameIndex)
 lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfig, sensor_msgs::PointCloud2::Ptr _traceStorage, std::shared_ptr<spdlog::logger> _logger)
     : ITracer(_sensorConfig, _traceStorage, _logger),
       _options{},
-      _gasBuffersAllocated(false),
-      _geometryWasUpdated(false)
+      _geometryWasUpdated(false),
+      _devNumRaygenSbtRecordAllocated(0),
+      _devNumMissSbtRecordAllocated(0),
+      _devNumHitgroupSbtRecordAllocated(0),
+      _devGasTempBufferSizeInBytes(0),
+      _devGasOutputBufferSizeInBytes(0)
 {
     // Block for creating the contexts
     _devContext = nullptr;
@@ -434,8 +431,87 @@ lidarshooter::OptixTracer::OptixTracer(std::shared_ptr<LidarDevice> _sensorConfi
 
 void lidarshooter::OptixTracer::optixLoggerCallback(unsigned int _level, const char* _tag, const char* _message, void* _data)
 {
-    // Log output to default location
-    spdlog::get(LIDARSHOOTER_APPLICATION_NAME)->log(static_cast<spdlog::level::level_enum>(_level), std::string(_message));
+    // Unfortunately we have to do this because this has to be a static function
+    auto logger = spdlog::get(LIDARSHOOTER_LOGGER_TOP);
+    if (logger == nullptr)
+        logger = spdlog::stdout_color_mt(LIDARSHOOTER_LOGGER_TOP);
+    
+    // Log output to the main window
+    logger->log(static_cast<spdlog::level::level_enum>(_level), std::string(_message));
+}
+
+void lidarshooter::OptixTracer::setupGasBuffers()
+{
+    // Only reallocate if we need more space than we have
+    if (_gasBufferSizes.tempSizeInBytes > _devGasTempBufferSizeInBytes.load())
+    {
+        // Free the present chunk
+        if (_devGasTempBufferSizeInBytes.load() > 0)
+        {
+            CUDA_CHECK(
+                cudaFree(
+                    reinterpret_cast<void*>(_devGasTempBuffer)
+                )
+            );
+        }
+
+        CUDA_CHECK(
+            cudaMalloc(
+                reinterpret_cast<void**>(&_devGasTempBuffer),
+                _gasBufferSizes.tempSizeInBytes
+            )
+        );
+
+        // Set the space being used now
+        _devGasTempBufferSizeInBytes.store(_gasBufferSizes.tempSizeInBytes);
+    }
+
+    if (_gasBufferSizes.outputSizeInBytes > _devGasOutputBufferSizeInBytes.load())
+    {
+        if (_devGasOutputBufferSizeInBytes.load() > 0)
+        {
+            CUDA_CHECK(
+                cudaFree(
+                    reinterpret_cast<void*>(_devGasOutputBuffer)
+                )
+            );
+        }
+
+        CUDA_CHECK(
+            cudaMalloc(
+                reinterpret_cast<void**>(&_devGasOutputBuffer),
+                _gasBufferSizes.outputSizeInBytes
+            )
+        );
+
+        // Set the space being used now
+        _devGasOutputBufferSizeInBytes.store(_gasBufferSizes.outputSizeInBytes);
+    }
+}
+
+void lidarshooter::OptixTracer::teardownGasBuffers()
+{
+    // Freeing the GAS buffers
+    if (_devGasTempBufferSizeInBytes.load() > 0)
+    {
+        // Remember that this will fail if nothing is allocated
+        CUDA_CHECK(
+            cudaFree(
+                reinterpret_cast<void*>(_devGasTempBuffer)
+            )
+        );
+        _devGasTempBufferSizeInBytes.store(0);
+    }
+
+    if (_devGasOutputBufferSizeInBytes.load() > 0)
+    {
+        CUDA_CHECK(
+            cudaFree(
+                reinterpret_cast<void*>(_devGasOutputBuffer)
+            )
+        );
+        _devGasOutputBufferSizeInBytes.store(0);
+    }
 }
 
 void lidarshooter::OptixTracer::buildAccelStructure()
@@ -459,7 +535,7 @@ void lidarshooter::OptixTracer::buildAccelStructure()
     _accelBuildOptions.operation = _fullUpdate ? OPTIX_BUILD_OPERATION_BUILD : OPTIX_BUILD_OPERATION_UPDATE;
 
     // Calculate the GAS buffer sizes
-    if (_fullUpdate || !_gasBuffersAllocated)
+    if (_fullUpdate)
     {
         OPTIX_CHECK(
             optixAccelComputeMemoryUsage(
@@ -471,25 +547,11 @@ void lidarshooter::OptixTracer::buildAccelStructure()
             )
         );
 
-        CUDA_CHECK(
-            cudaMalloc(
-                reinterpret_cast<void**>(&_devGasTempBuffer),
-                _gasBufferSizes.tempSizeInBytes
-            )
-        );
-
-        CUDA_CHECK(
-            cudaMalloc(
-                reinterpret_cast<void**>(&_devGasOutputBuffer),
-                _gasBufferSizes.outputSizeInBytes
-            )
-        );
-
-        // Indicate that we already built the accleeration structure and allocate
-        // the space needed to easily update
-        _gasBuffersAllocated = true;
+        // Allocate the space using the _gasBufferSizes just acquired above
+        setupGasBuffers();
     }
 
+    // Build the GAS itself; this depends on the geometry
     OPTIX_CHECK(
         optixAccelBuild(
             _devContext,
@@ -655,81 +717,123 @@ void lidarshooter::OptixTracer::setupSbtRecords()
 {
     // Raygen SBT record
     const size_t raygenRecordSize = sizeof(RayGenSbtRecord);
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void **>(&_devRaygenSbtRecord),
-            raygenRecordSize
-        )
-    );
-    OPTIX_CHECK(
-        optixSbtRecordPackHeader(
-            _raygenProgramGroup,
-            &_raygenSbtRecord
-        )
-    );
-    CUDA_CHECK(
-        cudaMemcpy(
-            reinterpret_cast<void *>(_devRaygenSbtRecord),
-            &_raygenSbtRecord,
-            raygenRecordSize,
-            cudaMemcpyHostToDevice
-        )
-    );
-
-    // Miss SBT record
-    const size_t missRecordSize = sizeof(MissSbtRecord);
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void **>(&_devMissSbtRecord),
-            getGeometryCount() * missRecordSize
-        )
-    );
-
-    OPTIX_CHECK(
-        optixSbtRecordPackHeader(
-            _missProgramGroup,
-            &_missSbtRecord
-        )
-    );
-
-    for (int recordIndex = 0; recordIndex < getGeometryCount(); ++recordIndex)
+    if (_devNumRaygenSbtRecordAllocated.load() < 1)
     {
         CUDA_CHECK(
+            cudaMalloc(
+                reinterpret_cast<void **>(&_devRaygenSbtRecord),
+                raygenRecordSize
+            )
+        );
+
+        OPTIX_CHECK(
+            optixSbtRecordPackHeader(
+                _raygenProgramGroup,
+                &_raygenSbtRecord
+            )
+        );
+
+        CUDA_CHECK(
             cudaMemcpy(
-                reinterpret_cast<void *>(_devMissSbtRecord + missRecordSize * recordIndex),
-                &_missSbtRecord,
-                missRecordSize,
+                reinterpret_cast<void *>(_devRaygenSbtRecord),
+                &_raygenSbtRecord,
+                raygenRecordSize,
                 cudaMemcpyHostToDevice
             )
         );
+
+        // Set allocate records to 1
+        _devNumRaygenSbtRecordAllocated.store(1);
+    }
+
+    // Miss SBT record
+    const size_t missRecordSize = sizeof(MissSbtRecord);
+    if (_devNumMissSbtRecordAllocated.load() < getGeometryCount())
+    {
+        // If something is already allocated free it first
+        if (_devNumMissSbtRecordAllocated.load() > 0)
+        {
+            CUDA_CHECK(
+                cudaFree(
+                    reinterpret_cast<void*>(_devMissSbtRecord)
+                )
+            );
+        }
+
+        CUDA_CHECK(
+            cudaMalloc(
+                reinterpret_cast<void **>(&_devMissSbtRecord),
+                getGeometryCount() * missRecordSize
+            )
+        );
+
+        OPTIX_CHECK(
+            optixSbtRecordPackHeader(
+                _missProgramGroup,
+                &_missSbtRecord
+            )
+        );
+
+        // TODO: Each mesh can have its own record type; use an std::map as always
+        for (int recordIndex = 0; recordIndex < getGeometryCount(); ++recordIndex)
+        {
+            CUDA_CHECK(
+                cudaMemcpy(
+                    reinterpret_cast<void *>(_devMissSbtRecord + missRecordSize * recordIndex),
+                    &_missSbtRecord,
+                    missRecordSize,
+                    cudaMemcpyHostToDevice
+                )
+            );
+        }
+
+        // Set the miss records allocated to the current geometry count
+        _devNumMissSbtRecordAllocated.store(getGeometryCount());
     }
 
     // Hit group SBT record
     const size_t hitGroupRecordSize = sizeof(HitGroupSbtRecord);
-    CUDA_CHECK(
-        cudaMalloc(
-            reinterpret_cast<void **>(&_devHitgroupSbtRecord),
-            getGeometryCount() * hitGroupRecordSize
-        )
-    );
-
-    OPTIX_CHECK(
-        optixSbtRecordPackHeader(
-            _hitgroupProgramGroup,
-            &_hitgroupSbtRecord
-        )
-    );
-
-    for (int recordIndex = 0; recordIndex < getGeometryCount(); ++recordIndex)
+    if (_devNumHitgroupSbtRecordAllocated.load() < getGeometryCount())
     {
+        // If something is already allocated free it first
+        if (_devNumHitgroupSbtRecordAllocated.load() > 0)
+        {
+            CUDA_CHECK(
+                cudaFree(
+                    reinterpret_cast<void*>(_devHitgroupSbtRecord)
+                )
+            );
+        }
+
         CUDA_CHECK(
-            cudaMemcpy(
-                reinterpret_cast<void *>(_devHitgroupSbtRecord + hitGroupRecordSize * recordIndex),
-                &_hitgroupSbtRecord,
-                hitGroupRecordSize,
-                cudaMemcpyHostToDevice
+            cudaMalloc(
+                reinterpret_cast<void **>(&_devHitgroupSbtRecord),
+                getGeometryCount() * hitGroupRecordSize
             )
         );
+
+        OPTIX_CHECK(
+            optixSbtRecordPackHeader(
+                _hitgroupProgramGroup,
+                &_hitgroupSbtRecord
+            )
+        );
+
+        // TODO: Each mesh can have its own record type; use an std::map as always
+        for (int recordIndex = 0; recordIndex < getGeometryCount(); ++recordIndex)
+        {
+            CUDA_CHECK(
+                cudaMemcpy(
+                    reinterpret_cast<void *>(_devHitgroupSbtRecord + hitGroupRecordSize * recordIndex),
+                    &_hitgroupSbtRecord,
+                    hitGroupRecordSize,
+                    cudaMemcpyHostToDevice
+                )
+            );
+        }
+
+        // Set the miss records allocated to the current geometry count
+        _devNumHitgroupSbtRecordAllocated.store(getGeometryCount());
     }
 
     // Fill out SBT structure
@@ -740,6 +844,52 @@ void lidarshooter::OptixTracer::setupSbtRecords()
     _shaderBindingTable.hitgroupRecordBase = _devHitgroupSbtRecord;
     _shaderBindingTable.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
     _shaderBindingTable.hitgroupRecordCount = getGeometryCount();
+}
+
+void lidarshooter::OptixTracer::teardownSbtRecords()
+{
+    // Free the GPU memory
+    if (_devNumRaygenSbtRecordAllocated.load() > 0)
+    {
+        _logger->debug("Tearing down raygen SBT: Size {}", _devNumRaygenSbtRecordAllocated.load());
+        CUDA_CHECK(
+            cudaFree(
+                reinterpret_cast<void*>(_devRaygenSbtRecord)
+            )
+        );
+    }
+    _devNumRaygenSbtRecordAllocated.store(0);
+
+    if (_devNumMissSbtRecordAllocated.load() > 0)
+    {
+        _logger->debug("Tearing down miss SBT: Size {}", _devNumMissSbtRecordAllocated.load());
+        CUDA_CHECK(
+            cudaFree(
+                reinterpret_cast<void*>(_devMissSbtRecord)
+            )
+        );
+    }
+    _devNumMissSbtRecordAllocated.store(0);
+
+    if (_devNumHitgroupSbtRecordAllocated.load() > 0)
+    {
+        _logger->debug("Tearing down hit group SBT: Size {}", _devNumHitgroupSbtRecordAllocated.load());
+        CUDA_CHECK(
+            cudaFree(
+                reinterpret_cast<void*>(_devHitgroupSbtRecord)
+            )
+        );
+    }
+    _devNumHitgroupSbtRecordAllocated.store(0);
+
+    // Clean out SBT struct
+    _shaderBindingTable.raygenRecord = 0;
+    _shaderBindingTable.missRecordBase = 0;
+    _shaderBindingTable.missRecordStrideInBytes = sizeof(MissSbtRecord);
+    _shaderBindingTable.missRecordCount = 0;
+    _shaderBindingTable.hitgroupRecordBase = 0;
+    _shaderBindingTable.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
+    _shaderBindingTable.hitgroupRecordCount = 0;
 }
 
 void lidarshooter::OptixTracer::addPointsToCloud(Hit *_resultHits)

@@ -47,7 +47,11 @@ extern "C" __global__ void __raygen__rg()
         1e16f,
         0.0f,
         OptixVisibilityMask(255),
+#ifdef LIDARSHOOTER_OPTIX_TERMINATE_ON_FIRST_HIT
+        OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+#else
         OPTIX_RAY_FLAG_NONE,
+#endif
         0,
         1,
         0,

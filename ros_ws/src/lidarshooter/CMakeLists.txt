@@ -151,6 +151,10 @@ include_directories(
 
 option(ENABLE_OPENACC "Enable compilation with OpenACC" OFF)
 
+# General package-wide options
+option(LIDARSHOOTER_DEBUG "Whole scope debug setting for LiDARShooter" OFF)
+option(LIDARSHOOTER_FULL_OPTIMIZE "Set to greater than average optimization" OFF)
+
 find_package(PCL REQUIRED)
 find_package(Poco COMPONENTS Net REQUIRED)
 #find_package(jsoncpp REQUIRED)
@@ -159,7 +163,7 @@ find_package(Eigen REQUIRED)
 find_package(Boost COMPONENTS program_options system)
 
 if (ENABLE_OPENACC)
-find_package(OpenACC REQUIRED)
+  find_package(OpenACC REQUIRED)
 endif(ENABLE_OPENACC)
 
 ## Declare a C++ library
@@ -246,7 +250,8 @@ set(OptiX_INSTALL_DIR "/workspaces/lidarshooter/NVIDIA-OptiX-SDK-7.6.0-linux64-x
 option(LIDARSHOOTER_OPTIX_FOUND "Set to true if NVIDIA OptiX was found" OFF)
 option(LIDARSHOOTER_OPTIX_DEBUG "Enables debugging for OptixTracer if used" ON)
 option(LIDARSHOOTER_OPTIX_DEVICE_CONTEXT_VALIDATION_MODE "Enables bounds validation at runtime on pipelines" OFF)
-option(LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS "Forces acceleration structure in OptiX to build full every time (no update only)" ON)
+option(LIDARSHOOTER_OPTIX_ALWAYS_BUILD_FULL_GAS "Forces acceleration structure in OptiX to build full every time (no update only)" OFF)
+option(LIDARSHOOTER_OPTIX_TERMINATE_ON_FIRST_HIT "Only return the closest hit and stop traversal" ON)
 
 # Get rid of this once CMake modules are installed correctly
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -254,6 +259,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 # Set the OptiX SDK path; important
 list(APPEND CMAKE_MODULE_PATH "${OptiX_INSTALL_DIR}/SDK/CMake")
 
+# TODO: Get rid of this; I don't think this is being used at all
 include(BuildPTXFromSource)
 
 # Find OptiX requirements
@@ -262,10 +268,10 @@ find_package(OptiX)
 
 # Check for OptiX and set variable
 if (EXISTS ${OptiX_INCLUDE})
-message(STATUS "Setting OptiX library to found: ${OptiX_INCLUDE}")
-set(LIDARSHOOTER_OPTIX_FOUND ON)
+  message(STATUS "Setting OptiX library to found: ${OptiX_INCLUDE}")
+  set(LIDARSHOOTER_OPTIX_FOUND ON)
 else()
-message(STATUS "Could not find the OptiX library")
+  message(STATUS "Could not find the OptiX library")
 endif()
 
 # Generate Optix debugging header for LidarShooter.hpp
@@ -287,7 +293,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets LinguistTools REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets LinguistTools REQUIRED)
 
-add_compile_options(-O0 -g3)
+if (LIDARSHOOTER_DEBUG)
+  add_compile_options(-O0 -g3)
+else()
+  if (LIDARSHOOTER_FULL_OPTIMIZE)
+    add_compile_options(-O3)
+  else()
+    add_compile_options(-O2)
+  endif()
+endif()
 
 set(TS_FILES LiDARShooterGUI_en_US.ts)
 
@@ -392,7 +406,7 @@ add_library(lidarshooter ${LIBRARY_TARGETS})
 target_compile_features(lidarshooter PUBLIC cxx_std_17)
 
 if (ENABLE_OPENACC)
-    target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
+  target_compile_options(lidarshooter PRIVATE -fcf-protection=none -fno-stack-protector)
 endif (ENABLE_OPENACC)
 target_include_directories(lidarshooter PUBLIC ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} /usr/include/jsoncpp /usr/include/eigen3 /usr/src/embree-3.13.4.x86_64.linux/include ${OptiX_INCLUDE} ${OptiX_INCLUDE}/../SDK ${OptiX_INCLUDE}/../SDK/support)
 target_link_directories(lidarshooter PUBLIC /usr/src/embree-3.13.4.x86_64.linux/lib)

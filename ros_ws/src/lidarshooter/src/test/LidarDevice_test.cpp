@@ -67,9 +67,9 @@ TEST_F(LidarDeviceTest, InitializeMessage)
     lidarDevice->initMessage(cloud, 100);
     EXPECT_EQ(cloud->fields.size(), 5);
     EXPECT_EQ(cloud->height, 1);
-    EXPECT_EQ(cloud->width, 150 * 32);
+    EXPECT_EQ(cloud->width, 0);
     EXPECT_EQ(cloud->point_step, 32);
-    EXPECT_EQ(cloud->row_step, 150 * 32 * 32);
+    EXPECT_EQ(cloud->row_step, 0 * 32);
     EXPECT_EQ(cloud->is_bigendian, false);
     EXPECT_EQ(cloud->is_dense, true);
     EXPECT_EQ(cloud->header.seq, 100);

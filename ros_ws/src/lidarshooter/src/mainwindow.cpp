@@ -26,14 +26,14 @@ MainWindow::MainWindow(QWidget *parent)
     sensorsDialog->show();
 
     // Set up the loggerTop
-    loggerTop = spdlog::get("LiDARShooterTop"); // If it isn't already there then make it
+    loggerTop = spdlog::get(LIDARSHOOTER_LOGGER_TOP); // If it isn't already there then make it
     if (loggerTop == nullptr)
-        loggerTop = spdlog::qt_logger_mt("LiDARShooterTop", logDialog->getTextEditTop());
+        loggerTop = spdlog::qt_logger_mt(LIDARSHOOTER_LOGGER_TOP, logDialog->getTextEditTop());
 
     // Set up the loggerBottom
-    loggerBottom = spdlog::get("LiDARShooterBottom"); // If it isn't already there then make it
+    loggerBottom = spdlog::get(LIDARSHOOTER_LOGGER_BOTTOM); // If it isn't already there then make it
     if (loggerBottom == nullptr)
-        loggerBottom = spdlog::qt_logger_mt("LiDARShooterBottom", logDialog->getTextEditBottom());
+        loggerBottom = spdlog::qt_logger_mt(LIDARSHOOTER_LOGGER_BOTTOM, logDialog->getTextEditBottom());
 
     // Set up the visualization
     auto renderer = vtkSmartPointer<vtkRenderer>::New();
@@ -254,7 +254,7 @@ const std::string MainWindow::addSensor(const std::string& _fileName)
     else
     {
         // This is where you would choose which tracer to use
-        auto tracer = lidarshooter::OptixTracer::create(devicePointer, nullptr, loggerTop);
+        lidarshooter::ITracer::Ptr tracer = lidarshooter::OptixTracer::create(devicePointer, nullptr, loggerTop);
         //lidarshooter::ITracer::Ptr tracer = lidarshooter::EmbreeTracer::create(devicePointer, nullptr, loggerTop);
 
         // Create the sensor
