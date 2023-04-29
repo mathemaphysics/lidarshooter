@@ -89,7 +89,7 @@ public:
      * @param __tracePeriod Check if changes to object mesh and retrace every \c __tracePeriod
      * @param __logger 
      */
-    MeshProjector(std::shared_ptr<LidarDevice> _configDevice, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
+    MeshProjector(LidarDevice::Ptr _configDevice, ITracer::Ptr __tracer, ros::NodeHandlePtr __nodeHandle = nullptr, ros::Duration __publishPeriod = ros::Duration(0.1), ros::Duration __tracePeriod = ros::Duration(0.1), std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Destroy the mesh projector object
@@ -215,7 +215,7 @@ private:
     std::shared_ptr<spdlog::logger> _logger;
 
     // Device with everyone you need to know about your scanner
-    std::shared_ptr<LidarDevice> _config;
+    LidarDevice::Ptr _config;
 
     // Messages in class format
     std::map<const std::string, lidarshooter::AffineMesh::Ptr> _affineTrackObjects; // Remove _trackObject (singular) when finished

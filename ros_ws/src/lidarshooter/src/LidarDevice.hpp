@@ -52,12 +52,12 @@ namespace lidarshooter
  * object for this type; eventually use this as a base class to build other
  * sensor-specific header generators
  */
-class LidarDevice
+class LidarDevice : public std::enable_shared_from_this<LidarDevice>
 {
 public:
 	// TODO: For later when LidarDevice has a factory create
-    //using Ptr = std::shared_ptr<LidarDevice>;
-    //using ConstPtr = std::shared_ptr<LidarDevice const>;
+    using Ptr = std::shared_ptr<LidarDevice>;
+    using ConstPtr = std::shared_ptr<LidarDevice const>;
 
     /**
      * @brief Construct a new LidarDevice
@@ -66,11 +66,13 @@ public:
      * have all the information to start up before creating the object; you
      * can call \c initialize with the configuration file when the path is
      * known.
+     *
+     * @param __logger The logger pointer
      */
-    LidarDevice(std::shared_ptr<spdlog::logger> __logger = nullptr);
+    static Ptr create(std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
-     * @brief Construct a new LidarDevice
+     * @brief Construct a new LidarDevice getting unknown sensorUid from server
      * 
      * For cases in which you already know the path to the JSON
      * configuration file; calling this constructor is identical to calling
@@ -79,7 +81,7 @@ public:
      * @param _config Path to the JSON configuration file for the device
      * @param __logger Logger to use instead of creating a 
      */
-    LidarDevice(const std::string& _config, std::shared_ptr<spdlog::logger> __logger = nullptr);
+    static Ptr create(const std::string& _config, std::shared_ptr<spdlog::logger> __logger = nullptr);
 
     /**
      * @brief Construct a new LidarDevice
@@ -92,7 +94,9 @@ public:
      * @param _sensorUid UID of the specific sensor to emulate, e.g. lidar_0000
      * @param __logger Logger to use instead of creating a 
      */
-    LidarDevice(const std::string& _config, const std::string& _sensorUid, std::shared_ptr<spdlog::logger> __logger = nullptr);
+    static Ptr create(const std::string& _config, const std::string& _sensorUid, std::shared_ptr<spdlog::logger> __logger = nullptr);
+
+    Ptr getPtr();
 
     /**
      * @brief Destroy the LidarDevice object
@@ -296,6 +300,42 @@ public:
     const std::string& getSensorUid() const;
 
 private:
+    /**
+     * @brief Construct a new LidarDevice
+     * 
+     * For those cases when you need a default constructor because you don't
+     * have all the information to start up before creating the object; you
+     * can call \c initialize with the configuration file when the path is
+     * known.
+     *
+     * @param __logger The logger pointer
+     */
+    LidarDevice(std::shared_ptr<spdlog::logger> __logger = nullptr);
+
+    /**
+     * @brief Construct a new LidarDevice
+     * 
+     * For cases in which you already know the path to the JSON
+     * configuration file; calling this constructor is identical to calling
+     * the no-arguments constructor and then calling \c initialize.
+     * 
+     * @param _config Path to the JSON configuration file for the device
+     * @param __logger Logger to use instead of creating a 
+     */
+    LidarDevice(const std::string& _config, std::shared_ptr<spdlog::logger> __logger = nullptr);
+
+    /**
+     * @brief Construct a new LidarDevice
+     * 
+     * For cases in which you already know the path to the JSON
+     * configuration file; calling this constructor is identical to calling
+     * the no-arguments constructor and then calling \c initialize.
+     * 
+     * @param _config Path to the JSON configuration file for the device
+     * @param _sensorUid UID of the specific sensor to emulate, e.g. lidar_0000
+     * @param __logger Logger to use instead of creating a 
+     */
+    LidarDevice(const std::string& _config, const std::string& _sensorUid, std::shared_ptr<spdlog::logger> __logger = nullptr);
     /**
      * @brief Folder into which output files are written when needed
      * 

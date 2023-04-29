@@ -108,7 +108,7 @@ private:
     // Device to object maps
     std::map<const std::string, lidarshooter::AffineMesh::Ptr> affineMeshMap;
     std::map<const std::string, lidarshooter::DeviceRuntime> runtimeMap;
-    std::map<const std::string, std::shared_ptr<lidarshooter::LidarDevice>> deviceConfigMap; ///< Takes sensorUid as index
+    std::map<const std::string, lidarshooter::LidarDevice::Ptr> deviceConfigMap; ///< Takes sensorUid as index
 
     // ROS thread initialization and storage
     char **rosArgv;
