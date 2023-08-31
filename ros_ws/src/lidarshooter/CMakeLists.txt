@@ -347,6 +347,10 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
+## Workaround for CMake versions before 3.25.??? to allow use of C++20 standard with CUDA
+#set(CMAKE_CUDA20_STANDARD_COMPILE_OPTION "")
+#set(CMAKE_CUDA20_EXTENSION_COMPILE_OPTION "")
+
 target_compile_features(LiDARShooterGUI PUBLIC cxx_std_17)
 target_include_directories(LiDARShooterGUI PRIVATE ${PCL_INCLUDE_DIRS} /usr/include/jsoncpp /usr/src/embree-3.13.4.x86_64.linux/include)
 target_link_libraries(LiDARShooterGUI PRIVATE Qt${QT_VERSION_MAJOR}::Widgets lidarshooter CUDA::cudart ${PCL_LIBRARIES} spdlog::spdlog Poco::Net jsoncpp fmt ${catkin_LIBRARIES})
