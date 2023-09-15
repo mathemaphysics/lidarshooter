@@ -543,7 +543,7 @@ int lidarshooter::LidarDevice::loadConfiguration(const std::string _config, cons
             _logger->info("Getting sensor config from SENSR API");
             int loadResult = loadTransformationFromUrl(
                 _device.sensorApiUrl + ":"
-                + std::to_string((unsigned int)_device.sensorApiPort)
+                + std::to_string(static_cast<unsigned int>(_device.sensorApiPort))
                 + _sensrGetEndpoint
                 + _device.sensorUid
             );
