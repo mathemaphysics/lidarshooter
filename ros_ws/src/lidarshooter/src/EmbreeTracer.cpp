@@ -345,10 +345,11 @@ int lidarshooter::EmbreeTracer::traceScene(std::uint32_t _frameIndex)
                                 rayhitn.ray.tfar[ri] * rayhitn.ray.dir_z[ri],
                                 64.0, rayRings[ri]
                             );
-                            cloudMutex.lock();
-                            cloudBytes.addToCloud(this->getTraceCloud());
-                            totalPointCount.store(totalPointCount.load() + 1);
-                            cloudMutex.unlock();
+                            {
+                                std::lock_guard<std::mutex> cloudLock(cloudMutex);
+                                cloudBytes.addToCloud(this->getTraceCloud());
+                                totalPointCount.store(totalPointCount.load() + 1);
+                            }
                         }
                         validRays[ri] = 0; // Reset ray validity to invalid/off/don't compute
                     }
