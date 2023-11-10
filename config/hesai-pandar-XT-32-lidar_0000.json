@@ -1,7 +1,7 @@
 {
     "device": {
         "sensorUid": "lidar_0000",
-        "sensorApiUrl": "http://od-dacc-dev.hti-sys.com",
+        "sensorApiUrl": "http://sensoraddr",
         "sensorApiPort": 9080,
         "sensorConfigFile": "/workspaces/lidarshooter/config/transform-lidar_0000.json",
         "sensorConfig": {
