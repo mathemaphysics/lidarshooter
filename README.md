@@ -5,6 +5,7 @@ To use the convenient `devcontainer.json` setup for VSCode you'll want to make s
 Before you open and build the devcontainer do the following. If you're on Windows, you'll need to open `.devcontainer/devcontainer.json` and make the following changes: Comments out `remoteEnv`'s `DISPLAY` and `XAUTHORITY` variables and also comment out the last two `source=` lines in the `mounts` section. When you're done with this it should look like this:
 
 ```json
+{
 	"remoteEnv": {
 		//"DISPLAY": "${localEnv:DISPLAY}",
 		//"XAUTHORITY": "/home/devuser/.Xauthority",
