@@ -1,6 +1,6 @@
 /**
  * @file AffineMesh_test.cpp
- * @author Ryan P. Daly (rdaly@herzog.com)
+ * @author Ryan P. Daly (mathemaphysics@gmail.com)
  * @brief Unit tests related to the AffineMesh class
  * @version 0.1
  * @date 2023-01-26

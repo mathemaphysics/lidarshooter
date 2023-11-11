@@ -1,6 +1,6 @@
 /**
  * @file OptixTracerModules.cu
- * @author Ryan P. Daly (rdaly@herzog.com)
+ * @author Ryan P. Daly (mathemaphysics@gmail.com)
  * @brief Modules source for producing OPTIX-IR and PTX
  * @version 0.1
  * @date 2023-04-10

@@ -1,6 +1,6 @@
 /**
  * @file OptixTracer.cpp
- * @author Ryan P. Daly (rdaly@herzog.com)
+ * @author Ryan P. Daly (mathemaphysics@gmail.com)
  * @brief Do your raytracing with NVIDIA Optix
  * @version 0.1
  * @date 2023-02-25

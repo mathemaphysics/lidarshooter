@@ -1,6 +1,6 @@
 /**
  * @file MeshProjector.cpp
- * @author Ryan P. Daly (rdaly@herzog.com)
+ * @author Ryan P. Daly (mathemaphysics@gmail.com)
  * @brief MeshProjector class which traces objects
  * @version 0.1
  * @date 2022-08-18

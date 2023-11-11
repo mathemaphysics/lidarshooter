@@ -1,6 +1,6 @@
 /**
  * @file EmbreeTracer.cpp
- * @author Ryan P. Daly (rdaly@herzog.com)
+ * @author Ryan P. Daly (mathemaphysics@gmail.com)
  * @brief EmbreeTracer class is an implementation of a tracer
  * @version 0.1
  * @date 2023-01-20

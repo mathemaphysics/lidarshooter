@@ -1,6 +1,6 @@
 /**
  * @file LidarDevice.cpp
- * @author Ryan P. Daly (rdaly@herzog.com)
+ * @author Ryan P. Daly (mathemaphysics@gmail.com)
  * @brief Abstraction of the LiDAR device configuration
  * @version 0.1
  * @date 2022-08-18

@@ -1,6 +1,6 @@
 /**
  * @file AffineMesh.cpp
- * @author Ryan P. Daly (rdaly@herzog.com)
+ * @author Ryan P. Daly (mathemaphysics@gmail.com)
  * @brief 
  * @version 0.1
  * @date 2023-02-01
