@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 
 services:
   devcontainer:
@@ -16,5 +16,6 @@ services:
       - ROS_MASTER_URI=${ROS_MASTER_URI}
       - QT_AUTO_SCREEN_SCALE_FACTOR=${QT_AUTO_SCREEN_SCALE_FACTOR}
     command: "sleep infinity"
+    privileged: true
     volumes:
       - ..:/workspaces/lidarshooter
